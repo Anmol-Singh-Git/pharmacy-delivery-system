@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Products | meddeliver</title>
+<link rel="stylesheet" href="LISTINGPAGE.CSS">
+<link rel="stylesheet" href="logo-styles.css">
+<style>
+.site-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.navbar .site-logo {
+  display: inline-block;
+  vertical-align: middle;
+}
+</style>
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<section class="page-header">
+<h1 id="pageTitle">Browse Products</h1>
+<p id="pageCopy">Find products or locate the nearest pharmacies using your current location.</p>
+</section>
+
+<section class="filters-panel">
+<div id="medicineFilters" class="filters-grid">
+<select id="categoryFilter" onchange="handleCategoryChange()">
+<option value="all">All Categories</option>
+<option value="MEDICINES">Medicines</option>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurveda</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+
+    <select id="priceSort" onchange="handlePriceSortChange()">
+      <option value="default">Sort by Price</option>
+      <option value="low">Low to High</option>
+      <option value="high">High to Low</option>
+    </select>
+
+    <select id="stockSort" onchange="handleStockSortChange()">
+      <option value="default">Sort by Stock</option>
+      <option value="stock-high">High to Low</option>
+      <option value="stock-low">Low to High</option>
+    </select>
+</div>
+
+<div id="categoryFilterBanner" class="category-filter-banner hidden">
+<span id="categoryFilterText"></span>
+</div>
+
+<div id="sellerFilterBanner" class="seller-filter-banner hidden">
+<span id="sellerFilterText"></span>
+<button type="button" onclick="clearSellerFilter()">Clear Filter</button>
+</div>
+
+<p id="locationStatus" class="location-status"></p>
+</section>
+
+<section class="results-head">
+<div>
+<h2 id="resultsTitle">Product Results</h2>
+<p id="resultsMeta">Browse products from verified pharmacies.</p>
+</div>
+</section>
+
+<section class="medicine-section">
+<div id="medicine-container" class="medicine-grid"></div>
+</section>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const buyerEmail = localStorage.getItem("buyer_email");
+const sellerEmail = localStorage.getItem("seller_email");
+const buyerProfile = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+const initialUrlParams = new URLSearchParams(window.location.search);
+
+let sliderIntervals = new Map();
+let allMedicines = [];
+let nearbyPharmacies = [];
+let buyerLocation = normalizeLocation(buyerProfile.location);
+
+function hydrateBuyerLocationFromStorage(){
+if(buyerLocation) return;
+const fromMd = window.readMedDeliverStoredCoords && window.readMedDeliverStoredCoords();
+if(fromMd){
+buyerLocation = fromMd;
+return;
+}
+try{
+const bp = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+buyerLocation = normalizeLocation(bp.location);
+}
+catch(error){
+/* keep buyerLocation as-is */
+}
+}
+
+hydrateBuyerLocationFromStorage();
+let currentSearchMode = "medicines";
+let activeSellerFilter = "";
+let activeCategoryFilter = "all";
+const PHARMACY_SEARCH_RANGE_KM = 25;
+
+const CATEGORY_CONFIG = {
+MEDICINES: {
+label: "Medicines",
+aliases: ["medicines", "medicine"],
+codes: ["TABLET", "SYRUP", "CAPSULE", "INJECTION"],
+queryValue: "Medicines"
+},
+TABLET: {
+label: "Tablet",
+aliases: ["tablet"],
+codes: ["TABLET"],
+queryValue: "Tablet"
+},
+SYRUP: {
+label: "Syrup",
+aliases: ["syrup"],
+codes: ["SYRUP"],
+queryValue: "Syrup"
+},
+CAPSULE: {
+label: "Capsule",
+aliases: ["capsule"],
+codes: ["CAPSULE"],
+queryValue: "Capsule"
+},
+INJECTION: {
+label: "Injection",
+aliases: ["injection"],
+codes: ["INJECTION"],
+queryValue: "Injection"
+},
+HEALTHCARE_DEVICES: {
+label: "Healthcare Devices",
+aliases: ["healthcare devices", "healthcare_devices"],
+codes: ["HEALTHCARE_DEVICES"],
+queryValue: "Healthcare Devices"
+},
+PERSONAL_CARE: {
+label: "Personal Care",
+aliases: ["personal care", "personal_care"],
+codes: ["PERSONAL_CARE"],
+queryValue: "Personal Care"
+},
+BABY_CARE: {
+label: "Baby Care",
+aliases: ["baby care", "baby_care"],
+codes: ["BABY_CARE"],
+queryValue: "Baby Care"
+},
+NUTRITION: {
+label: "Nutrition",
+aliases: ["nutrition", "nutrition & supplements"],
+codes: ["NUTRITION"],
+queryValue: "Nutrition"
+},
+AYURVEDIC: {
+label: "Ayurveda",
+aliases: ["ayurveda", "ayurvedic", "ayurvedic products"],
+codes: ["AYURVEDIC"],
+queryValue: "Ayurveda"
+},
+HOME_ESSENTIALS: {
+label: "Home Essentials",
+aliases: ["home essentials", "home_essentials"],
+codes: ["HOME_ESSENTIALS"],
+queryValue: "Home Essentials"
+}
+};
+
+function getNavbarSearchMarkup(){
+return `
+<div class="nav-search">
+<select id="searchMode" onchange="handleSearchModeChange()">
+<option value="medicines">Search Products</option>
+<option value="pharmacies">Search Nearby Pharmacies</option>
+</select>
+<input
+type="text"
+id="searchInput"
+placeholder="Search products, brands, or pharmacies..."
+autocomplete="off"
+oninput="handleSearchInput()"
+onkeydown="handleSearchKeydown(event)"
+>
+<button type="button" class="nav-search-btn" onclick="runSearch()">Search</button>
+</div>
+`;
+}
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+const navSearch = getNavbarSearchMarkup();
+
+if(!buyerEmail && !sellerEmail){
+navbar.innerHTML = `
+<header class="navbar navbar-search">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+${navSearch}
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyerEmail){
+navbar.innerHTML = `
+<header class="navbar navbar-search">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+${navSearch}
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar navbar-search">
+<a class="logo" href="HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+${navSearch}
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function storeProduct(medicine){
+localStorage.setItem("selectedProduct", JSON.stringify(medicine));
+}
+
+function encodeProduct(product){
+return encodeURIComponent(JSON.stringify(product)).replace(/'/g, "%27");
+}
+
+function decodeProduct(encodedProduct){
+return JSON.parse(decodeURIComponent(encodedProduct));
+}
+
+function normalizeLocation(location){
+if(!location) return null;
+
+const latitude = Number(location.latitude ?? location.lat ?? location.coordinates?.[1]);
+const longitude = Number(location.longitude ?? location.lng ?? location.coordinates?.[0]);
+
+if(!Number.isFinite(latitude) || !Number.isFinite(longitude)){
+return null;
+}
+
+return { latitude, longitude };
+}
+
+function formatCategory(category){
+return String(category || "General")
+.replace(/_/g, " ")
+.toLowerCase()
+.replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function normalizeText(value){
+return String(value || "").toLowerCase().trim();
+}
+
+function resolveCategoryKey(value){
+if(!value || value === "all") return "all";
+
+const directKey = String(value || "").trim().toUpperCase();
+
+if(CATEGORY_CONFIG[directKey]){
+return directKey;
+}
+
+const normalizedValue = normalizeText(value);
+const matchedEntry = Object.entries(CATEGORY_CONFIG).find(([, config]) =>
+config.aliases.includes(normalizedValue) || normalizeText(config.label) === normalizedValue
+);
+
+return matchedEntry ? matchedEntry[0] : "all";
+}
+
+function getCategoryCodes(categoryKey){
+return CATEGORY_CONFIG[categoryKey]?.codes || [];
+}
+
+function getCategoryLabel(categoryKey){
+return CATEGORY_CONFIG[categoryKey]?.label || "All Categories";
+}
+
+function getCategoryQueryValue(categoryKey){
+return CATEGORY_CONFIG[categoryKey]?.queryValue || "";
+}
+
+function matchesSelectedCategory(medicineCategory, categoryKey){
+if(categoryKey === "all") return true;
+return getCategoryCodes(categoryKey).includes(String(medicineCategory || "").toUpperCase());
+}
+
+function toRadians(value){
+return value * (Math.PI / 180);
+}
+
+function calculateDistanceKm(from, to){
+if(!from || !to) return null;
+
+const earthRadius = 6371;
+const dLat = toRadians(to.latitude - from.latitude);
+const dLng = toRadians(to.longitude - from.longitude);
+
+const a =
+Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+Math.cos(toRadians(from.latitude)) *
+Math.cos(toRadians(to.latitude)) *
+Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+return earthRadius * c;
+}
+
+function getDistance(lat1, lon1, lat2, lon2){
+const R = 6371;
+const dLat = (lat2-lat1) * Math.PI/180;
+const dLon = (lon2-lon1) * Math.PI/180;
+
+const a =
+Math.sin(dLat/2) * Math.sin(dLat/2) +
+Math.cos(lat1 * Math.PI/180) *
+Math.cos(lat2 * Math.PI/180) *
+Math.sin(dLon/2) * Math.sin(dLon/2);
+
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return (R * c).toFixed(3);
+}
+
+function getSellerDistance(medicine){
+return calculateDistanceKm(
+buyerLocation,
+normalizeLocation(medicine.seller_details?.location || medicine.seller_details)
+);
+}
+
+function getDistanceMarkup(medicine){
+const distance = getSellerDistance(medicine);
+
+if(distance === null){
+return `<p class="distance muted">Distance unavailable</p>`;
+}
+
+  return `<p class="distance">${distance.toFixed(3)} km from you</p>`;
+}
+
+function getSellerAddressLine(medicine){
+const seller = medicine.seller_details;
+
+if(!seller){
+return "Seller details unavailable";
+}
+
+return [
+seller.shopName || seller.pharmacy_name || seller.owner_name || "Medical Store",
+seller.city || "",
+seller.pincode || ""
+].filter(Boolean).join(" | ");
+}
+
+function setLocationStatus(message, tone = "info", loading = false){
+const status = document.getElementById("locationStatus");
+
+if(!message){
+status.className = "location-status";
+status.innerHTML = "";
+return;
+}
+
+status.className = `location-status ${tone}`;
+status.innerHTML = `
+${loading ? '<span class="status-spinner"></span>' : ""}
+<span>${escapeHtml(message)}</span>
+`;
+}
+
+function renderDefaultLocationStatus(){
+if(currentSearchMode === "pharmacies"){
+if(buyerLocation){
+setLocationStatus("Search nearby pharmacies using your saved or current location.", "info", false);
+return;
+}
+
+setLocationStatus("Enable location access to search nearby pharmacies.", "info", false);
+return;
+}
+
+if(buyerLocation){
+setLocationStatus("Distance is calculated using your saved or current location.", "info", false);
+return;
+}
+
+setLocationStatus("Sign in and allow location on the home page to compare pharmacy distance.", "info", false);
+}
+
+function getCurrentLocation(){
+return new Promise((resolve, reject) => {
+if(!navigator.geolocation){
+reject(new Error("Location is not supported in this browser."));
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+position => resolve({
+latitude: position.coords.latitude,
+longitude: position.coords.longitude
+}),
+error => {
+if(error.code === error.PERMISSION_DENIED){
+reject(new Error("Enable location access to search nearby pharmacies."));
+return;
+}
+
+reject(new Error("Unable to fetch your location right now."));
+},
+{
+enableHighAccuracy: true,
+timeout: 10000
+}
+);
+});
+}
+
+function saveBuyerLocation(location){
+const updatedBuyerProfile = {
+...buyerProfile,
+location
+};
+
+localStorage.setItem("buyer_profile", JSON.stringify(updatedBuyerProfile));
+}
+
+function updateListingUrl(){
+const params = new URLSearchParams();
+
+if(currentSearchMode === "pharmacies"){
+params.set("mode", "pharmacies");
+}
+
+if(activeCategoryFilter !== "all"){
+params.set("category", getCategoryQueryValue(activeCategoryFilter));
+}
+
+if(currentSearchMode === "medicines" && activeSellerFilter){
+params.set("seller", activeSellerFilter);
+}
+
+const query = params.toString();
+const nextUrl = query ? `LISTINGPAGE.HTML?${query}` : "LISTINGPAGE.HTML";
+window.history.replaceState({}, "", nextUrl);
+}
+
+function updateCategoryFilterBanner(){
+const banner = document.getElementById("categoryFilterBanner");
+const bannerText = document.getElementById("categoryFilterText");
+const categoryFilter = document.getElementById("categoryFilter");
+
+categoryFilter.value = activeCategoryFilter;
+
+if(currentSearchMode !== "medicines" || activeCategoryFilter === "all"){
+banner.classList.add("hidden");
+bannerText.textContent = "";
+return;
+}
+
+banner.classList.remove("hidden");
+bannerText.textContent = `Showing: ${getCategoryLabel(activeCategoryFilter)}`;
+}
+
+function updateSellerFilterBanner(){
+const banner = document.getElementById("sellerFilterBanner");
+const bannerText = document.getElementById("sellerFilterText");
+
+if(currentSearchMode !== "medicines" || !activeSellerFilter){
+banner.classList.add("hidden");
+bannerText.textContent = "";
+return;
+}
+
+const matchingMedicine = allMedicines.find(medicine => medicine.seller_email === activeSellerFilter);
+  const sellerName =
+  matchingMedicine?.seller_details?.shopName ||
+  matchingMedicine?.seller_details?.pharmacy_name ||
+  matchingMedicine?.seller_details?.owner_name ||
+  "Pharmacy";
+
+  banner.classList.remove("hidden");
+  bannerText.textContent = `Showing products from ${sellerName}`;
+}
+
+function updateSearchUi(){
+const searchMode = document.getElementById("searchMode");
+const searchInput = document.getElementById("searchInput");
+const searchButton = document.querySelector(".nav-search-btn");
+const pageTitle = document.getElementById("pageTitle");
+const pageCopy = document.getElementById("pageCopy");
+const medicineFilters = document.getElementById("medicineFilters");
+
+searchMode.value = currentSearchMode;
+
+if(currentSearchMode === "pharmacies"){
+searchInput.placeholder = "Filter nearby pharmacies by shop, city, or pincode";
+searchButton.textContent = "Find Nearby";
+pageTitle.textContent = "Nearby Pharmacies";
+pageCopy.textContent = "Search pharmacies sorted by the real distance from your current location.";
+medicineFilters.classList.add("hidden");
+}
+else{
+searchInput.placeholder = "Search products, brands, or pharmacies...";
+searchButton.textContent = "Search";
+pageTitle.textContent = activeSellerFilter
+? "Products from Selected Pharmacy"
+: activeCategoryFilter !== "all"
+? `Showing: ${getCategoryLabel(activeCategoryFilter)}`
+: "Browse Products";
+pageCopy.textContent = activeSellerFilter
+? "View products from the pharmacy you selected and compare pricing or stock."
+: activeCategoryFilter !== "all"
+? `Showing products in the ${getCategoryLabel(activeCategoryFilter)} category.`
+: "Find trusted products and compare nearby pharmacies using seller address and distance.";
+medicineFilters.classList.remove("hidden");
+}
+
+updateCategoryFilterBanner();
+updateSellerFilterBanner();
+renderDefaultLocationStatus();
+updateListingUrl();
+}
+
+function updateResultsHead(title, meta){
+document.getElementById("resultsTitle").textContent = title;
+document.getElementById("resultsMeta").textContent = meta;
+}
+
+function showEmptyState(message){
+const container = document.getElementById("medicine-container");
+container.classList.toggle("pharmacy-view", currentSearchMode === "pharmacies");
+container.innerHTML = `<p>${escapeHtml(message)}</p>`;
+}
+
+function startSlider(card){
+const images = JSON.parse(card.getAttribute("data-images"));
+if(!images || images.length < 2) return;
+
+const imgTag = card.querySelector(".product-img");
+let index = 0;
+
+const interval = setInterval(() => {
+index = (index + 1) % images.length;
+imgTag.src = "/uploads/" + images[index];
+}, 1500);
+
+sliderIntervals.set(card, interval);
+}
+
+function stopSlider(card){
+const interval = sliderIntervals.get(card);
+
+if(interval){
+clearInterval(interval);
+sliderIntervals.delete(card);
+}
+
+const imgTag = card.querySelector(".product-img");
+const first = imgTag.getAttribute("data-first");
+
+if(first){
+imgTag.src = "/uploads/" + first;
+}
+}
+
+function displayMedicines(medicines){
+const container = document.getElementById("medicine-container");
+container.classList.remove("pharmacy-view");
+container.innerHTML = "";
+
+if(medicines.length === 0){
+updateResultsHead(
+activeCategoryFilter !== "all" ? `Showing: ${getCategoryLabel(activeCategoryFilter)}` : "Product Results",
+"No products match the current search and filters."
+);
+container.innerHTML = "<p>No products found.</p>";
+return;
+}
+
+const sellerName = medicines[0]?.seller_details?.shopName || medicines[0]?.seller_details?.pharmacy_name;
+updateResultsHead(
+activeSellerFilter
+? `Products from ${sellerName || "Selected Pharmacy"}`
+: activeCategoryFilter !== "all"
+? `Showing: ${getCategoryLabel(activeCategoryFilter)}`
+: "Medicine Results",
+activeCategoryFilter !== "all"
+? `${medicines.length} product(s) found in ${getCategoryLabel(activeCategoryFilter)}`
+: `${medicines.length} product(s) found`
+);
+
+medicines.forEach(medicine => {
+const firstImg = medicine.images && medicine.images.length ? medicine.images[0] : "default.png";
+const imagesData = JSON.stringify(medicine.images || []);
+const showAddToCart = !sellerEmail;
+const medicineName = escapeHtml(medicine.medicine_name || "Medicine");
+const categoryLabel = escapeHtml(formatCategory(medicine.category));
+const prescriptionBadge = String(medicine.prescription_required || "No").toLowerCase() === "yes"
+? `<span class="prescription-badge ui-badge-pill badge-rx" title="Prescription Required">Prescription Required</span>`
+: `<span class="prescription-badge ui-badge-pill badge-ok" title="No Prescription">No Prescription</span>`;
+
+container.innerHTML += `
+<div class="medicine-card ui-card-equal"
+data-images='${imagesData}'
+onmouseenter="startSlider(this)"
+onmouseleave="stopSlider(this)">
+<div class="card-top-row">
+${prescriptionBadge}
+<span class="card-category-tag ui-badge-pill" title="${categoryLabel}">${categoryLabel}</span>
+</div>
+<img src="/uploads/${firstImg}"
+class="product-img"
+data-first="${firstImg}"
+alt="${medicineName}">
+
+<div class="medicine-card-copy">
+<h3 class="ui-line-clamp-2" title="${medicineName}">${medicineName}</h3>
+${getDistanceMarkup(medicine)}
+<button class="view-product-btn" onclick="event.stopPropagation(); storeProduct(decodeProduct('${encodeProduct(medicine)}')); window.location.href='PRODUCTPAGE.HTML';">View</button>
+</div>
+
+${showAddToCart ? `<button class="ui-btn-compact" onclick="event.stopPropagation(); event.preventDefault(); addToCart(decodeProduct('${encodeProduct(medicine)}'))">Add to Cart</button>` : ""}
+</div>
+`;
+});
+}
+
+function renderPharmacyResults(){
+const container = document.getElementById("medicine-container");
+const search = normalizeText(document.getElementById("searchInput").value);
+
+container.classList.add("pharmacy-view");
+
+const filtered = nearbyPharmacies.filter(pharmacy => {
+const searchable = [
+pharmacy.name,
+pharmacy.shopName,
+pharmacy.address,
+pharmacy.city,
+pharmacy.pincode,
+pharmacy.email
+].filter(Boolean).join(" ").toLowerCase();
+
+return searchable.includes(search);
+});
+
+if(filtered.length === 0){
+updateResultsHead("Nearby Pharmacies", "No pharmacies found.");
+container.innerHTML = "<p>No pharmacies found.</p>";
+return;
+}
+
+updateResultsHead(
+"Nearby Pharmacies",
+`${filtered.length} pharmacy(s) sorted by nearest distance`
+);
+
+container.innerHTML = filtered.map(pharmacy => {
+const address = [
+pharmacy.address,
+pharmacy.city,
+pharmacy.pincode
+].filter(Boolean).join(", ");
+const distanceLabel = pharmacy.distance
+? pharmacy.distance
+: Number.isFinite(Number(pharmacy.distanceKm))
+  ? `${Number(pharmacy.distanceKm).toFixed(3)} km away`
+: "Distance unavailable";
+const actionMarkup = pharmacy.email
+? `<button type="button" data-email="${escapeHtml(pharmacy.email || "")}" onclick="viewSellerMedicines(this.dataset.email)">View Products</button>`
+: `<button type="button" disabled>View Products Unavailable</button>`;
+
+const shopImageMarkup = pharmacy.shop_image
+  ? `<div class="pharmacy-card-banner"><img src="/uploads/${escapeHtml(pharmacy.shop_image)}" alt="${escapeHtml(pharmacy.name || "Pharmacy")} shop" class="pharmacy-banner-img"></div>`
+  : `<div class="pharmacy-card-banner pharmacy-card-banner--placeholder"><span class="pharmacy-banner-icon">🏪</span></div>`;
+
+return `
+<article class="pharmacy-card">
+${shopImageMarkup}
+<div class="pharmacy-card-top">
+<div>
+<p class="pharmacy-label">Nearby Pharmacy</p>
+<h3>${escapeHtml(pharmacy.name || pharmacy.shopName || pharmacy.pharmacy_name || "Pharmacy")}</h3>
+</div>
+<span class="pharmacy-distance">${escapeHtml(distanceLabel)}</span>
+</div>
+<p class="pharmacy-address">${escapeHtml(address || "Address unavailable")}</p>
+<div class="pharmacy-meta-row">
+<span class="pharmacy-meta">${escapeHtml(String(pharmacy.medicineCount || 0))} product(s) available</span>
+<span class="pharmacy-meta secondary-meta">${escapeHtml(pharmacy.city || "Location saved")}</span>
+</div>
+${actionMarkup}
+</article>
+`;
+}).join("");
+}
+
+function addToCart(medicine){
+if(!localStorage.getItem("buyer_email")){
+alert("Login as buyer first");
+window.location.href = "LOGINPAGE.HTML";
+return;
+}
+
+const cart = JSON.parse(localStorage.getItem("cart")) || [];
+const existing = cart.find(item =>
+(medicine._id && item.medicine_id === medicine._id) ||
+(!medicine._id && item.medicine_name === medicine.medicine_name)
+);
+
+if(existing){
+existing.quantity += 1;
+}
+else{
+cart.push({
+medicine_id: medicine._id,
+medicine_name: medicine.medicine_name,
+seller_email: medicine.seller_email,
+price: medicine.price,
+image: medicine.images?.[0] || "default.png",
+prescription_required: medicine.prescription_required || "No",
+quantity: 1
+});
+}
+
+localStorage.setItem("cart", JSON.stringify(cart));
+window.refreshCartNavLabel();
+alert("Added to cart");
+}
+
+function handlePriceSortChange(){
+if(document.getElementById("priceSort").value !== "default"){
+document.getElementById("stockSort").value = "default";
+}
+
+filterMedicines();
+}
+
+function handleStockSortChange(){
+if(document.getElementById("stockSort").value !== "default"){
+document.getElementById("priceSort").value = "default";
+}
+
+filterMedicines();
+}
+
+function filterMedicines(){
+const search = normalizeText(document.getElementById("searchInput").value);
+const priceSortType = document.getElementById("priceSort").value;
+const stockSortType = document.getElementById("stockSort").value;
+
+let filtered = allMedicines.filter(medicine => {
+const seller = medicine.seller_details || {};
+const searchableText = [
+medicine.medicine_name,
+medicine.brand,
+medicine.category,
+seller.shopName,
+seller.pharmacy_name,
+seller.owner_name,
+seller.city,
+seller.address
+].filter(Boolean).join(" ").toLowerCase();
+
+return searchableText.includes(search) &&
+matchesSelectedCategory(medicine.category, activeCategoryFilter) &&
+(!activeSellerFilter || medicine.seller_email === activeSellerFilter);
+});
+
+if(priceSortType === "low") filtered.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+if(priceSortType === "high") filtered.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+if(stockSortType === "stock-low") filtered.sort((a, b) => (Number(a.stock) || 0) - (Number(b.stock) || 0));
+if(stockSortType === "stock-high") filtered.sort((a, b) => (Number(b.stock) || 0) - (Number(a.stock) || 0));
+if(priceSortType === "near"){
+filtered.sort((a, b) => {
+const distanceA = getSellerDistance(a);
+const distanceB = getSellerDistance(b);
+
+if(distanceA === null && distanceB === null) return 0;
+if(distanceA === null) return 1;
+if(distanceB === null) return -1;
+return distanceA - distanceB;
+});
+}
+
+displayMedicines(filtered);
+}
+
+async function handleCategoryChange(){
+activeCategoryFilter = document.getElementById("categoryFilter").value;
+currentSearchMode = "medicines";
+localStorage.setItem("listingSearchMode", "medicines");
+updateSearchUi();
+await loadMedicines();
+}
+
+async function fetchNearbyPharmacies(forceRefresh = false){
+try{
+if(!buyerLocation || forceRefresh){
+setLocationStatus("Fetching your current location...", "info", true);
+buyerLocation = await getCurrentLocation();
+saveBuyerLocation(buyerLocation);
+}
+
+setLocationStatus("Finding the nearest pharmacies near you...", "info", true);
+const searchTerm = document.getElementById("searchInput").value.trim();
+const result = await window.fetchJson(
+`${BASE_URL}/api/get-pharmacies${searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : ""}`,
+{},
+"Server error or invalid response"
+);
+
+const pharmacies = Array.isArray(result.pharmacies) ? result.pharmacies : [];
+nearbyPharmacies = pharmacies
+.map(pharmacy => {
+const location = normalizeLocation(pharmacy);
+
+if(!location){
+return null;
+}
+
+const distanceKm = Number(
+getDistance(
+buyerLocation.latitude,
+buyerLocation.longitude,
+location.latitude,
+location.longitude
+)
+);
+
+if(!Number.isFinite(distanceKm)){
+return null;
+}
+
+return {
+...pharmacy,
+distanceKm,
+  distance: `${distanceKm.toFixed(3)} km away`
+};
+})
+.filter(Boolean)
+.filter(pharmacy => pharmacy.distanceKm <= PHARMACY_SEARCH_RANGE_KM)
+.sort((first, second) => first.distanceKm - second.distanceKm);
+
+currentSearchMode = "pharmacies";
+localStorage.setItem("listingSearchMode", "pharmacies");
+updateSearchUi();
+renderPharmacyResults();
+
+setLocationStatus(
+nearbyPharmacies.length
+? `Showing ${nearbyPharmacies.length} pharmacy(s) sorted by nearest distance.`
+: "No pharmacies found.",
+nearbyPharmacies.length ? "success" : "info",
+false
+);
+}
+catch(error){
+console.error(error);
+if(
+error.message === "Enable location access to search nearby pharmacies." ||
+error.message === "Location is not supported in this browser." ||
+error.message === "Unable to fetch your location right now."
+){
+setLocationStatus(error.message, "error", false);
+showEmptyState(error.message);
+return;
+}
+
+setLocationStatus(window.getApiErrorMessage(error), "error", false);
+showEmptyState(window.getApiErrorMessage(error));
+}
+}
+
+function handleSearchModeChange(){
+currentSearchMode = document.getElementById("searchMode").value;
+localStorage.setItem("listingSearchMode", currentSearchMode);
+
+if(currentSearchMode === "pharmacies"){
+activeSellerFilter = "";
+localStorage.setItem("homepagePharmacySearchTerm", document.getElementById("searchInput").value.trim());
+}
+else{
+localStorage.removeItem("homepagePharmacySearchTerm");
+}
+
+updateSearchUi();
+
+if(currentSearchMode === "pharmacies"){
+if(nearbyPharmacies.length > 0){
+renderPharmacyResults();
+}
+else{
+showEmptyState("Use search, or open the home page once while signed in so we can use your saved location.");
+}
+return;
+}
+
+filterMedicines();
+}
+
+function handleSearchInput(){
+if(currentSearchMode === "pharmacies"){
+localStorage.setItem("homepagePharmacySearchTerm", document.getElementById("searchInput").value.trim());
+renderPharmacyResults();
+return;
+}
+
+filterMedicines();
+}
+
+function handleSearchKeydown(event){
+if(event.key === "Enter"){
+event.preventDefault();
+runSearch();
+}
+}
+
+function runSearch(){
+if(currentSearchMode === "pharmacies"){
+fetchNearbyPharmacies(false);
+return;
+}
+
+localStorage.setItem("listingSearchMode", "medicines");
+filterMedicines();
+}
+
+function clearSellerFilter(){
+activeSellerFilter = "";
+currentSearchMode = "medicines";
+document.getElementById("searchMode").value = "medicines";
+updateSearchUi();
+filterMedicines();
+}
+
+function viewSellerMedicines(email){
+if(!email) return;
+
+localStorage.setItem("listingSearchMode", "medicines");
+localStorage.removeItem("homepagePharmacySearchTerm");
+window.location.href = `LISTINGPAGE.HTML?seller=${encodeURIComponent(email)}`;
+}
+
+function applyInitialSearchState(){
+activeSellerFilter = initialUrlParams.get("seller") || "";
+activeCategoryFilter = resolveCategoryKey(initialUrlParams.get("category"));
+
+if(activeSellerFilter){
+currentSearchMode = "medicines";
+}
+else if(initialUrlParams.get("mode") === "pharmacies" || localStorage.getItem("listingSearchMode") === "pharmacies"){
+currentSearchMode = "pharmacies";
+}
+else{
+currentSearchMode = "medicines";
+}
+
+document.getElementById("searchMode").value = currentSearchMode;
+document.getElementById("categoryFilter").value = activeCategoryFilter;
+
+if(currentSearchMode === "pharmacies"){
+document.getElementById("searchInput").value = localStorage.getItem("homepagePharmacySearchTerm") || "";
+}
+else{
+document.getElementById("searchInput").value = localStorage.getItem("homepageSearchTerm") || "";
+localStorage.removeItem("homepageSearchTerm");
+}
+
+updateSearchUi();
+}
+
+async function loadMedicines(){
+try{
+const categoryQuery = activeCategoryFilter !== "all"
+? `?category=${encodeURIComponent(getCategoryQueryValue(activeCategoryFilter))}`
+: "";
+const data = await window.fetchJson(
+`${BASE_URL}/api/medicines${categoryQuery}`,
+{},
+"Server error or invalid response"
+);
+allMedicines = Array.isArray(data) ? data : (Array.isArray(data?.medicines) ? data.medicines : []);
+console.log('loadMedicines: loaded', allMedicines.length, 'medicines');
+
+if(currentSearchMode === "pharmacies"){
+if(buyerLocation){
+await fetchNearbyPharmacies(false);
+}
+else{
+showEmptyState("Enable location access to search nearby pharmacies.");
+}
+return;
+}
+
+filterMedicines();
+}
+catch(error){
+console.log(error);
+setLocationStatus(window.getApiErrorMessage(error), "error", false);
+showEmptyState("Server error or invalid response");
+}
+}
+
+loadNavbar();
+applyInitialSearchState();
+hydrateBuyerLocationFromStorage();
+
+(async function initListing(){
+if(buyerEmail){
+await window.syncMedDeliverDeviceLocation();
+hydrateBuyerLocationFromStorage();
+}
+await loadMedicines();
+})();
+</script>
+
+</body>
+</html>

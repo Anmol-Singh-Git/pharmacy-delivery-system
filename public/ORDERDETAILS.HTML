@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Details | MedDeliver</title>
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+}
+
+body{
+background:
+radial-gradient(circle at top left, rgba(0,188,212,0.12), transparent 24%),
+radial-gradient(circle at top right, rgba(255,77,109,0.14), transparent 22%),
+linear-gradient(180deg, #f4f7fb 0%, #eef4f8 100%);
+color:#18212f;
+min-height:100vh;
+}
+
+a{
+text-decoration:none;
+color:inherit;
+}
+
+button{
+font:inherit;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 56px;
+background:#081018;
+color:#ffffff;
+position:sticky;
+top:0;
+z-index:20;
+box-shadow:0 12px 30px rgba(0,0,0,0.12);
+}
+
+.logo{
+font-size:22px;
+font-weight:700;
+letter-spacing:0.4px;
+color:#ffffff;
+}
+
+.navbar nav{
+display:flex;
+align-items:center;
+gap:22px;
+}
+
+.navbar nav a{
+font-size:14px;
+color:rgba(255,255,255,0.9);
+transition:color 0.2s ease;
+}
+
+.navbar nav a:hover{
+color:#7be0ec;
+}
+
+.details-shell{
+max-width:1280px;
+margin:0 auto;
+padding:34px 22px 56px;
+}
+
+.page-head{
+display:flex;
+justify-content:space-between;
+align-items:flex-start;
+gap:16px;
+margin-bottom:24px;
+}
+
+.eyebrow{
+font-size:12px;
+font-weight:700;
+letter-spacing:0.16em;
+text-transform:uppercase;
+color:#007b92;
+margin-bottom:10px;
+}
+
+.page-head h1{
+font-size:clamp(30px, 4vw, 44px);
+line-height:1.08;
+margin-bottom:10px;
+color:#102033;
+}
+
+.page-head p{
+font-size:16px;
+line-height:1.7;
+color:#5b6c7e;
+max-width:760px;
+}
+
+.back-link{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:12px 16px;
+border-radius:14px;
+background:#eef7fa;
+color:#0d6574;
+font-weight:700;
+}
+
+.details-grid{
+display:grid;
+gap:22px;
+}
+
+.panel{
+background:rgba(255,255,255,0.88);
+backdrop-filter:blur(10px);
+border:1px solid rgba(255,255,255,0.65);
+border-radius:28px;
+padding:26px;
+box-shadow:0 20px 48px rgba(21,34,50,0.08);
+}
+
+.meta-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+gap:14px;
+}
+
+.meta-card,
+.seller-card{
+padding:18px;
+border-radius:20px;
+background:#f8fbfd;
+border:1px solid #e4edf4;
+}
+
+.meta-card span,
+.seller-card span{
+display:block;
+font-size:12px;
+font-weight:700;
+letter-spacing:0.08em;
+text-transform:uppercase;
+color:#688093;
+margin-bottom:8px;
+}
+
+.meta-card strong,
+.seller-card strong{
+display:block;
+font-size:20px;
+line-height:1.25;
+color:#142235;
+}
+
+.meta-card p,
+.seller-card p{
+font-size:14px;
+line-height:1.7;
+color:#5e7084;
+margin-top:8px;
+word-break:break-word;
+}
+
+.section-head{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:14px;
+margin-bottom:16px;
+}
+
+.section-head h2{
+font-size:28px;
+line-height:1.1;
+color:#102033;
+}
+
+.status-pill{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:8px 12px;
+border-radius:999px;
+font-size:11px;
+font-weight:800;
+letter-spacing:0.08em;
+text-transform:uppercase;
+}
+
+.status-success{
+background:#dcfce7;
+color:#166534;
+}
+
+.status-danger{
+background:#fee2e2;
+color:#b91c1c;
+}
+
+.status-warning{
+background:#fef3c7;
+color:#92400e;
+}
+
+.status-info{
+background:#dbeafe;
+color:#1d4ed8;
+}
+
+.medicine-list,
+.prescription-list{
+display:grid;
+gap:14px;
+align-items:stretch;
+}
+
+.medicine-card,
+.prescription-card{
+display:grid;
+grid-template-columns:96px 1fr auto;
+gap:16px;
+align-items:center;
+padding:16px;
+border-radius:22px;
+background:#ffffff;
+border:1px solid #e4edf4;
+box-shadow:0 16px 36px rgba(20,32,49,0.08);
+min-height:138px;
+}
+
+.medicine-card img{
+width:96px;
+height:96px;
+object-fit:contain;
+background:#f8fbfd;
+border-radius:18px;
+padding:10px;
+}
+
+.medicine-copy strong,
+.prescription-copy strong{
+display:block;
+font-size:18px;
+line-height:1.3;
+color:#142235;
+margin-bottom:6px;
+display:-webkit-box;
+-webkit-box-orient:vertical;
+-webkit-line-clamp:2;
+line-clamp:2;
+overflow:hidden;
+}
+
+.medicine-copy p,
+.prescription-copy p{
+font-size:14px;
+line-height:1.7;
+color:#5e7084;
+}
+
+.badge-row{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+
+.mini-badge{
+display:inline-flex;
+align-items:center;
+padding:8px 12px;
+border-radius:999px;
+font-size:12px;
+font-weight:700;
+}
+
+.badge-rx{
+background:rgba(239,68,68,0.12);
+color:#b91c1c;
+}
+
+.badge-ok{
+background:#ecfdf3;
+color:#166534;
+}
+
+.price-column{
+text-align:right;
+}
+
+.price-column strong{
+display:block;
+font-size:22px;
+color:#102033;
+}
+
+.price-column span{
+display:block;
+margin-top:8px;
+font-size:13px;
+font-weight:700;
+color:#607288;
+}
+
+.prescription-card{
+grid-template-columns:1fr auto;
+}
+
+.prescription-link{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:10px 14px;
+border-radius:12px;
+background:#eef7fa;
+color:#0d6574;
+font-weight:700;
+font-size:13px;
+}
+
+.empty-state{
+background:linear-gradient(180deg, #f8fbfd 0%, #f2f7fa 100%);
+border:1px dashed #c6d6e4;
+border-radius:22px;
+padding:34px 24px;
+text-align:center;
+}
+
+.empty-state h2{
+font-size:28px;
+margin-bottom:10px;
+color:#142235;
+}
+
+.empty-state p{
+font-size:15px;
+line-height:1.7;
+color:#607288;
+max-width:540px;
+margin:0 auto 18px;
+}
+
+@media(max-width:760px){
+.navbar{
+padding:16px 18px;
+flex-direction:column;
+gap:12px;
+}
+
+.navbar nav{
+gap:16px;
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.details-shell{
+padding:22px 14px 44px;
+}
+
+.page-head{
+flex-direction:column;
+}
+
+.panel{
+padding:20px;
+border-radius:22px;
+}
+
+.medicine-card,
+.prescription-card{
+grid-template-columns:1fr;
+}
+
+.medicine-card img{
+width:84px;
+height:84px;
+}
+
+.price-column{
+text-align:left;
+}
+}
+</style>
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="details-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Orders</p>
+<h1>Order Details</h1>
+<p>Review every medicine, prescription upload, and the latest seller decision for this order.</p>
+</div>
+<a href="ORDERS.HTML" class="back-link">Back to Orders</a>
+</section>
+
+<section id="emptyState" class="empty-state" hidden>
+<h2>Order not found</h2>
+<p>Open this page from your orders list to review the full medicine and prescription details.</p>
+<a href="ORDERS.HTML" class="back-link">Go to Orders</a>
+</section>
+
+<section id="detailsContent" class="details-grid" hidden>
+<div class="panel">
+<div class="section-head">
+<h2>Order Summary</h2>
+<span id="orderStatusPill" class="status-pill status-info">Waiting for Approval</span>
+</div>
+<div class="meta-grid">
+<article class="meta-card">
+<span>Order Date</span>
+<strong id="orderDate">-</strong>
+</article>
+<article class="meta-card">
+<span>Total</span>
+<strong id="orderTotal">Rs 0</strong>
+</article>
+<article class="meta-card">
+<span>Prescription Status</span>
+<strong id="prescriptionStatusValue">Pending</strong>
+</article>
+<article class="meta-card">
+<span>Distance</span>
+<strong id="orderDistanceMeta">—</strong>
+</article>
+<article class="meta-card">
+<span>ETA</span>
+<strong id="orderEtaMeta">—</strong>
+</article>
+<article class="meta-card">
+<span>Delivery Phone</span>
+<strong id="orderDeliveryPhoneMeta">—</strong>
+</article>
+<article class="seller-card">
+<span>Seller</span>
+<strong id="sellerSummaryTitle">Seller</strong>
+<p id="sellerSummaryCopy">Seller details will appear here.</p>
+</article>
+</div>
+</div>
+
+<div class="panel">
+<div class="section-head">
+<h2>Medicines</h2>
+</div>
+<div id="medicineList" class="medicine-list"></div>
+</div>
+
+<div class="panel">
+<div class="section-head">
+<h2>Prescription Files</h2>
+</div>
+<div id="prescriptionList" class="prescription-list"></div>
+</div>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const buyerEmail = localStorage.getItem("buyer_email");
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(value){
+if(!value) return "N/A";
+
+const date = new Date(value);
+if(Number.isNaN(date.getTime())) return "N/A";
+
+return date.toLocaleDateString("en-IN", {
+day: "2-digit",
+month: "short",
+year: "numeric"
+});
+}
+
+function getStatusClass(status){
+const normalized = String(status || "").replace(/Waiting for Acceptance/gi, "Waiting for Approval").toLowerCase();
+
+if(normalized.includes("partial")) return "status-warning";
+if(normalized.includes("accepted") || normalized.includes("approved") || normalized.includes("delivered") || normalized.includes("ordered")) return "status-success";
+if(normalized.includes("rejected") || normalized.includes("cancel")) return "status-danger";
+if(normalized.includes("pending") || normalized.includes("waiting")) return "status-warning";
+return "status-info";
+}
+
+function normalizeOrderStatusLabel(status){
+return String(status || "Waiting for Approval").replace(/Waiting for Acceptance/gi, "Waiting for Approval");
+}
+
+function getPrescriptionStatusText(order){
+const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+return prescriptions.length ? (order.prescription_status || "Pending") : "Not Required";
+}
+
+function getOrderItemImage(item){
+const image = item.image || "default.png";
+
+if(String(image).startsWith("http") || String(image).startsWith("data:") || String(image).startsWith("/")){
+return image;
+}
+
+return `/uploads/${encodeURIComponent(image)}`;
+}
+
+function getPrescriptionForItem(order, item){
+const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+
+return prescriptions.find(entry => {
+const sameMedicineId = entry.medicine_id && item.medicine_id && String(entry.medicine_id) === String(item.medicine_id);
+const sameMedicineName = String(entry.medicine_name || "").toLowerCase() === String(item.medicine_name || "").toLowerCase();
+const sameSeller = String(entry.seller_email || "").toLowerCase() === String(item.seller_email || "").toLowerCase();
+
+return sameMedicineId || (sameMedicineName && sameSeller);
+});
+}
+
+function showEmptyState(){
+document.getElementById("emptyState").hidden = false;
+document.getElementById("detailsContent").hidden = true;
+}
+
+function showDetails(){
+document.getElementById("emptyState").hidden = true;
+document.getElementById("detailsContent").hidden = false;
+}
+
+function renderOrder(order){
+const items = Array.isArray(order.medicines) ? order.medicines : [];
+const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+const sellerEmails = [...new Set(items.map(item => item.seller_email).filter(Boolean))];
+const hasMultipleSellers = sellerEmails.length > 1;
+const seller = order.seller_details || {};
+const sellerTitle = hasMultipleSellers
+? "Multiple Sellers"
+: (seller.pharmacy_name || seller.owner_name || order.seller_email || "Seller");
+const sellerCopy = hasMultipleSellers
+? sellerEmails.join(", ")
+: [
+seller.email || order.seller_email || "",
+seller.mobile || "",
+[seller.address || "", seller.city || "", seller.pincode || ""].filter(Boolean).join(", ")
+].filter(Boolean).join("\n");
+
+document.title = `Order Details | MedDeliver`;
+document.getElementById("orderDate").textContent = formatDate(order.order_date);
+document.getElementById("orderTotal").textContent = formatCurrency(order.total_price);
+document.getElementById("prescriptionStatusValue").textContent = getPrescriptionStatusText(order);
+document.getElementById("orderDistanceMeta").textContent = window.formatDistance
+? window.formatDistance(order.distanceKm)
+: "—";
+let etaLine = "Location unavailable";
+if(Number.isFinite(Number(order.etaMin)) && Number.isFinite(Number(order.etaMax))){
+etaLine = `${order.etaMin} - ${order.etaMax} mins`;
+} else if(order.eta && String(order.eta).trim() && !/^calculating/i.test(String(order.eta))){
+etaLine = String(order.eta).trim();
+}
+document.getElementById("orderEtaMeta").textContent = etaLine;
+document.getElementById("orderDeliveryPhoneMeta").textContent =
+order.deliveryBoyPhone && String(order.deliveryBoyPhone).trim()
+? order.deliveryBoyPhone
+: "Not Assigned";
+document.getElementById("sellerSummaryTitle").textContent = sellerTitle;
+document.getElementById("sellerSummaryCopy").textContent = sellerCopy || "Seller details not available";
+
+const orderStatusPill = document.getElementById("orderStatusPill");
+orderStatusPill.textContent = normalizeOrderStatusLabel(order.order_status || order.status);
+orderStatusPill.className = `status-pill ${getStatusClass(order.order_status || order.status)}`;
+
+document.getElementById("medicineList").innerHTML = items.length
+? items.map(item => {
+const matchedPrescription = getPrescriptionForItem(order, item);
+const requiresPrescription = typeof item.requires_prescription === "boolean"
+? item.requires_prescription
+: Boolean(matchedPrescription);
+const itemStatus = normalizeOrderStatusLabel(item.status || (requiresPrescription ? "Waiting for Approval" : "Ordered"));
+
+return `
+<article class="medicine-card">
+<img src="${escapeHtml(getOrderItemImage(item))}" alt="${escapeHtml(item.medicine_name || "Medicine")}">
+<div class="medicine-copy">
+<strong>${escapeHtml(item.medicine_name || "Medicine")}</strong>
+<p>Qty: ${escapeHtml(item.quantity || 1)} | Seller: ${escapeHtml(item.seller_email || "Not available")}</p>
+<div class="badge-row">
+<span class="mini-badge ${requiresPrescription ? "badge-rx" : "badge-ok"}">
+${requiresPrescription ? "Prescription Required" : "No Prescription"}
+</span>
+<span class="mini-badge ${getStatusClass(itemStatus)}">${escapeHtml(itemStatus)}</span>
+</div>
+</div>
+<div class="price-column">
+<strong>${formatCurrency(item.price)}</strong>
+<span>${formatCurrency((Number(item.price) || 0) * (Number(item.quantity) || 0))}</span>
+</div>
+</article>
+`;
+}).join("")
+: `<div class="empty-state"><p>No medicine details found for this order.</p></div>`;
+
+document.getElementById("prescriptionList").innerHTML = prescriptions.length
+? prescriptions.map(entry => `
+<article class="prescription-card">
+<div class="prescription-copy">
+<strong>${escapeHtml(entry.medicine_name || "Prescription")}</strong>
+<p>Seller: ${escapeHtml(entry.seller_email || "Not available")}</p>
+</div>
+<a class="prescription-link" href="/uploads/${encodeURIComponent(entry.file)}" target="_blank" rel="noopener noreferrer">View File</a>
+</article>
+`).join("")
+: `<div class="empty-state"><p>No prescription files were required for this order.</p></div>`;
+
+showDetails();
+}
+
+async function resolveOrder(){
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get("order_id") || "";
+const storedOrderRaw = localStorage.getItem("selectedOrderDetails");
+
+if(orderId && buyerEmail){
+try{
+const response = await fetch(`${BASE_URL}/api/order/${encodeURIComponent(orderId)}`);
+const data = await window.parseJsonResponse(response);
+if(response.ok && data && data._id){
+return data;
+}
+}
+catch(error){
+console.error("Unable to load order by id:", error);
+}
+}
+
+if(storedOrderRaw){
+try{
+const storedOrder = JSON.parse(storedOrderRaw);
+
+if(storedOrder && storedOrder._id && (!orderId || String(storedOrder._id) === String(orderId))){
+return storedOrder;
+}
+}
+catch(error){
+console.error("Unable to parse selected order details:", error);
+}
+}
+
+if(!buyerEmail || !orderId){
+return null;
+}
+
+const orders = await window.fetchJson(
+`${BASE_URL}/api/orders?buyer_email=${encodeURIComponent(buyerEmail)}`,
+{},
+"Server error or invalid response"
+);
+
+return (Array.isArray(orders) ? orders : []).find(order => String(order._id) === String(orderId)) || null;
+}
+
+async function initPage(){
+loadNavbar();
+
+if(!buyerEmail){
+alert("Please login first");
+window.location.href = "LOGINPAGE.HTML";
+return;
+}
+
+try{
+const order = await resolveOrder();
+
+if(!order){
+showEmptyState();
+return;
+}
+
+localStorage.setItem("selectedOrderDetails", JSON.stringify(order));
+renderOrder(order);
+}
+catch(error){
+console.error("Error loading order details:", error);
+showEmptyState();
+}
+}
+
+initPage();
+</script>
+
+</body>
+</html>

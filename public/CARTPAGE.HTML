@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart | MedDeliver</title>
+<link rel="stylesheet" href="CARTPAGE.CSS">
+<link rel="stylesheet" href="logo-styles.css">
+<style>
+.cart-item{
+align-items:center;
+}
+
+.item-main{
+display:flex;
+gap:16px;
+align-items:flex-start;
+flex:1;
+}
+
+.item-thumb{
+width:92px;
+height:92px;
+border-radius:18px;
+background:#f8fbfd;
+border:1px solid #e4edf4;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:10px;
+flex-shrink:0;
+overflow:hidden;
+}
+
+.item-thumb img{
+width:100%;
+height:100%;
+object-fit:contain;
+}
+
+.item-meta{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:10px;
+}
+
+.item-badge{
+display:inline-flex;
+align-items:center;
+padding:8px 12px;
+border-radius:999px;
+font-size:12px;
+font-weight:700;
+}
+
+.item-badge.rx{
+background:rgba(239,68,68,0.12);
+color:#b91c1c;
+}
+
+.item-badge.normal{
+background:#ecfdf3;
+color:#166534;
+}
+
+@media(max-width:760px){
+.item-main{
+width:100%;
+}
+
+.item-thumb{
+width:84px;
+height:84px;
+}
+}
+</style>
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="cart-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Cart</p>
+<h1>Your Cart</h1>
+<p>Review your selected products, confirm quantities, and continue to checkout when ready.</p>
+</div>
+</section>
+
+<section class="cart-layout">
+<div class="cart-panel">
+<div id="cart-container" class="cart-items"></div>
+</div>
+
+<aside class="summary-card">
+<p class="summary-label">Order Summary</p>
+      <h2 id="total-price">Total: Rs 0</h2>
+      <p>Checkout securely and place your order in a few quick steps.</p>
+      <p class="eta-text">Estimated Delivery: <span id="cartETA"></span></p>
+      <button class="checkout-btn" onclick="goToCheckout()">Proceed to Checkout</button>
+<a href="LISTINGPAGE.HTML" class="secondary-link">Continue Shopping</a>
+</aside>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+let currentCart = [];
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+if(!localStorage.getItem("buyer_email")){
+alert("Please login first");
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function getCartItemImage(item){
+const image = item.image || "default.png";
+
+if(String(image).startsWith("http") || String(image).startsWith("data:") || String(image).startsWith("/")){
+return image;
+}
+
+return `/uploads/${encodeURIComponent(image)}`;
+}
+
+function isPrescriptionRequired(item){
+return String(item?.prescription_required || "No").toLowerCase() === "yes";
+}
+
+async function enrichCartItems(cart){
+let changed = false;
+
+const enrichedCart = await Promise.all(cart.map(async item => {
+if(!item.medicine_id){
+return item;
+}
+
+try{
+const medicine = await window.fetchJson(
+`${BASE_URL}/api/medicine/${encodeURIComponent(item.medicine_id)}`,
+{},
+"Server error or invalid response"
+);
+
+if(!medicine){
+return item;
+}
+
+const nextPrice = item.price !== undefined && item.price !== null && item.price !== ""
+? item.price
+: medicine.price;
+
+const nextItem = {
+...item,
+image: item.image || medicine.images?.[0] || "default.png",
+price: nextPrice,
+prescription_required: item.prescription_required || medicine.prescription_required || "No",
+seller_details: medicine.seller_details || item.seller_details || null
+};
+
+if(
+nextItem.image !== item.image ||
+String(nextItem.price) !== String(item.price) ||
+nextItem.prescription_required !== item.prescription_required ||
+JSON.stringify(nextItem.seller_details) !== JSON.stringify(item.seller_details)
+){
+changed = true;
+}
+
+return nextItem;
+}
+catch(error){
+console.error("Unable to enrich cart item:", error);
+return item;
+}
+}));
+
+if(changed){
+localStorage.setItem("cart", JSON.stringify(enrichedCart));
+}
+
+return enrichedCart;
+}
+
+async function loadCart(){
+const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+const container = document.getElementById("cart-container");
+
+if(window.hydrateBuyerCoordsFromServer){
+await window.hydrateBuyerCoordsFromServer();
+}
+
+currentCart = await enrichCartItems(storedCart);
+
+let total = 0;
+container.innerHTML = "";
+
+if(currentCart.length === 0){
+container.innerHTML = `
+<div class="empty-state">
+<h2>Your cart is empty</h2>
+<p>Add products from the listing page to continue to checkout.</p>
+<a href="LISTINGPAGE.HTML" class="primary-link">Browse Products</a>
+</div>
+`;
+document.getElementById("total-price").innerText = "Total: Rs 0";
+document.getElementById("cartETA").innerText = "Location unavailable";
+return;
+}
+
+currentCart.forEach((item, index) => {
+const price = Number(item.price) || 0;
+const quantity = item.quantity || 1;
+const itemTotal = price * quantity;
+const prescriptionBadge = isPrescriptionRequired(item)
+? `<span class="item-badge rx">Prescription Required</span>`
+: `<span class="item-badge normal">No Prescription</span>`;
+
+total += itemTotal;
+
+container.innerHTML += `
+<article class="cart-item">
+<div class="item-main">
+<div class="item-thumb">
+<img src="${escapeHtml(getCartItemImage(item))}" alt="${escapeHtml(item.medicine_name)}">
+</div>
+
+<div class="item-copy">
+<h3>${escapeHtml(item.medicine_name)}</h3>
+<p>Price: ${formatCurrency(price)}</p>
+<p>Quantity: ${quantity}</p>
+<strong>Subtotal: ${formatCurrency(itemTotal)}</strong>
+<div class="item-meta">
+${prescriptionBadge}
+</div>
+</div>
+</div>
+
+<button class="remove-btn" onclick="removeItem(${index})">Remove</button>
+</article>
+`;
+});
+
+  document.getElementById("total-price").innerText = `Total: ${formatCurrency(total)}`;
+  document.getElementById("cartETA").innerText = window.computeEtaLabelForCartOrCheckout
+    ? window.computeEtaLabelForCartOrCheckout(currentCart)
+    : "Location unavailable";
+}
+
+async function removeItem(index){
+const cart = JSON.parse(localStorage.getItem("cart")) || [];
+cart.splice(index, 1);
+localStorage.setItem("cart", JSON.stringify(cart));
+window.refreshCartNavLabel();
+await loadCart();
+}
+
+function goToCheckout(){
+if(currentCart.length === 0){
+alert("Cart is empty");
+return;
+}
+
+const orderData = currentCart.map(item => ({
+medicine_id: item.medicine_id || "",
+medicine_name: item.medicine_name,
+seller_email: item.seller_email || "",
+quantity: item.quantity || 1,
+price: item.price || 0,
+image: item.image || "default.png",
+prescription_required: item.prescription_required || "No"
+}));
+
+localStorage.setItem("order_medicines", JSON.stringify(orderData));
+window.location.href = "CHECKOUTPAGE.HTML";
+}
+
+loadNavbar();
+loadCart();
+</script>
+
+</body>
+</html>

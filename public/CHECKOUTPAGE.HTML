@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout | MedDeliver</title>
+<link rel="stylesheet" href="CHECKOUTPAGE.CSS">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+.order-item{
+align-items:center;
+}
+
+.order-item-main{
+display:flex;
+gap:14px;
+align-items:flex-start;
+flex:1;
+}
+
+.order-thumb{
+width:76px;
+height:76px;
+border-radius:16px;
+background:#ffffff;
+border:1px solid #e4edf4;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:8px;
+overflow:hidden;
+flex-shrink:0;
+}
+
+.order-thumb img{
+width:100%;
+height:100%;
+object-fit:contain;
+}
+
+.order-tags{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:8px;
+}
+
+.order-tag{
+display:inline-flex;
+align-items:center;
+padding:7px 11px;
+border-radius:999px;
+font-size:12px;
+font-weight:700;
+}
+
+.order-tag.rx{
+background:rgba(239,68,68,0.12);
+color:#b91c1c;
+}
+
+.order-tag.normal{
+background:#ecfdf3;
+color:#166534;
+}
+
+.prescription-panel{
+margin-top:18px;
+padding:20px;
+border-radius:22px;
+border:1px solid rgba(239,68,68,0.2);
+background:linear-gradient(135deg, rgba(239,68,68,0.08), rgba(249,115,22,0.1));
+}
+
+.prescription-panel[hidden]{
+display:none;
+}
+
+.prescription-panel h3{
+font-size:22px;
+line-height:1.1;
+margin-bottom:12px;
+color:#7f1d1d;
+}
+
+.prescription-panel p{
+font-size:15px;
+line-height:1.7;
+color:#7c2d12;
+margin-bottom:12px;
+}
+
+.prescription-list{
+display:grid;
+gap:14px;
+margin-top:16px;
+}
+
+.prescription-item{
+display:grid;
+grid-template-columns:auto 1fr;
+gap:14px;
+align-items:start;
+padding:16px;
+border-radius:18px;
+background:rgba(255,255,255,0.88);
+border:1px solid rgba(239,68,68,0.12);
+}
+
+.prescription-item-thumb{
+width:64px;
+height:64px;
+border-radius:16px;
+background:#ffffff;
+border:1px solid rgba(239,68,68,0.12);
+display:flex;
+align-items:center;
+justify-content:center;
+padding:8px;
+overflow:hidden;
+}
+
+.prescription-item-thumb img{
+width:100%;
+height:100%;
+object-fit:contain;
+}
+
+.prescription-item-copy strong{
+display:block;
+font-size:16px;
+line-height:1.4;
+color:#7f1d1d;
+}
+
+.prescription-item-copy span{
+display:block;
+margin-top:4px;
+font-size:13px;
+font-weight:700;
+color:#9a3412;
+}
+
+.prescription-upload{
+grid-column:1 / -1;
+display:grid;
+gap:10px;
+}
+
+.prescription-upload input[type="file"]{
+width:100%;
+padding:14px 16px;
+border-radius:16px;
+border:1px solid rgba(239,68,68,0.18);
+background:#ffffff;
+}
+
+.prescription-status{
+font-size:14px;
+font-weight:700;
+color:#9a3412;
+}
+
+.prescription-note{
+margin-top:10px;
+font-size:14px;
+line-height:1.7;
+color:#7c2d12;
+}
+
+@media(max-width:760px){
+.order-item{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.order-item-main{
+width:100%;
+}
+
+.prescription-item{
+grid-template-columns:1fr;
+}
+
+.prescription-item-thumb{
+width:72px;
+height:72px;
+}
+}
+</style>
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="checkout-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Checkout</p>
+<h1>Review Delivery and Payment</h1>
+<p>Confirm your delivery details, review the order summary, and place the order securely.</p>
+</div>
+</section>
+
+<section class="checkout-layout">
+<div class="panel delivery-box">
+<h2>Delivery Details</h2>
+<div class="field-grid">
+<input type="text" id="name" placeholder="Full Name">
+<input type="text" id="mobile" placeholder="Mobile Number">
+<input type="text" id="address" placeholder="Address">
+<input type="text" id="city" placeholder="City">
+<input type="text" id="pincode" placeholder="Pincode">
+</div>
+
+<section id="prescriptionPanel" class="prescription-panel" hidden>
+<h3>Prescription Verification</h3>
+<p>Upload one prescription file for each medicine marked below. This keeps approval fast and clear for the seller.</p>
+<div id="prescriptionFields" class="prescription-list"></div>
+<div class="prescription-note">Prescription verification usually takes only a few minutes. Your order will be confirmed after seller approval.</div>
+</section>
+</div>
+
+<div class="panel summary-box">
+<h2>Order Summary</h2>
+<div id="orderItems" class="order-items"></div>
+      <h3 id="totalPrice">Total: Rs 0</h3>
+      <p class="eta-text">Estimated Delivery: <span id="checkoutETA"></span></p>
+
+      <div class="payment-buttons">
+<button onclick="payOnline()" class="pay-btn">Pay Online</button>
+<button onclick="cashOnDelivery()" class="cod-btn">Cash on Delivery</button>
+</div>
+</div>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const MAX_PRESCRIPTION_SIZE = 5 * 1024 * 1024;
+
+let orderMedicines = JSON.parse(localStorage.getItem("order_medicines")) || [];
+let fullCart = JSON.parse(localStorage.getItem("cart")) || [];
+let buyerProfile = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+let total = 0;
+let requiredPrescriptionItems = [];
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+if(!localStorage.getItem("buyer_email")){
+alert("Please login first");
+window.location.href = "LOGINPAGE.HTML";
+}
+
+if(orderMedicines.length === 0){
+window.location.href = "CARTPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatFileSize(value){
+const size = Number(value) || 0;
+
+if(size >= 1024 * 1024){
+return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
+function isPrescriptionRequired(item){
+return String(item?.prescription_required || "No").toLowerCase() === "yes";
+}
+
+function getOrderItemImage(item){
+const image = item.image || "default.png";
+
+if(String(image).startsWith("http") || String(image).startsWith("data:") || String(image).startsWith("/")){
+return image;
+}
+
+return `/uploads/${encodeURIComponent(image)}`;
+}
+
+function getMedicineItemKey(item, fallbackIndex = ""){
+return String(
+item.medicine_id ||
+item._id ||
+[item.medicine_name || "", item.seller_email || "", fallbackIndex].join("::")
+);
+}
+
+function findCartMatch(item){
+return fullCart.find(cartItem =>
+(item.medicine_id && cartItem.medicine_id === item.medicine_id) ||
+(!item.medicine_id && cartItem.medicine_name === item.medicine_name && cartItem.seller_email === item.seller_email)
+);
+}
+
+async function enrichCartItems(items){
+let changed = false;
+
+const enrichedItems = await Promise.all(items.map(async item => {
+if(!item.medicine_id){
+return item;
+}
+
+try{
+const medicine = await window.fetchJson(
+`${BASE_URL}/api/medicine/${encodeURIComponent(item.medicine_id)}`,
+{},
+"Server error or invalid response"
+);
+
+if(!medicine){
+return item;
+}
+
+const nextPrice = item.price !== undefined && item.price !== null && item.price !== ""
+? item.price
+: medicine.price;
+
+const nextItem = {
+...item,
+image: item.image || medicine.images?.[0] || "default.png",
+price: nextPrice,
+prescription_required: item.prescription_required || medicine.prescription_required || "No",
+seller_details: medicine.seller_details || item.seller_details || null
+};
+
+if(
+nextItem.image !== item.image ||
+String(nextItem.price) !== String(item.price) ||
+nextItem.prescription_required !== item.prescription_required ||
+JSON.stringify(nextItem.seller_details) !== JSON.stringify(item.seller_details)
+){
+changed = true;
+}
+
+return nextItem;
+}
+catch(error){
+console.error("Unable to enrich checkout item:", error);
+return item;
+}
+}));
+
+if(changed){
+localStorage.setItem("cart", JSON.stringify(enrichedItems));
+}
+
+return enrichedItems;
+}
+
+function buildRequiredPrescriptionItems(){
+requiredPrescriptionItems = orderMedicines
+.filter(isPrescriptionRequired)
+.map((item, index) => ({
+...item,
+upload_key: `prescription_${index}`,
+item_key: getMedicineItemKey(item, index)
+}));
+}
+
+async function prepareCheckoutData(){
+fullCart = await enrichCartItems(fullCart);
+
+orderMedicines = orderMedicines.map(item => {
+const fullItem = findCartMatch(item);
+
+return {
+...item,
+price: item.price !== undefined && item.price !== null && item.price !== ""
+? item.price
+: (fullItem?.price || 0),
+image: item.image || fullItem?.image || "default.png",
+prescription_required: item.prescription_required || fullItem?.prescription_required || "No",
+seller_details: item.seller_details || fullItem?.seller_details || null
+};
+});
+
+buildRequiredPrescriptionItems();
+localStorage.setItem("order_medicines", JSON.stringify(orderMedicines));
+}
+
+function renderOrderSummary(){
+const container = document.getElementById("orderItems");
+total = 0;
+container.innerHTML = "";
+
+orderMedicines.forEach(item => {
+const price = Number(item.price) || 0;
+const quantity = item.quantity || 1;
+const lineTotal = price * quantity;
+const tagMarkup = isPrescriptionRequired(item)
+? `<span class="order-tag rx">Prescription Required</span>`
+: `<span class="order-tag normal">No Prescription</span>`;
+
+container.innerHTML += `
+<div class="order-item">
+<div class="order-item-main">
+<div class="order-thumb">
+<img src="${escapeHtml(getOrderItemImage(item))}" alt="${escapeHtml(item.medicine_name)}">
+</div>
+<div>
+<strong>${escapeHtml(item.medicine_name)}</strong>
+<p>Qty: ${quantity}</p>
+<div class="order-tags">
+${tagMarkup}
+</div>
+</div>
+</div>
+<span>${formatCurrency(lineTotal)}</span>
+</div>
+`;
+
+total += lineTotal;
+});
+
+  document.getElementById("totalPrice").innerText = `Total: ${formatCurrency(total)}`;
+  document.getElementById("checkoutETA").innerText = window.computeEtaLabelForCartOrCheckout
+    ? window.computeEtaLabelForCartOrCheckout(orderMedicines)
+    : "Location unavailable";
+}
+
+function updatePrescriptionFileStatus(uploadKey){
+const input = document.getElementById(uploadKey);
+const status = document.getElementById(`${uploadKey}_status`);
+
+if(!input || !status){
+return;
+}
+
+const file = input.files?.[0];
+
+status.textContent = file
+? `${file.name} selected (${formatFileSize(file.size)}).`
+: "No file selected yet.";
+}
+
+function renderPrescriptionPanel(){
+const panel = document.getElementById("prescriptionPanel");
+const container = document.getElementById("prescriptionFields");
+
+if(!requiredPrescriptionItems.length){
+panel.hidden = true;
+container.innerHTML = "";
+return;
+}
+
+panel.hidden = false;
+container.innerHTML = requiredPrescriptionItems.map(item => `
+<article class="prescription-item">
+<div class="prescription-item-thumb">
+<img src="${escapeHtml(getOrderItemImage(item))}" alt="${escapeHtml(item.medicine_name)}">
+</div>
+<div class="prescription-item-copy">
+<strong>${escapeHtml(item.medicine_name)}</strong>
+<span>Upload prescription for this medicine</span>
+</div>
+<div class="prescription-upload">
+<input
+type="file"
+id="${escapeHtml(item.upload_key)}"
+class="prescription-file-input"
+data-upload-key="${escapeHtml(item.upload_key)}"
+accept="image/*,application/pdf"
+>
+<div id="${escapeHtml(item.upload_key)}_status" class="prescription-status">No file selected yet.</div>
+</div>
+</article>
+`).join("");
+
+requiredPrescriptionItems.forEach(item => {
+updatePrescriptionFileStatus(item.upload_key);
+});
+}
+
+function prefillDeliveryDetails(){
+document.getElementById("name").value = buyerProfile.name || "";
+document.getElementById("mobile").value = buyerProfile.mobile || "";
+document.getElementById("address").value = buyerProfile.address || "";
+document.getElementById("city").value = buyerProfile.city || "";
+document.getElementById("pincode").value = buyerProfile.pincode || "";
+}
+
+function validateDeliveryDetails(){
+const requiredFields = [
+document.getElementById("name"),
+document.getElementById("mobile"),
+document.getElementById("address"),
+document.getElementById("city"),
+document.getElementById("pincode")
+];
+
+const hasEmptyField = requiredFields.some(field => field.value.trim() === "");
+
+if(hasEmptyField){
+alert("Please fill in all delivery details first.");
+return false;
+}
+
+return true;
+}
+
+function getPrescriptionFile(uploadKey){
+return document.getElementById(uploadKey)?.files?.[0] || null;
+}
+
+function validatePrescriptionFiles(){
+for(const item of requiredPrescriptionItems){
+const file = getPrescriptionFile(item.upload_key);
+
+if(!file){
+alert(`Please upload a prescription for ${item.medicine_name}.`);
+return false;
+}
+
+const isValidType = file.type.startsWith("image/") || file.type === "application/pdf";
+
+if(!isValidType){
+alert(`Please upload an image or PDF prescription for ${item.medicine_name}.`);
+return false;
+}
+
+if(file.size > MAX_PRESCRIPTION_SIZE){
+alert(`Please upload a prescription smaller than 5 MB for ${item.medicine_name}.`);
+return false;
+}
+}
+
+return true;
+}
+
+async function saveOrder(paymentMethod){
+  const buyerEmail = localStorage.getItem("buyer_email");
+  const deliveryDetails = {
+    name: document.getElementById("name").value.trim(),
+    mobile: document.getElementById("mobile").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    pincode: document.getElementById("pincode").value.trim()
+  };
+
+  let buyerLat = null;
+  let buyerLng = null;
+  const stored = window.readMedDeliverStoredCoords && window.readMedDeliverStoredCoords();
+  if(stored){
+    buyerLat = stored.latitude;
+    buyerLng = stored.longitude;
+  }
+  else{
+    try{
+      const bp = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+      const loc = bp.location;
+      const la = Number(loc?.latitude ?? loc?.lat);
+      const lo = Number(loc?.longitude ?? loc?.lng);
+      if(Number.isFinite(la) && Number.isFinite(lo)){
+        buyerLat = la;
+        buyerLng = lo;
+      }
+    }
+    catch(e){
+      /* ignore */
+    }
+  }
+
+buyerProfile = {
+...buyerProfile,
+...deliveryDetails
+};
+
+localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
+
+const formData = new FormData();
+formData.append("buyer_email", buyerEmail);
+  formData.append("medicines", JSON.stringify(orderMedicines.map(item => ({
+    medicine_id: item.medicine_id || "",
+    medicine_name: item.medicine_name,
+    seller_email: item.seller_email || "",
+    quantity: item.quantity || 1
+  }))));
+  formData.append("total_price", String(total));
+  formData.append("delivery_details", JSON.stringify(deliveryDetails));
+  formData.append("payment_method", paymentMethod || "");
+  
+  if(buyerLat && buyerLng) {
+    formData.append("buyerLat", String(buyerLat));
+    formData.append("buyerLng", String(buyerLng));
+  }
+
+if(requiredPrescriptionItems.length){
+const prescriptionPayload = requiredPrescriptionItems.map(item => {
+const file = getPrescriptionFile(item.upload_key);
+formData.append(item.upload_key, file, file.name);
+
+return {
+medicine_id: item.medicine_id || "",
+medicine_name: item.medicine_name,
+seller_email: item.seller_email || "",
+field_name: item.upload_key
+};
+});
+
+formData.append("prescriptions", JSON.stringify(prescriptionPayload));
+}
+
+return window.fetchJson(`${BASE_URL}/api/place-order`, {
+method: "POST",
+body: formData
+}, "Server error or invalid response");
+}
+
+function clearOrderState(){
+localStorage.removeItem("cart");
+localStorage.removeItem("order_medicines");
+}
+
+async function cashOnDelivery(){
+if(!validateDeliveryDetails()) return;
+if(!validatePrescriptionFiles()) return;
+
+try{
+const result = await saveOrder("Cash on Delivery");
+const createdOrders = Array.isArray(result.orders) ? result.orders : [];
+const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
+const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
+
+alert(
+approvalCount && instantCount
+? `${instantCount} medicine(s) were confirmed immediately, and ${approvalCount} prescription medicine(s) are waiting for seller approval.`
+: approvalCount
+? `${approvalCount} prescription medicine(s) are waiting for seller approval.`
+: "Order placed successfully"
+);
+
+clearOrderState();
+const redirectOrderId = createdOrders[0]?._id || "";
+if(redirectOrderId){
+    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
+}
+else{
+    window.location.href = "ORDERS.HTML";
+}
+}
+catch(error){
+alert(window.getApiErrorMessage(error));
+}
+}
+
+async function payOnline(){
+if(!validateDeliveryDetails()) return;
+if(!validatePrescriptionFiles()) return;
+
+const order = await window.fetchJson(`${BASE_URL}/api/create-order`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+amount: total
+})
+}, "Server error or invalid response");
+
+const options = {
+key: "rzp_test_SS3TBCR3eyB1WK",
+amount: order.amount,
+currency: "INR",
+name: "MedDeliver",
+description: "Order Payment",
+order_id: order.id,
+
+handler: async function(){
+try{
+const result = await saveOrder("Online Payment");
+const createdOrders = Array.isArray(result.orders) ? result.orders : [];
+const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
+const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
+
+alert(
+approvalCount && instantCount
+? `Payment successful. ${instantCount} medicine(s) were confirmed immediately, and ${approvalCount} prescription medicine(s) are waiting for seller approval.`
+: approvalCount
+? `Payment successful. ${approvalCount} prescription medicine(s) are waiting for seller approval.`
+: "Payment successful and order placed"
+);
+
+clearOrderState();
+const redirectOrderId = createdOrders[0]?._id || "";
+if(redirectOrderId){
+    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
+}
+else{
+    window.location.href = "ORDERS.HTML";
+}
+}
+catch(error){
+alert(window.getApiErrorMessage(error));
+}
+}
+};
+
+const rzp = new Razorpay(options);
+rzp.open();
+}
+
+document.addEventListener("change", (event) => {
+if(event.target.classList.contains("prescription-file-input")){
+updatePrescriptionFileStatus(event.target.dataset.uploadKey);
+}
+});
+
+async function initCheckout(){
+loadNavbar();
+if(window.hydrateBuyerCoordsFromServer){
+await window.hydrateBuyerCoordsFromServer();
+}
+await prepareCheckoutData();
+renderOrderSummary();
+prefillDeliveryDetails();
+renderPrescriptionPanel();
+}
+
+initCheckout();
+</script>
+
+</body>
+</html>

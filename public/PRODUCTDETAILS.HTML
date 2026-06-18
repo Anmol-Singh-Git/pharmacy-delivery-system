@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Details | MedDeliver</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;}
+body{background:linear-gradient(180deg,#f4f7fb 0%,#eef4f8 100%);color:#102033;min-height:100vh;}
+.navbar{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;background:#081018;color:#fff;}
+.navbar a{color:rgba(255,255,255,0.9);text-decoration:none;margin-left:18px;font-size:14px;}
+.logo{font-weight:800;font-size:20px;color:#fff;}
+.shell{max-width:900px;margin:0 auto;padding:32px 20px 48px;}
+.panel{background:rgba(255,255,255,0.92);border-radius:24px;padding:28px;box-shadow:0 20px 48px rgba(21,34,50,0.08);border:1px solid rgba(255,255,255,0.65);}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start;}
+@media(max-width:720px){.layout{grid-template-columns:1fr;}}
+.img-wrap{background:#f8fbfd;border-radius:18px;padding:16px;border:1px solid #e4edf4;}
+.img-wrap img{width:100%;max-height:280px;object-fit:contain;}
+h1{font-size:clamp(22px,4vw,30px);margin-bottom:12px;}
+.price{font-size:26px;font-weight:800;color:#0077b6;margin:12px 0;}
+.meta{font-size:14px;color:#5b6c7e;margin-bottom:10px;}
+.desc{margin-top:20px;line-height:1.7;color:#374151;font-size:15px;}
+.back{display:inline-block;margin-bottom:20px;color:#0d6574;font-weight:700;text-decoration:none;}
+.hidden{display:none;}
+.empty{text-align:center;padding:40px 20px;}
+</style>
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+<div id="navbar"></div>
+<main class="shell">
+<a href="LISTINGPAGE.HTML" class="back">← Back to products</a>
+<section id="loading" class="panel"><p>Loading product…</p></section>
+<section id="empty" class="panel empty hidden"><h2>Product not found</h2><p>Open this page from your orders or product list.</p></section>
+<section id="content" class="panel hidden">
+<div class="layout">
+<div class="img-wrap"><img id="pImg" src="/uploads/default.png" alt=""></div>
+<div>
+<h1 id="pName">—</h1>
+<p class="price" id="pPrice">Rs 0</p>
+<p class="meta">Available quantity: <strong id="pQty">—</strong></p>
+<div class="desc" id="pDesc">—</div>
+</div>
+</div>
+</section>
+</main>
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+
+function loadNavbar(){
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+const nav = document.getElementById("navbar");
+if(!buyer && !seller){
+nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="LOGINPAGE.HTML">Login</a></nav></header>`;
+return;
+}
+if(buyer){
+nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a><a href="ORDERS.HTML">Orders</a></nav></header>`;
+return;
+}
+nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="SELLER-DASHBOARD.HTML">Dashboard</a><a href="LISTINGPAGE.HTML">Products</a></nav></header>`;
+}
+
+function escapeHtml(v){
+return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+async function loadProduct(){
+loadNavbar();
+const id = new URLSearchParams(window.location.search).get("product_id");
+const loading = document.getElementById("loading");
+const empty = document.getElementById("empty");
+const content = document.getElementById("content");
+if(!id){
+loading.classList.add("hidden");
+empty.classList.remove("hidden");
+return;
+}
+try{
+const med = await window.fetchJson(`${BASE_URL}/api/medicine/${encodeURIComponent(id)}`, {}, "Server error");
+if(!med || !med.medicine_name){
+loading.classList.add("hidden");
+empty.classList.remove("hidden");
+return;
+}
+loading.classList.add("hidden");
+content.classList.remove("hidden");
+const img = (med.images && med.images[0]) ? med.images[0] : "default.png";
+document.getElementById("pImg").src = `/uploads/${escapeHtml(img)}`;
+document.getElementById("pImg").alt = escapeHtml(med.medicine_name);
+document.getElementById("pName").textContent = med.medicine_name || "Product";
+document.getElementById("pPrice").textContent = `Rs ${Number(med.price||0).toLocaleString("en-IN")}`;
+document.getElementById("pQty").textContent = String(med.stock != null ? med.stock : "—");
+document.getElementById("pDesc").textContent = (med.description && String(med.description).trim()) ? med.description : "No description provided.";
+document.title = `${med.medicine_name} | MedDeliver`;
+}
+catch(e){
+console.error(e);
+loading.classList.add("hidden");
+empty.classList.remove("hidden");
+}
+}
+
+loadProduct();
+</script>
+</body>
+</html>

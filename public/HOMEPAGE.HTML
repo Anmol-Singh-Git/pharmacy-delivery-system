@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedDeliver</title>
+<link rel="stylesheet" href="HOMEPAGE.CSS">
+<link rel="stylesheet" href="logo-styles.css">
+<style>
+.hero-search{
+position:relative;
+max-width:960px;
+margin:0 auto 18px;
+gap:12px;
+align-items:flex-start;
+}
+
+.search-mode{
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:56px;
+padding:0 18px;
+border-radius:999px;
+background:#ffffff;
+box-shadow:0 16px 36px rgba(8,16,24,0.18);
+}
+
+.search-mode select{
+border:none;
+outline:none;
+background:transparent;
+font-size:14px;
+font-weight:700;
+color:#14213d;
+min-width:200px;
+cursor:pointer;
+appearance:none;
+-webkit-appearance:none;
+-moz-appearance:none;
+}
+
+.search-box{
+position:relative;
+flex:1;
+}
+
+.hero-search input{
+width:100%;
+padding:16px 20px;
+}
+
+.search-btn{
+border:none;
+cursor:pointer;
+min-height:56px;
+min-width:150px;
+}
+
+.hero-search-status{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:10px;
+padding:14px 18px;
+border-radius:18px;
+margin:0 auto 14px;
+max-width:760px;
+font-size:14px;
+line-height:1.6;
+}
+
+.hero-search-status.hidden{
+display:none;
+}
+
+.hero-search-status.info{
+background:rgba(255,255,255,0.16);
+border:1px solid rgba(255,255,255,0.16);
+color:#f4fbff;
+}
+
+.hero-search-status.error{
+background:rgba(255,99,132,0.18);
+border:1px solid rgba(255,255,255,0.18);
+color:#fff3f6;
+}
+
+.hero-search-status.success{
+background:rgba(57,198,132,0.16);
+border:1px solid rgba(255,255,255,0.16);
+color:#edfff5;
+}
+
+.search-spinner{
+width:18px;
+height:18px;
+border-radius:50%;
+border:2px solid rgba(255,255,255,0.35);
+border-top-color:#ffffff;
+animation:spin 0.8s linear infinite;
+flex-shrink:0;
+}
+
+.search-suggestions{
+position:absolute;
+top:calc(100% + 12px);
+left:0;
+right:0;
+background:#ffffff;
+border-radius:22px;
+box-shadow:0 20px 50px rgba(0,0,0,0.18);
+padding:18px;
+text-align:left;
+z-index:1200;
+max-height:430px;
+overflow-y:auto;
+}
+
+.search-suggestions.hidden{
+display:none;
+}
+
+.suggestions-head{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:12px;
+margin-bottom:14px;
+}
+
+.suggestions-head h3{
+font-size:16px;
+color:#14213d;
+}
+
+.suggestions-head span{
+font-size:12px;
+color:#607086;
+}
+
+.suggestions-list{
+display:grid;
+gap:12px;
+}
+
+.suggestion-item{
+display:grid;
+grid-template-columns:64px 1fr auto;
+gap:12px;
+align-items:center;
+padding:12px;
+border-radius:16px;
+background:#f7fbfd;
+transition:0.25s;
+}
+
+.suggestion-item:hover{
+background:#e9f8fb;
+transform:translateY(-2px);
+}
+
+.suggestion-item img{
+width:64px;
+height:64px;
+object-fit:contain;
+background:#ffffff;
+border-radius:12px;
+padding:6px;
+}
+
+.suggestion-info h4{
+font-size:15px;
+color:#1c2a3a;
+margin-bottom:4px;
+}
+
+.suggestion-info p{
+font-size:12px;
+color:#6b7b8f;
+margin:0;
+}
+
+.suggestion-price{
+font-size:15px;
+font-weight:700;
+color:#b30000;
+white-space:nowrap;
+}
+
+.suggestion-empty{
+padding:16px;
+border-radius:16px;
+background:#f7fbfd;
+color:#5c6b7a;
+font-size:14px;
+line-height:1.6;
+}
+
+.search-helper-links{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+margin-top:12px;
+}
+
+.search-helper-links button{
+border:none;
+background:#eef3f8;
+color:#203a43;
+padding:8px 12px;
+border-radius:999px;
+cursor:pointer;
+font-size:12px;
+transition:0.25s;
+}
+
+.search-helper-links button:hover{
+background:#d9eef3;
+}
+
+@keyframes spin{
+to{
+transform:rotate(360deg);
+}
+}
+
+@media(max-width:900px){
+.hero-search{
+flex-direction:column;
+}
+
+.search-mode,
+.search-box,
+.search-btn{
+width:100%;
+}
+
+.search-mode{
+justify-content:flex-start;
+padding:0 20px;
+}
+
+.search-mode select{
+width:100%;
+}
+}
+
+@media(max-width:768px){
+.search-suggestions{
+padding:14px;
+}
+
+.suggestion-item{
+grid-template-columns:56px 1fr;
+}
+
+.suggestion-price{
+grid-column:2;
+}
+}
+</style>
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<section class="hero">
+<h1>Your Online Healthcare Store</h1>
+<p>Order medicines, wellness products and essentials from trusted pharmacies near you.</p>
+
+<div class="hero-search" id="heroSearch">
+<label class="search-mode">
+<select id="searchMode" onchange="handleSearchModeChange()">
+<option value="medicines">Search Products</option>
+</select>
+</label>
+
+<div class="search-box">
+<input
+type="text"
+id="searchInput"
+placeholder="Search medicines, devices, supplements..."
+autocomplete="off"
+onfocus="openSearchCard()"
+oninput="handleSearchInput()"
+onkeydown="handleSearchKeydown(event)"
+>
+
+<div id="searchSuggestions" class="search-suggestions hidden">
+<div class="suggestions-head">
+<h3 id="suggestionsTitle">Popular products</h3>
+<span id="suggestionsMeta">Click a product to open it</span>
+</div>
+<div id="suggestionsList" class="suggestions-list"></div>
+<div id="searchHelperLinks" class="search-helper-links"></div>
+</div>
+</div>
+
+<button class="search-btn" id="searchActionBtn" type="button" onclick="runSearch()">Search</button>
+</div>
+
+<div id="heroSearchStatus" class="hero-search-status hidden"></div>
+
+<div class="hero-buttons">
+<a href="LISTINGPAGE.HTML" class="btn buyer-btn">Shop Now</a>
+<a href="SELLER.HTML" class="btn seller-btn">Sell on MedDeliver</a>
+</div>
+</section>
+
+<section class="categories">
+<button type="button" class="category" onclick="navigateToCategory('Medicines')">Medicines</button>
+<button type="button" class="category" onclick="navigateToCategory('Healthcare Devices')">Healthcare Devices</button>
+<button type="button" class="category" onclick="navigateToCategory('Personal Care')">Personal Care</button>
+<button type="button" class="category" onclick="navigateToCategory('Baby Care')">Baby Care</button>
+<button type="button" class="category" onclick="navigateToCategory('Nutrition')">Nutrition</button>
+<button type="button" class="category" onclick="navigateToCategory('Ayurveda')">Ayurveda</button>
+</section>
+
+<section class="products-section">
+<h2>Popular Products</h2>
+<div id="home-products" class="products-grid"></div>
+<div class="more-btn">
+<a href="LISTINGPAGE.HTML">View More Products -></a>
+</div>
+</section>
+
+<section class="features">
+<div class="feature-box">
+<h3>Verified Sellers</h3>
+<p>All pharmacies are licensed and trusted.</p>
+</div>
+
+<div class="feature-box">
+<h3>Fast Delivery</h3>
+<p>Quick doorstep delivery with tracking.</p>
+</div>
+
+<div class="feature-box">
+<h3>Secure Payments</h3>
+<p>Safe and encrypted transactions.</p>
+</div>
+
+<div class="feature-box">
+<h3>Wide Product Range</h3>
+<p>Medicines, devices, wellness and more.</p>
+</div>
+</section>
+
+<section class="trust">
+<h2>Why Choose MedDeliver?</h2>
+<p>
+We bridge the gap between local pharmacies and customers by providing a seamless digital platform.
+Affordable pricing, fast delivery, and reliable service all in one place.
+</p>
+</section>
+
+<footer>
+<p>&copy; 2026 MedDeliver | All Rights Reserved</p>
+<p>Healthcare made simple, fast, and reliable.</p>
+</footer>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+let sliderIntervals = new Map();
+let allProducts = [];
+let currentSearchMode = "medicines";
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo" href="HOMEPAGE.HTML"><img src="images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+</nav>
+</header>
+`;
+}
+else if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+else{
+navbar.innerHTML = `
+<header class="navbar">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function navigateToCategory(categoryName){
+localStorage.setItem("listingSearchMode", "medicines");
+localStorage.removeItem("homepageSearchTerm");
+localStorage.removeItem("homepagePharmacySearchTerm");
+window.location.href = `LISTINGPAGE.HTML?category=${encodeURIComponent(categoryName)}`;
+}
+
+function storeProduct(product){
+localStorage.setItem("selectedProduct", JSON.stringify(product));
+}
+
+function encodeProduct(product){
+return encodeURIComponent(JSON.stringify(product)).replace(/'/g, "%27");
+}
+
+function decodeProduct(encodedProduct){
+return JSON.parse(decodeURIComponent(encodedProduct));
+}
+
+function escapeHtml(value){
+return String(value || "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function escapeJsString(value){
+return String(value || "")
+.replace(/\\/g, "\\\\")
+.replace(/'/g, "\\'");
+}
+
+function normalizeText(value){
+return String(value || "").toLowerCase().trim();
+}
+
+function formatCategory(category){
+return String(category || "Healthcare Product")
+.replace(/_/g, " ")
+.toLowerCase()
+.replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function setSearchStatus(message, tone = "info", loading = false){
+const status = document.getElementById("heroSearchStatus");
+
+if(!message){
+status.className = "hero-search-status hidden";
+status.innerHTML = "";
+return;
+}
+
+status.className = `hero-search-status ${tone}`;
+status.innerHTML = `
+${loading ? '<span class="search-spinner"></span>' : ""}
+<span>${escapeHtml(message)}</span>
+`;
+}
+
+function handleSearchModeChange(){
+currentSearchMode = document.getElementById("searchMode").value;
+updateSearchUi();
+
+if(currentSearchMode !== "medicines"){
+closeSearchCard();
+}
+else if(document.getElementById("searchInput").value.trim()){
+renderSearchSuggestions(document.getElementById("searchInput").value);
+}
+}
+
+function updateSearchUi(){
+const input = document.getElementById("searchInput");
+const actionButton = document.getElementById("searchActionBtn");
+
+if(currentSearchMode === "pharmacies"){
+input.placeholder = "Find the nearest pharmacies near your current location";
+actionButton.textContent = "Find Nearby";
+setSearchStatus("", "info", false);
+return;
+}
+
+input.placeholder = "Search medicines, devices, supplements...";
+actionButton.textContent = "Search";
+setSearchStatus("", "info", false);
+}
+
+function startSlider(card){
+const images = JSON.parse(card.getAttribute("data-images"));
+
+if(!images || images.length < 2) return;
+
+const imgTag = card.querySelector(".product-img");
+let index = 0;
+
+const interval = setInterval(() => {
+index = (index + 1) % images.length;
+imgTag.src = "/uploads/" + images[index];
+}, 1500);
+
+sliderIntervals.set(card, interval);
+}
+
+function stopSlider(card){
+const interval = sliderIntervals.get(card);
+
+if(interval){
+clearInterval(interval);
+sliderIntervals.delete(card);
+}
+
+const imgTag = card.querySelector(".product-img");
+const first = imgTag.getAttribute("data-first");
+
+if(first){
+imgTag.src = "/uploads/" + first;
+}
+}
+
+function getMatchedProducts(term){
+const keyword = normalizeText(term);
+
+if(!keyword){
+return allProducts.slice(0, 6);
+}
+
+return allProducts.filter(product => {
+const searchable = [
+product.medicine_name,
+product.brand,
+product.category,
+product.manufacturer
+].map(normalizeText).join(" ");
+
+return searchable.includes(keyword);
+}).slice(0, 8);
+}
+
+function buildQuickLinks(matches){
+const helper = document.getElementById("searchHelperLinks");
+const keyword = normalizeText(document.getElementById("searchInput").value);
+
+if(currentSearchMode !== "medicines" || keyword || matches.length === 0){
+helper.innerHTML = "";
+return;
+}
+
+const tags = [];
+
+matches.forEach(product => {
+if(tags.length < 4 && product.category && !tags.includes(product.category)){
+tags.push(product.category);
+}
+});
+
+helper.innerHTML = tags.map(tag => `
+<button type="button" onclick="fillSearch('${escapeJsString(tag)}')">${escapeHtml(formatCategory(tag))}</button>
+`).join("");
+}
+
+function renderSearchSuggestions(term){
+if(currentSearchMode !== "medicines"){
+closeSearchCard();
+return;
+}
+
+const card = document.getElementById("searchSuggestions");
+const list = document.getElementById("suggestionsList");
+const title = document.getElementById("suggestionsTitle");
+const meta = document.getElementById("suggestionsMeta");
+
+card.classList.remove("hidden");
+
+if(allProducts.length === 0){
+title.textContent = "Loading products";
+meta.textContent = "Please wait";
+list.innerHTML = `<div class="suggestion-empty">Products are loading. Try again in a moment.</div>`;
+document.getElementById("searchHelperLinks").innerHTML = "";
+return;
+}
+
+const keyword = normalizeText(term);
+const matches = getMatchedProducts(keyword);
+
+title.textContent = keyword ? `Results for "${term.trim()}"` : "Popular products";
+meta.textContent = keyword ? `${matches.length} product(s) found` : "Suggestions from your catalog";
+
+if(matches.length === 0){
+list.innerHTML = `
+<div class="suggestion-empty">
+No matching products found for <strong>${escapeHtml(term.trim())}</strong>.<br>
+Try a medicine name, brand, or category.
+</div>
+`;
+buildQuickLinks(matches);
+return;
+}
+
+list.innerHTML = matches.map(product => {
+const firstImg = (product.images && product.images.length) ? product.images[0] : "default.png";
+const name = escapeHtml(product.medicine_name || "Unnamed Product");
+const details = [
+product.brand ? escapeHtml(product.brand) : "",
+product.category ? escapeHtml(formatCategory(product.category)) : ""
+].filter(Boolean).join(" | ");
+
+return `
+<a href="PRODUCTPAGE.HTML" class="suggestion-item" onclick="openSuggestedProduct('${encodeProduct(product)}')">
+<img src="/uploads/${escapeHtml(firstImg)}" alt="${name}">
+<div class="suggestion-info">
+<h4>${name}</h4>
+<p>${details || "Healthcare Product"}</p>
+</div>
+<div class="suggestion-price">Rs ${escapeHtml(product.price)}</div>
+</a>
+`;
+}).join("");
+
+buildQuickLinks(matches);
+}
+
+function openSearchCard(){
+if(currentSearchMode !== "medicines") return;
+renderSearchSuggestions(document.getElementById("searchInput").value);
+}
+
+function closeSearchCard(){
+document.getElementById("searchSuggestions").classList.add("hidden");
+}
+
+function fillSearch(value){
+const input = document.getElementById("searchInput");
+input.value = formatCategory(value);
+renderSearchSuggestions(input.value);
+input.focus();
+}
+
+function openSuggestedProduct(product){
+storeProduct(typeof product === "string" ? decodeProduct(product) : product);
+closeSearchCard();
+}
+
+function handleSearchInput(){
+if(currentSearchMode !== "medicines"){
+closeSearchCard();
+return;
+}
+
+renderSearchSuggestions(document.getElementById("searchInput").value);
+}
+
+function handleSearchKeydown(event){
+if(event.key === "Enter"){
+event.preventDefault();
+runSearch();
+}
+}
+
+function saveBuyerLocation(location){
+const buyerProfile = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+buyerProfile.location = location;
+localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
+}
+
+function getCurrentLocation(){
+return new Promise((resolve, reject) => {
+if(!navigator.geolocation){
+reject(new Error("Location is not supported in this browser."));
+return;
+}
+
+navigator.geolocation.getCurrentPosition(
+position => resolve({
+latitude: position.coords.latitude,
+longitude: position.coords.longitude
+}),
+error => {
+if(error.code === error.PERMISSION_DENIED){
+reject(new Error("Location access is mandatory for product tracking and smooth delivery. Please allow access so the buyer and seller locations can be used to calculate the distance accurately."));
+return;
+}
+
+reject(new Error("Unable to fetch your location right now."));
+},
+{
+enableHighAccuracy: true,
+timeout: 10000
+}
+);
+});
+}
+
+function goToListing(){
+const searchTerm = document.getElementById("searchInput").value.trim();
+
+localStorage.setItem("listingSearchMode", "medicines");
+localStorage.removeItem("homepagePharmacySearchTerm");
+
+if(searchTerm){
+localStorage.setItem("homepageSearchTerm", searchTerm);
+}
+else{
+localStorage.removeItem("homepageSearchTerm");
+}
+
+window.location.href = "LISTINGPAGE.HTML";
+}
+
+async function findNearbyPharmacies(){
+const searchTerm = document.getElementById("searchInput").value.trim();
+
+try{
+setSearchStatus("Please allow location access. It is mandatory for product tracking and smooth delivery. We need your location and seller location to calculate distance accurately.", "info", true);
+const userLocation = await getCurrentLocation();
+console.log("Location:", userLocation.latitude, userLocation.longitude);
+saveBuyerLocation(userLocation);
+
+setSearchStatus("Finding the nearest pharmacies near you...", "info", true);
+const url = `${BASE_URL}/api/nearby-pharmacies?lat=${encodeURIComponent(userLocation.latitude)}&lng=${encodeURIComponent(userLocation.longitude)}`;
+console.log("Calling API...", url);
+const response = await fetch(url);
+
+if(!response.ok){
+throw new Error("Server error");
+}
+
+const result = await response.json();
+console.log("API DATA:", result);
+
+localStorage.setItem("listingSearchMode", "pharmacies");
+localStorage.setItem("homepagePharmacySearchTerm", searchTerm);
+localStorage.removeItem("homepageSearchTerm");
+window.location.href = "LISTINGPAGE.HTML?mode=pharmacies";
+}
+catch(error){
+console.error(error);
+if(
+error.message === "Location access is mandatory for product tracking and smooth delivery. Please allow access so the buyer and seller locations can be used to calculate the distance accurately." ||
+error.message === "Location is not supported in this browser." ||
+error.message === "Unable to fetch your location right now."
+){
+setSearchStatus(error.message, "error", false);
+return;
+}
+
+setSearchStatus("Server error or invalid response", "error", false);
+}
+}
+
+function runSearch(){
+if(currentSearchMode === "pharmacies"){
+findNearbyPharmacies();
+return;
+}
+
+goToListing();
+}
+
+document.addEventListener("click", function(event){
+const searchArea = document.getElementById("heroSearch");
+
+if(searchArea && !searchArea.contains(event.target)){
+closeSearchCard();
+}
+});
+
+async function loadHomeProducts(){
+try{
+const data = await window.fetchJson(
+`${BASE_URL}/api/medicines`,
+{},
+"Server error or invalid response"
+);
+
+allProducts = Array.isArray(data) ? data : [];
+
+const container = document.getElementById("home-products");
+const limited = allProducts.slice(0, 20);
+
+container.innerHTML = "";
+
+limited.forEach(item => {
+const firstImg = (item.images && item.images.length) ? item.images[0] : "default.png";
+const imagesData = JSON.stringify(item.images || []);
+
+container.innerHTML += `
+<a href="PRODUCTPAGE.HTML" onclick="storeProduct(decodeProduct('${encodeProduct(item)}'))">
+<div class="product-card"
+data-images='${imagesData}'
+onmouseenter="startSlider(this)"
+onmouseleave="stopSlider(this)">
+<img src="/uploads/${firstImg}"
+class="product-img"
+data-first="${firstImg}">
+<h4>${escapeHtml(item.medicine_name)}</h4>
+<p>Rs ${escapeHtml(item.price)}</p>
+</div>
+</a>
+`;
+});
+
+renderSearchSuggestions(document.getElementById("searchInput").value);
+closeSearchCard();
+}
+catch(err){
+console.log(err);
+setSearchStatus(window.getApiErrorMessage(err), "error", false);
+}
+}
+
+loadNavbar();
+updateSearchUi();
+loadHomeProducts();
+
+if(localStorage.getItem("buyer_email") || localStorage.getItem("seller_email")){
+window.syncMedDeliverDeviceLocation();
+}
+</script>
+
+</body>
+</html>

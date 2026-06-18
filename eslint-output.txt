@@ -1,0 +1,19 @@
+﻿
+C:\Users\anmol\PROJECT MEDICA\public\api.js
+   15:16  error  'Set' is not defined      no-undef
+  208:20  error  'Set' is not defined      no-undef
+  239:12  error  'Promise' is not defined  no-undef
+  242:14  error  'Promise' is not defined  no-undef
+
+C:\Users\anmol\PROJECT MEDICA\server.js
+   629:30  error    'Set' is not defined                              no-undef
+   642:23  error    'Map' is not defined                              no-undef
+  1015:34  error    'Map' is not defined                              no-undef
+  1098:30  error    'Map' is not defined                              no-undef
+  1178:7   warning  'total_price' is assigned a value but never used  no-unused-vars
+  1182:34  error    'Map' is not defined                              no-undef
+  1202:27  error    'Map' is not defined                              no-undef
+  1807:7   error    'Promise' is not defined                          no-undef
+
+Γ£û 12 problems (11 errors, 1 warning)
+

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Past Orders | MedDeliver</title>
+<link rel="stylesheet" href="SELLER-PAST-ORDERS.CSS">
+<link rel="stylesheet" href="/logo-styles.css">
+<link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+<div id="navbar"></div>
+
+<main class="past-orders-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Past Orders</p>
+<h1>Older Seller Orders</h1>
+<p>Browse every order beyond your latest six. Filter by order type, price, or date and inspect full buyer and item details from the same page.</p>
+</div>
+<a href="SELLER-DASHBOARD.HTML" class="secondary-link">Back to Dashboard</a>
+</section>
+
+<section class="filters-panel">
+<div class="filters-grid">
+<div class="filter-field">
+<label for="orderSearch">Search</label>
+<input id="orderSearch" placeholder="Search by order id, buyer, medicine..." type="search">
+</div>
+
+<div class="filter-field">
+<label for="categoryFilter">Order type</label>
+<select id="categoryFilter">
+<option value="all">All Types</option>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurvedic</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+</div>
+
+<div class="filter-field">
+<label for="priceSort">Price</label>
+<select id="priceSort">
+<option value="default">Sort by Price</option>
+<option value="low">Low to High</option>
+<option value="high">High to Low</option>
+</select>
+</div>
+
+<div class="filter-field">
+<label for="dateRangeButton">Date range</label>
+<button id="dateRangeButton" type="button" class="range-picker-btn">Select date range</button>
+<div id="dateRangePopup" class="date-range-popup hidden" aria-hidden="true"></div>
+</div>
+</div>
+</section>
+
+<section class="orders-panel">
+<div class="orders-header">
+<div>
+<p class="orders-summary" id="ordersSummary">Loading past orders…</p>
+</div>
+<button type="button" class="ghost-btn" id="refreshPastOrdersBtn">Refresh</button>
+</div>
+
+<div id="orders-container" class="orders-grid"></div>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const sellerEmail = localStorage.getItem("seller_email");
+let allSellerOrders = [];
+let expandedOrderId = null;
+
+if(!sellerEmail){
+  alert("Seller login required");
+  window.location.href = "LOGINPAGE.HTML";
+}
+
+function loadNavbar(){
+  const navbar = document.getElementById("navbar");
+  const seller = localStorage.getItem("seller_email");
+
+  navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="SELLER-PAST-ORDERS.HTML">Past Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+  localStorage.clear();
+  window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+  return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(value){
+  if(!value) return "N/A";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "N/A";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatTime(value){
+  if(!value) return "N/A";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "N/A";
+  return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatCategory(category){
+  return String(category || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function normalizeOrderStatusLabel(status){
+  return String(status || "Waiting for Approval").replace(/Waiting for Acceptance/gi, "Waiting for Approval");
+}
+
+function getStatusClass(status){
+  const normalized = normalizeOrderStatusLabel(status).toLowerCase();
+  if(normalized.includes("partial")) return "status-warning";
+  if(normalized.includes("accepted") || normalized.includes("approved") || normalized.includes("delivered") || normalized.includes("ordered")) return "status-success";
+  if(normalized.includes("rejected") || normalized.includes("cancel")) return "status-danger";
+  if(normalized.includes("pending") || normalized.includes("waiting")) return "status-warning";
+  return "status-info";
+}
+
+function getOrderTypes(order){
+  const categories = new Set();
+  const items = Array.isArray(order.medicines) ? order.medicines : [];
+  items.forEach(item => {
+    if(item.category) categories.add(item.category);
+  });
+  return [...categories];
+}
+
+function getOrderTypeLabel(order){
+  const types = getOrderTypes(order);
+  if(types.length === 0) return "Unknown";
+  if(types.length === 1) return types[0].replace(/_/g, " ");
+  return "Mixed";
+}
+
+function orderMatchesFilters(order){
+  const search = document.getElementById("orderSearch").value.trim().toLowerCase();
+  const selectedCategory = document.getElementById("categoryFilter").value;
+  const orderTypes = getOrderTypes(order);
+  if(selectedCategory !== "all" && !orderTypes.includes(selectedCategory)){
+    return false;
+  }
+
+  if(dateRangeState.start && dateRangeState.end){
+    const orderIso = formatDateInput(order.order_date);
+    if(!orderIso || orderIso < dateRangeState.start || orderIso > dateRangeState.end){
+      return false;
+    }
+  }
+
+  if(search){
+    const terms = [
+      order._id,
+      order.buyer_details?.name,
+      order.buyer_details?.email,
+      order.buyer_details?.mobile,
+      order.order_status,
+      order.status,
+      order.deliveryBoyPhone,
+      getOrderTypeLabel(order),
+      order.orderTime
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    const items = Array.isArray(order.medicines) ? order.medicines : [];
+    const itemText = items.map(item => [item.medicine_name, item.brand, item.category].filter(Boolean).join(" ")).join(" ").toLowerCase();
+
+    if(!terms.includes(search) && !itemText.includes(search)){
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const dateRangeState = {
+  start:null,
+  end:null,
+  viewYear:new Date().getFullYear(),
+  viewMonth:new Date().getMonth()
+};
+
+function compareOrders(a, b){
+  return new Date(b.order_date).getTime() - new Date(a.order_date).getTime();
+}
+
+function sortByPrice(a, b){
+  const sortType = document.getElementById("priceSort").value;
+  const priceA = Number(a.total_price) || 0;
+  const priceB = Number(b.total_price) || 0;
+  if(sortType === "low") return priceA - priceB;
+  if(sortType === "high") return priceB - priceA;
+  return 0;
+}
+
+function formatDateInput(value){
+  if(!value) return "";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0,10);
+}
+
+function updateDateRangeButton(){
+  const button = document.getElementById("dateRangeButton");
+  if(dateRangeState.start && dateRangeState.end){
+    button.textContent = `${formatDate(dateRangeState.start)} — ${formatDate(dateRangeState.end)}`;
+    button.classList.add("range-selected");
+  }
+  else if(dateRangeState.start){
+    button.textContent = `${formatDate(dateRangeState.start)}`;
+    button.classList.add("range-selected");
+  }
+  else {
+    button.textContent = "Select date range";
+    button.classList.remove("range-selected");
+  }
+}
+
+function renderCalendar(year, month){
+  const popup = document.getElementById("dateRangePopup");
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const weekdayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const firstDay = new Date(year, month, 1);
+  const dayCount = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay.getDay();
+
+  let html = `
+    <div class="calendar-shell">
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button type="button" id="calendarPrevMonth" aria-label="Previous month">‹</button>
+          <div class="calendar-heading">
+            <select id="calendarMonth" class="calendar-select"></select>
+            <select id="calendarYear" class="calendar-select"></select>
+          </div>
+          <button type="button" id="calendarNextMonth" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="calendar-weekdays">`;
+
+  weekdayNames.forEach(day => {
+    html += `<div class="calendar-weekday">${day}</div>`;
+  });
+  html += `</div><div class="calendar-days">`;
+
+  for(let i=0;i<startOffset;i++){
+    html += `<span class="calendar-day empty"></span>`;
+  }
+
+  for(let day=1;day<=dayCount;day++){
+    const date = new Date(year, month, day);
+    const isoDate = formatDateInput(date);
+    const selectedStart = dateRangeState.start === isoDate;
+    const selectedEnd = dateRangeState.end === isoDate;
+    const inRange = dateRangeState.start && dateRangeState.end && isoDate >= dateRangeState.start && isoDate <= dateRangeState.end;
+    const classes = ["calendar-day", selectedStart ? "selected-start" : "", selectedEnd ? "selected-end" : "", inRange ? "in-range" : ""].filter(Boolean).join(" ");
+
+    html += `<button type="button" class="${classes}" data-date="${isoDate}">${day}</button>`;
+  }
+
+  html += `</div>
+      <div class="calendar-actions">
+        <button type="button" id="calendarClear" class="secondary-btn">Clear</button>
+        <button type="button" id="calendarCancel" class="ghost-btn">Cancel</button>
+        <button type="button" id="calendarApply" class="primary-btn">Apply</button>
+      </div>
+    </div>
+  `;
+
+  popup.innerHTML = html;
+
+  const monthSelect = document.getElementById("calendarMonth");
+  const yearSelect = document.getElementById("calendarYear");
+  monthNames.forEach((name,index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = name;
+    if(index === month) option.selected = true;
+    monthSelect.append(option);
+  });
+
+  const currentYear = new Date().getFullYear();
+  for(let offset = -5; offset <= 5; offset++){
+    const yearOption = document.createElement("option");
+    const value = currentYear + offset;
+    yearOption.value = value;
+    yearOption.textContent = value;
+    if(value === year) yearOption.selected = true;
+    yearSelect.append(yearOption);
+  }
+
+  monthSelect.addEventListener("change", () => {
+    dateRangeState.viewMonth = Number(monthSelect.value);
+    renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+  });
+
+  yearSelect.addEventListener("change", () => {
+    dateRangeState.viewYear = Number(yearSelect.value);
+    renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+  });
+
+  document.getElementById("calendarPrevMonth").addEventListener("click", () => {
+    if(dateRangeState.viewMonth === 0){
+      dateRangeState.viewMonth = 11;
+      dateRangeState.viewYear -= 1;
+    } else {
+      dateRangeState.viewMonth -= 1;
+    }
+    renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+  });
+
+  document.getElementById("calendarNextMonth").addEventListener("click", () => {
+    if(dateRangeState.viewMonth === 11){
+      dateRangeState.viewMonth = 0;
+      dateRangeState.viewYear += 1;
+    } else {
+      dateRangeState.viewMonth += 1;
+    }
+    renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+  });
+
+  popup.querySelectorAll(".calendar-day[data-date]").forEach(button => {
+    button.addEventListener("click", () => {
+      const selectedDate = button.dataset.date;
+      if(!dateRangeState.start || (dateRangeState.start && dateRangeState.end)){
+        dateRangeState.start = selectedDate;
+        dateRangeState.end = null;
+      }
+      else if(selectedDate < dateRangeState.start){
+        dateRangeState.end = dateRangeState.start;
+        dateRangeState.start = selectedDate;
+      }
+      else {
+        dateRangeState.end = selectedDate;
+      }
+      renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+      updateDateRangeButton();
+    });
+  });
+
+  document.getElementById("calendarApply").addEventListener("click", () => {
+    if(dateRangeState.start && !dateRangeState.end){
+      dateRangeState.end = dateRangeState.start;
+    }
+    renderPastOrders();
+    closeDateRangePopup();
+  });
+
+  document.getElementById("calendarCancel").addEventListener("click", () => {
+    closeDateRangePopup();
+  });
+
+  document.getElementById("calendarClear").addEventListener("click", () => {
+    dateRangeState.start = null;
+    dateRangeState.end = null;
+    updateDateRangeButton();
+    renderPastOrders();
+    renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+  });
+}
+
+function openDateRangePopup(){
+  const popup = document.getElementById("dateRangePopup");
+  popup.classList.remove("hidden");
+  popup.setAttribute("aria-hidden","false");
+  renderCalendar(dateRangeState.viewYear, dateRangeState.viewMonth);
+}
+
+function closeDateRangePopup(){
+  const popup = document.getElementById("dateRangePopup");
+  popup.classList.add("hidden");
+  popup.setAttribute("aria-hidden","true");
+}
+
+function initializeDateRangePicker(){
+  document.getElementById("dateRangeButton").addEventListener("click", event => {
+    event.stopPropagation();
+    openDateRangePopup();
+  });
+
+  const popup = document.getElementById("dateRangePopup");
+  popup.addEventListener("click", event => event.stopPropagation());
+
+  document.addEventListener("click", () => {
+    if(!popup.classList.contains("hidden")) closeDateRangePopup();
+  });
+
+  updateDateRangeButton();
+}
+
+function getPastOrders(){
+  const filtered = allSellerOrders.slice(6).filter(orderMatchesFilters);
+  filtered.sort(compareOrders);
+  filtered.sort(sortByPrice);
+  return filtered;
+}
+
+function toggleOrderDetails(orderId){
+  expandedOrderId = expandedOrderId === orderId ? null : orderId;
+  renderPastOrders();
+}
+
+function formatOrderDetailItems(order){
+  const items = Array.isArray(order.medicines) ? order.medicines : [];
+  if(!items.length) return `<div class="detail-empty">No product details available.</div>`;
+
+  return items.map(item => {
+    const itemStatus = normalizeOrderStatusLabel(item.status || "Ordered");
+    return `
+      <li class="detail-item">
+        <div>
+          <strong>${escapeHtml(item.medicine_name || "Unnamed Product")}</strong>
+          <p>${escapeHtml((item.category || "").replace(/_/g, " "))} &#8226; Qty: ${escapeHtml(item.quantity || 1)} &#8226; ${formatCurrency(item.price)}</p>
+          <p>Status: ${escapeHtml(itemStatus)}</p>
+        </div>
+      </li>
+    `;
+  }).join("");
+}
+
+function renderDetailSection(order){
+  const buyer = order.buyer_details || {};
+  const prescriptionStatus = Array.isArray(order.prescriptions) && order.prescriptions.length ? (order.prescription_status || "Pending") : "Not Required";
+  const detailsOpen = expandedOrderId === order._id;
+
+  return `
+    <div class="order-details ${detailsOpen ? "open" : ""}">
+      <div class="detail-row"><span>Order ID</span><strong>${escapeHtml(order._id || "-")}</strong></div>
+      <div class="detail-row"><span>Buyer</span><strong>${escapeHtml(buyer.name || "Unknown Buyer")}</strong></div>
+      <div class="detail-row"><span>Buyer Email</span><strong>${escapeHtml(buyer.email || order.buyer_email || "-")}</strong></div>
+      <div class="detail-row"><span>Buyer Mobile</span><strong>${escapeHtml(buyer.mobile || "-")}</strong></div>
+      <div class="detail-row"><span>Buyer Address</span><strong>${escapeHtml([buyer.address, buyer.city, buyer.pincode].filter(Boolean).join(", ") || "-")}</strong></div>
+      <div class="detail-row"><span>Order Date</span><strong>${formatDate(order.order_date)}</strong></div>
+      <div class="detail-row"><span>Order Time</span><strong>${escapeHtml(order.orderTime || "-")}</strong></div>
+      <div class="detail-row"><span>Status</span><strong>${escapeHtml(normalizeOrderStatusLabel(order.order_status || order.status || "Pending"))}</strong></div>
+      <div class="detail-row"><span>Prescription Status</span><strong>${escapeHtml(prescriptionStatus)}</strong></div>
+      <div class="detail-row"><span>Delivery Phone</span><strong>${escapeHtml(order.deliveryBoyPhone || "Not Assigned")}</strong></div>
+      <div class="detail-row detail-fullwidth"><span>Items</span><ul class="detail-items">${formatOrderDetailItems(order)}</ul></div>
+    </div>
+  `;
+}
+
+function renderPastOrders(){
+  const container = document.getElementById("orders-container");
+  const summary = document.getElementById("ordersSummary");
+  const orders = getPastOrders();
+
+  if(!orders.length){
+    summary.textContent = "No older orders found for the selected filters.";
+    container.innerHTML = `<div class="empty-state"><h3>No past orders yet</h3><p>Older orders will appear here once you have more than six orders.</p></div>`;
+    return;
+  }
+
+  summary.textContent = `Showing ${orders.length} past order${orders.length === 1 ? "" : "s"}.`;
+  container.innerHTML = orders.map(order => {
+    const buyer = order.buyer_details || {};
+    const typeLabel = getOrderTypeLabel(order);
+    const status = normalizeOrderStatusLabel(order.order_status || order.status || "Pending");
+    const orderTotal = formatCurrency(order.total_price || order.seller_total || 0);
+    const items = Array.isArray(order.medicines) ? order.medicines.length : 0;
+    const detailsOpen = expandedOrderId === order._id;
+
+    const firstItem = Array.isArray(order.medicines) && order.medicines.length ? order.medicines[0] : null;
+    const firstImage = firstItem && firstItem.image ? escapeHtml(firstItem.image) : "default.png";
+    const firstName = firstItem ? escapeHtml(firstItem.medicine_name || firstItem.name || "Product") : "No items";
+    const firstCategory = firstItem ? escapeHtml(formatCategory(firstItem.category)) : "";
+    const firstPriceText = firstItem ? formatCurrency(firstItem.price) : "";
+
+    return `
+      <article class="past-order-card">
+        <div class="card-top">
+          <div>
+            <p class="card-label">Order</p>
+            <h3>${escapeHtml(buyer.name || "Unknown Buyer")}</h3>
+            <p class="card-subtitle">${escapeHtml(order._id || "Order ID not available")}</p>
+          </div>
+          <span class="status-pill ${getStatusClass(status)}">${escapeHtml(status)}</span>
+        </div>
+
+        <div class="card-meta">
+          <span>Type: ${escapeHtml(typeLabel)}</span>
+          <span>Items: ${escapeHtml(items)}</span>
+          <span>Total: ${escapeHtml(orderTotal)}</span>
+          <span>Date: ${escapeHtml(formatDate(order.order_date))}</span>
+          <span>Time: ${escapeHtml(order.orderTime || "-")}</span>
+        </div>
+
+        ${firstItem ? `
+        <div class="order-summary-block">
+          <img class="order-summary-img" src="/uploads/${firstImage}" alt="${firstName}">
+          <div class="order-summary-copy">
+            <strong>${firstName}</strong>
+            <p>${firstCategory}</p>
+            <span>${escapeHtml(firstItem.quantity || 1)} × ${firstPriceText}</span>
+          </div>
+        </div>
+        ` : ""}
+
+        <div class="card-actions">
+          <button type="button" class="secondary-btn" onclick="toggleOrderDetails('${escapeHtml(order._id)}')">${detailsOpen ? "Hide Details" : "Details"}</button>
+        </div>
+
+        ${renderDetailSection(order)}
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadPastOrders(){
+  const container = document.getElementById("orders-container");
+  container.innerHTML = `<div class="empty-state"><h3>Loading past orders...</h3><p>Please wait while older order history is fetched.</p></div>`;
+
+  try{
+    allSellerOrders = await window.fetchJson(`${BASE_URL}/api/seller-orders/${encodeURIComponent(sellerEmail)}`, {}, "Server error or invalid response");
+    renderPastOrders();
+  }
+  catch(error){
+    console.error("Error loading past orders:", error);
+    container.innerHTML = `<div class="empty-state"><h3>Unable to load older orders</h3><p>${escapeHtml(window.getApiErrorMessage(error))}</p></div>`;
+    document.getElementById("ordersSummary").textContent = "Failed to load past orders.";
+  }
+}
+
+function attachFilters(){
+  ["orderSearch", "categoryFilter", "priceSort"].forEach(id => {
+    document.getElementById(id).addEventListener("input", renderPastOrders);
+    document.getElementById(id).addEventListener("change", renderPastOrders);
+  });
+}
+
+loadNavbar();
+attachFilters();
+initializeDateRangePicker();
+document.getElementById("refreshPastOrdersBtn").addEventListener("click", loadPastOrders);
+loadPastOrders();
+</script>
+
+</body>
+</html>

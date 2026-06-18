@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Orders | MedDeliver</title>
+<link rel="stylesheet" href="ORDERS.CSS">
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="orders-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Orders</p>
+<h1>Your Orders</h1>
+<p>Track the products you have already purchased and review current delivery progress.</p>
+</div>
+</section>
+
+<section class="orders-panel">
+<div id="orders-container" class="orders-grid"></div>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+let currentOrders = [];
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(value){
+if(!value) return "N/A";
+
+const date = new Date(value);
+if(Number.isNaN(date.getTime())) return "N/A";
+
+return date.toLocaleDateString("en-IN", {
+day: "2-digit",
+month: "short",
+year: "numeric"
+});
+}
+
+function getPrescriptionStatusText(order){
+const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+return prescriptions.length ? (order.prescription_status || "Pending") : "Not Required";
+}
+
+function normalizeOrderStatusLabel(status){
+return String(status || "Waiting for Approval").replace(/Waiting for Acceptance/gi, "Waiting for Approval");
+}
+
+function getOrderStatusText(order){
+  const delivered = localStorage.getItem("delivered_" + order._id);
+  if (delivered === "true") {
+    return "Delivered";
+  }
+  return normalizeOrderStatusLabel(order.order_status || order.status || "Waiting for Approval");
+}
+
+function formatOrderEtaDisplay(order){
+if(Number.isFinite(Number(order.etaMin)) && Number.isFinite(Number(order.etaMax))){
+return `${order.etaMin} - ${order.etaMax} mins`;
+}
+const raw = order.eta && String(order.eta).trim();
+if(raw && !/^calculating/i.test(raw)){
+return raw;
+}
+return "Location unavailable";
+}
+
+function getStatusClass(status){
+const normalized = normalizeOrderStatusLabel(status).toLowerCase();
+
+if(normalized.includes("partial")) return "status-warning";
+if(normalized.includes("accepted") || normalized.includes("approved") || normalized.includes("delivered") || normalized.includes("ordered")) return "status-success";
+if(normalized.includes("rejected") || normalized.includes("cancel")) return "status-danger";
+if(normalized.includes("pending") || normalized.includes("waiting")) return "status-warning";
+if(normalized.includes("out for delivery")) return "status-info";
+return "";
+}
+
+const buyerEmail = localStorage.getItem("buyer_email");
+
+if(!buyerEmail){
+alert("Please login first");
+window.location.href = "LOGINPAGE.HTML";
+}
+
+async function loadOrders(){
+const container = document.getElementById("orders-container");
+
+try{
+const userOrders = await window.fetchJson(
+`${BASE_URL}/api/orders?buyer_email=${encodeURIComponent(buyerEmail)}`,
+{},
+"Server error or invalid response"
+);
+currentOrders = userOrders;
+
+if(!userOrders.length){
+container.innerHTML = `
+<div class="empty-state">
+<h2>No orders yet</h2>
+<p>You have not placed any orders yet. Browse products and your next order will appear here.</p>
+<a href="LISTINGPAGE.HTML" class="primary-link">Browse Products</a>
+</div>
+`;
+return;
+}
+
+container.innerHTML = userOrders.map((order, index) => {
+const items = Array.isArray(order.medicines) ? order.medicines : [];
+const seller = order.seller_details || {};
+const sellerEmails = [...new Set(items.map(item => item.seller_email).filter(Boolean))];
+const hasMultipleSellers = sellerEmails.length > 1;
+const sellerName = hasMultipleSellers
+? "Multiple Sellers"
+: (seller.pharmacy_name || seller.owner_name || order.seller_email || "Seller");
+const sellerAddress = hasMultipleSellers
+? "This order contains medicines from more than one seller."
+: ([seller.address || "", seller.city || "", seller.pincode || ""].filter(Boolean).join(", ") || "Address not available");
+const sellerMobile = hasMultipleSellers
+? "Open order details to review item-wise seller information."
+: (seller.mobile || "Mobile not available");
+
+const medicineList = items.map(item => `
+<li class="order-item">
+<img src="/uploads/${escapeHtml(item.image || "default.png")}" alt="${escapeHtml(item.medicine_name || "Product")}">
+<div>
+<strong>${escapeHtml(item.medicine_name || "Medicine")}</strong>
+<p>Qty: ${item.quantity || 1} | ${formatCurrency(item.price)}</p>
+</div>
+</li>
+`).join("");
+
+return `
+<article class="order-card" onclick="trackOrder(${index})" style="cursor: pointer;">
+<div class="order-top">
+<div>
+<p class="order-label">Order Date</p>
+<h3>${formatDate(order.order_date)}</h3>
+<p>Order Time: ${order.orderTime || ""}</p>
+</div>
+<span class="status-pill ${getStatusClass(getOrderStatusText(order))}">${escapeHtml(getOrderStatusText(order))}</span>
+</div>
+
+<div class="order-meta">
+<span>Total: ${formatCurrency(order.total_price)}</span>
+<span>Items: ${items.length}</span>
+<span>Estimated Delivery: ${escapeHtml(formatOrderEtaDisplay(order))}</span>
+<span>Prescription Status: ${escapeHtml(getPrescriptionStatusText(order))}</span>
+<span>Ordered Medicines: ${escapeHtml(order.order_summary?.ordered_items ?? items.length)}</span>
+<span>Awaiting Approval: ${escapeHtml(order.order_summary?.waiting_items ?? 0)}</span>
+</div>
+
+<div class="seller-block">
+<p class="seller-label">Seller</p>
+<h4>${escapeHtml(sellerName)}</h4>
+<p>${escapeHtml(sellerAddress)}</p>
+<p>${escapeHtml(sellerMobile)}</p>
+</div>
+
+<div class="products-block">
+<h4>Products</h4>
+<ul class="order-items">
+${medicineList}
+</ul>
+</div>
+
+<div class="order-actions" onclick="event.stopPropagation()">
+<button type="button" class="track-btn secondary-track-btn" onclick="openProductDetails(${index})">View Details</button>
+<button type="button" class="track-btn" onclick="trackOrder(${index})">Track Order</button>
+</div>
+</article>
+`;
+}).join("");
+}
+catch(err){
+console.error("Error loading orders:", err);
+container.innerHTML = `
+<div class="empty-state">
+<h2>Unable to load orders</h2>
+<p>${window.getApiErrorMessage(err)}</p>
+</div>
+`;
+}
+}
+
+function trackOrder(index){
+const order = currentOrders[index] || {};
+localStorage.setItem("selectedOrderForTracking", JSON.stringify(order));
+window.location.href = `TRACKORDER.HTML?order_id=${encodeURIComponent(order._id || "")}`;
+}
+
+function openProductDetails(index){
+const order = currentOrders[index] || {};
+const items = Array.isArray(order.medicines) && order.medicines.length
+? order.medicines
+: (Array.isArray(order.items) ? order.items : []);
+const first = items[0] || {};
+const pid = first.medicine_id || first._id || "";
+if(pid){
+window.location.href = `PRODUCTDETAILS.HTML?product_id=${encodeURIComponent(String(pid))}`;
+return;
+}
+localStorage.setItem("selectedOrderDetails", JSON.stringify(order));
+window.location.href = `ORDERDETAILS.HTML?order_id=${encodeURIComponent(order._id || "")}`;
+}
+
+loadNavbar();
+loadOrders();
+</script>
+
+</body>
+</html>

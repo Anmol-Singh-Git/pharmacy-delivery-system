@@ -1,0 +1,279 @@
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+/* font-family: var(--font-body); */
+}
+
+body{
+background:
+radial-gradient(circle at top left, rgba(0,188,212,0.12), transparent 24%),
+linear-gradient(180deg, #f4f7fb 0%, #eef4f8 100%);
+color:var(--text-main);
+min-height:100vh;
+}
+
+a{
+text-decoration:none;
+color:inherit;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 56px;
+background:var(--primary);
+color:#ffffff;
+position:sticky;
+top:0;
+z-index:20;
+box-shadow:0 12px 30px rgba(0,0,0,0.12);
+}
+
+.logo{
+font-size:22px;
+font-weight:700;
+letter-spacing:0.4px;
+color:#ffffff;
+}
+
+.navbar nav{
+display:flex;
+align-items:center;
+gap:22px;
+}
+
+.navbar nav a{
+font-size:14px;
+color:rgba(255,255,255,0.9);
+transition:color 0.2s ease;
+}
+
+.navbar nav a:hover{
+color:var(--secondary);
+}
+
+.cart-shell{
+max-width:1280px;
+margin:0 auto;
+padding:34px 22px 56px;
+}
+
+.page-head{
+margin-bottom:24px;
+}
+
+.eyebrow{
+font-size:12px;
+font-weight:700;
+letter-spacing:0.16em;
+text-transform:uppercase;
+color:#007b92;
+margin-bottom:10px;
+}
+
+.page-head h1{
+font-size:clamp(30px, 4vw, 44px);
+line-height:1.08;
+margin-bottom:10px;
+color:var(--text-main);
+}
+
+.page-head p{
+font-size:16px;
+line-height:1.7;
+color:var(--text-muted);
+max-width:760px;
+}
+
+.cart-layout{
+display:grid;
+grid-template-columns:1.4fr minmax(280px, 340px);
+gap:24px;
+align-items:start;
+}
+
+.cart-panel,
+.summary-card{
+background:rgba(255,255,255,0.88);
+backdrop-filter:blur(10px);
+border:1px solid rgba(255,255,255,0.65);
+border-radius:28px;
+padding:26px;
+box-shadow:0 20px 48px rgba(21,34,50,0.08);
+}
+
+.cart-items{
+display:grid;
+gap:16px;
+}
+
+.cart-item{
+background:#ffffff;
+border-radius:22px;
+padding:20px;
+border:1px solid var(--border);
+box-shadow:0 16px 36px rgba(20,32,49,0.08);
+display:flex;
+justify-content:space-between;
+gap:18px;
+align-items:flex-start;
+}
+
+.item-copy h3{
+font-size:20px;
+line-height:1.25;
+margin-bottom:8px;
+color:var(--text-main);
+}
+
+.item-copy p{
+font-size:15px;
+line-height:1.7;
+color:#5e7084;
+}
+
+.item-copy strong{
+display:block;
+margin-top:8px;
+font-size:16px;
+color:var(--text-main);
+}
+
+.remove-btn,
+.checkout-btn,
+.primary-link,
+.secondary-link{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+border:none;
+border-radius:14px;
+padding:14px 18px;
+font-weight:700;
+cursor:pointer;
+transition:transform 0.2s ease, opacity 0.2s ease;
+}
+
+.remove-btn{
+background:#fee2e2;
+color:#b91c1c;
+}
+
+.checkout-btn,
+.primary-link{
+background:linear-gradient(135deg, var(--secondary), var(--secondary-hover));
+color:#ffffff;
+box-shadow:0 14px 24px rgba(0,119,182,0.18);
+width:100%;
+}
+
+.secondary-link{
+background:#e9eef4;
+color:#1f3247;
+width:100%;
+margin-top:12px;
+}
+
+.remove-btn:hover,
+.checkout-btn:hover,
+.primary-link:hover,
+.secondary-link:hover{
+transform:translateY(-1px);
+}
+
+.summary-label{
+font-size:12px;
+font-weight:700;
+letter-spacing:0.14em;
+text-transform:uppercase;
+color:#688093;
+margin-bottom:10px;
+}
+
+.summary-card h2{
+font-size:32px;
+line-height:1.1;
+margin-bottom:12px;
+color:var(--text-main);
+}
+
+.summary-card p{
+font-size:15px;
+line-height:1.7;
+color:var(--text-muted);
+margin-bottom:18px;
+}
+
+.empty-state{
+background:linear-gradient(180deg, var(--bg-color) 0%, #f2f7fa 100%);
+border:1px dashed #c6d6e4;
+border-radius:22px;
+padding:34px 24px;
+text-align:center;
+}
+
+.empty-state h2{
+font-size:28px;
+margin-bottom:10px;
+color:var(--text-main);
+}
+
+.empty-state p{
+font-size:15px;
+line-height:1.7;
+color:#607288;
+max-width:540px;
+margin:0 auto 18px;
+}
+
+@media(max-width:920px){
+.cart-layout{
+grid-template-columns:1fr;
+}
+}
+
+@media(max-width:760px){
+.navbar{
+padding:16px 18px;
+flex-direction:column;
+gap:12px;
+}
+
+.navbar nav{
+gap:16px;
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.cart-shell{
+padding:22px 14px 44px;
+}
+
+.cart-panel,
+.summary-card{
+padding:20px;
+border-radius:22px;
+}
+
+.cart-item{
+flex-direction:column;
+}
+
+.remove-btn{
+width:100%;
+}
+}
+
+.eta-text {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #0a7;
+}
+
+.eta {
+  font-size: 13px;
+  color: #444;
+  margin-top: 5px;
+}

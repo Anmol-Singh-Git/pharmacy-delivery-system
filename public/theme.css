@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&family=Work+Sans:wght@500;600;700&display=swap');
+
+:root {
+  /* Core Theme Colors */
+  --primary: #0F7476; /* Teal */
+  --primary-hover: #0a5254;
+  --secondary: #DFAF34; /* Mustard Yellow */
+  --secondary-hover: #c4992b;
+
+  /* Neutrals & Surfaces */
+  --bg-color: #F8F9FA;
+  --surface: #FFFFFF;
+  --border: #E2E8F0;
+
+  /* Typography Colors */
+  --text-main: #1A202C;
+  --text-muted: #4A5568;
+  --text-light: #FFFFFF;
+
+  /* Font Families */
+  --font-heading: 'Work Sans', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+
+  /* Radii & Shadows */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 999px;
+  
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 16px 36px rgba(15, 116, 118, 0.1);
+  --shadow-lg: 0 24px 54px rgba(15, 116, 118, 0.18);
+}
+
+/* Global Typography Resets */
+body, input, textarea, select, button {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Base Body Styles */
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-main);
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(15, 116, 118, 0.08), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(223, 175, 52, 0.08), transparent 25%),
+    radial-gradient(circle at 50% -20%, rgba(15, 116, 118, 0.12), transparent 40%),
+    linear-gradient(135deg, #fdfefe 0%, #f4f9f9 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Background Geometric Floor & Elements */
+body::before {
+  content: "";
+  position: fixed;
+  top: -5vh;
+  right: -5vw;
+  width: 50vw;
+  height: 60vh;
+  background-color: var(--primary);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  z-index: -1;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 45vh;
+  background-color: var(--secondary);
+  clip-path: polygon(0 100%, 100% 100%, 100% 60%, 0 0);
+  z-index: -2;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Deeper Background Dimensions */
+html::before {
+  content: "";
+  position: fixed;
+  bottom: 10vh;
+  right: -5vw;
+  width: 40vw;
+  height: 60vh;
+  background-color: var(--primary-hover);
+  clip-path: polygon(100% 100%, 15% 100%, 100% 15%);
+  z-index: -3; /* Placed beneath primary shapes */
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+html::after {
+  content: "";
+  position: fixed;
+  top: 15vh;
+  left: -10vw;
+  width: 35vw;
+  height: 55vh;
+  background-color: var(--secondary-hover);
+  clip-path: polygon(0 0, 100% 25%, 0 100%);
+  z-index: -3;
+  opacity: 0.15;
+  pointer-events: none;
+}

@@ -1,0 +1,6 @@
+﻿
+C:\Users\anmol\PROJECT MEDICA\server.js
+  1178:7  warning  'total_price' is assigned a value but never used  no-unused-vars
+
+Γ£û 1 problem (0 errors, 1 warning)
+

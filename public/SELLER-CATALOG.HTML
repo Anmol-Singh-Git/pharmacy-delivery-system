@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Catalog | MedDeliver</title>
+<link rel="stylesheet" href="SELLER-CATALOG.CSS">
+<link rel="stylesheet" href="/logo-styles.css">
+<link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+<div id="navbar"></div>
+
+<main class="catalog-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Catalog</p>
+<h1>Your Full Product Catalog</h1>
+<p>Browse every product in your inventory with filters for category, price, date added, and search by name or brand.</p>
+</div>
+<a href="SELLER-DASHBOARD.HTML" class="secondary-link">Back to Dashboard</a>
+</section>
+
+<section class="filters-panel">
+<div class="filters-grid">
+<div class="filter-field">
+<label for="catalogSearch">Search</label>
+<input id="catalogSearch" type="search" placeholder="Search by product name, brand, category...">
+</div>
+
+<div class="filter-field">
+<label for="catalogCategory">Category</label>
+<select id="catalogCategory">
+<option value="all">All Categories</option>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurvedic</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+</div>
+
+<div class="filter-field">
+<label for="priceSort">Price</label>
+<select id="priceSort">
+<option value="default">Sort by Price</option>
+<option value="low">Low to High</option>
+<option value="high">High to Low</option>
+</select>
+</div>
+
+<div class="filter-field">
+<label for="catalogDateRangeButton">Date added</label>
+<button id="catalogDateRangeButton" type="button" class="range-picker-btn">Select date range</button>
+<div id="catalogDateRangePopup" class="date-range-popup hidden" aria-hidden="true"></div>
+</div>
+</div>
+</section>
+
+<section class="catalog-panel">
+<div class="catalog-header">
+<p id="catalogSummary">Loading products...</p>
+<button type="button" class="ghost-btn" id="refreshCatalogBtn">Refresh</button>
+</div>
+<div id="catalog-container" class="product-grid"></div>
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const sellerEmail = localStorage.getItem("seller_email");
+let allSellerProducts = [];
+
+if(!sellerEmail){
+  alert("Seller login required");
+  window.location.href = "LOGINPAGE.HTML";
+}
+
+function loadNavbar(){
+  document.getElementById("navbar").innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="SELLER-PAST-ORDERS.HTML">Past Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+  localStorage.clear();
+  window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+  return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatDate(value){
+  if(!value) return "Not provided";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "Not provided";
+  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatCategory(category){
+  return String(category || "General").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+const catalogDateState = {
+  start:null,
+  end:null,
+  viewYear:new Date().getFullYear(),
+  viewMonth:new Date().getMonth()
+};
+
+function getProductCreatedDate(product){
+  if(product.createdAt) return product.createdAt;
+  if(product.dateAdded) return product.dateAdded;
+  if(product._id && typeof product._id === "object" && typeof product._id.getTimestamp === "function"){
+    return product._id.getTimestamp();
+  }
+  return null;
+}
+
+function formatDateInput(value){
+  if(!value) return "";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0,10);
+}
+
+function productMatchesFilters(product){
+  const search = document.getElementById("catalogSearch").value.trim().toLowerCase();
+  const category = document.getElementById("catalogCategory").value;
+
+  if(category !== "all" && String(product.category) !== category){
+    return false;
+  }
+
+  if(catalogDateState.start && catalogDateState.end){
+    const productDate = formatDateInput(getProductCreatedDate(product));
+    if(!productDate || productDate < catalogDateState.start || productDate > catalogDateState.end){
+      return false;
+    }
+  }
+
+  if(search){
+    const text = [product.medicine_name, product.brand, product.category, product.description]
+      .filter(Boolean).join(" ").toLowerCase();
+    return text.includes(search);
+  }
+
+  return true;
+}
+
+function sortProducts(products){
+  const priceSort = document.getElementById("priceSort").value;
+  const sorted = [...products];
+
+  if(priceSort === "low"){
+    sorted.sort((a,b)=> (Number(a.price)||0) - (Number(b.price)||0));
+  } else if(priceSort === "high"){
+    sorted.sort((a,b)=> (Number(b.price)||0) - (Number(a.price)||0));
+  } else {
+    sorted.sort((a,b)=> new Date(getProductCreatedDate(b) || 0) - new Date(getProductCreatedDate(a) || 0));
+  }
+
+  return sorted;
+}
+
+function updateCatalogDateButton(){
+  const button = document.getElementById("catalogDateRangeButton");
+  if(catalogDateState.start && catalogDateState.end){
+    button.textContent = `${formatDate(catalogDateState.start)} — ${formatDate(catalogDateState.end)}`;
+    button.classList.add("range-selected");
+  }
+  else if(catalogDateState.start){
+    button.textContent = `${formatDate(catalogDateState.start)}`;
+    button.classList.add("range-selected");
+  }
+  else {
+    button.textContent = "Select date range";
+    button.classList.remove("range-selected");
+  }
+}
+
+function renderCatalogCalendar(year, month){
+  const popup = document.getElementById("catalogDateRangePopup");
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const weekdayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const firstDay = new Date(year, month, 1);
+  const dayCount = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay.getDay();
+
+  let html = `
+    <div class="calendar-shell">
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button type="button" id="catalogPrevMonth" aria-label="Previous month">‹</button>
+          <div class="calendar-heading">
+            <select id="catalogCalendarMonth" class="calendar-select"></select>
+            <select id="catalogCalendarYear" class="calendar-select"></select>
+          </div>
+          <button type="button" id="catalogNextMonth" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="calendar-weekdays">`;
+
+  weekdayNames.forEach(day => {
+    html += `<div class="calendar-weekday">${day}</div>`;
+  });
+  html += `</div><div class="calendar-days">`;
+
+  for(let i=0;i<startOffset;i++){
+    html += `<span class="calendar-day empty"></span>`;
+  }
+
+  for(let day=1;day<=dayCount;day++){
+    const date = new Date(year, month, day);
+    const isoDate = formatDateInput(date);
+    const selectedStart = catalogDateState.start === isoDate;
+    const selectedEnd = catalogDateState.end === isoDate;
+    const inRange = catalogDateState.start && catalogDateState.end && isoDate >= catalogDateState.start && isoDate <= catalogDateState.end;
+    const classes = ["calendar-day", selectedStart ? "selected-start" : "", selectedEnd ? "selected-end" : "", inRange ? "in-range" : ""].filter(Boolean).join(" ");
+    html += `<button type="button" class="${classes}" data-date="${isoDate}">${day}</button>`;
+  }
+
+  html += `</div>
+      <div class="calendar-actions">
+        <button type="button" id="catalogCalendarClear" class="secondary-btn">Clear</button>
+        <button type="button" id="catalogCalendarCancel" class="ghost-btn">Cancel</button>
+        <button type="button" id="catalogCalendarApply" class="primary-btn">Apply</button>
+      </div>
+    </div>
+  `;
+
+  popup.innerHTML = html;
+
+  const monthSelect = document.getElementById("catalogCalendarMonth");
+  const yearSelect = document.getElementById("catalogCalendarYear");
+  monthNames.forEach((name,index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = name;
+    if(index === month) option.selected = true;
+    monthSelect.append(option);
+  });
+
+  const currentYear = new Date().getFullYear();
+  for(let offset = -5; offset <= 5; offset++){
+    const value = currentYear + offset;
+    const yearOption = document.createElement("option");
+    yearOption.value = value;
+    yearOption.textContent = value;
+    if(value === year) yearOption.selected = true;
+    yearSelect.append(yearOption);
+  }
+
+  monthSelect.addEventListener("change", () => {
+    catalogDateState.viewMonth = Number(monthSelect.value);
+    renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+  });
+
+  yearSelect.addEventListener("change", () => {
+    catalogDateState.viewYear = Number(yearSelect.value);
+    renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+  });
+
+  document.getElementById("catalogPrevMonth").addEventListener("click", () => {
+    if(catalogDateState.viewMonth === 0){
+      catalogDateState.viewMonth = 11;
+      catalogDateState.viewYear -= 1;
+    } else {
+      catalogDateState.viewMonth -= 1;
+    }
+    renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+  });
+
+  document.getElementById("catalogNextMonth").addEventListener("click", () => {
+    if(catalogDateState.viewMonth === 11){
+      catalogDateState.viewMonth = 0;
+      catalogDateState.viewYear += 1;
+    } else {
+      catalogDateState.viewMonth += 1;
+    }
+    renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+  });
+
+  popup.querySelectorAll(".calendar-day[data-date]").forEach(button => {
+    button.addEventListener("click", () => {
+      const selectedDate = button.dataset.date;
+      if(!catalogDateState.start || (catalogDateState.start && catalogDateState.end)){
+        catalogDateState.start = selectedDate;
+        catalogDateState.end = null;
+      }
+      else if(selectedDate < catalogDateState.start){
+        catalogDateState.end = catalogDateState.start;
+        catalogDateState.start = selectedDate;
+      }
+      else {
+        catalogDateState.end = selectedDate;
+      }
+      renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+      updateCatalogDateButton();
+    });
+  });
+
+  document.getElementById("catalogCalendarApply").addEventListener("click", () => {
+    if(catalogDateState.start && !catalogDateState.end){
+      catalogDateState.end = catalogDateState.start;
+    }
+    renderCatalog();
+    closeCatalogDatePopup();
+  });
+
+  document.getElementById("catalogCalendarCancel").addEventListener("click", () => {
+    closeCatalogDatePopup();
+  });
+
+  document.getElementById("catalogCalendarClear").addEventListener("click", () => {
+    catalogDateState.start = null;
+    catalogDateState.end = null;
+    updateCatalogDateButton();
+    renderCatalog();
+    renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+  });
+}
+
+function openCatalogDatePopup(){
+  const popup = document.getElementById("catalogDateRangePopup");
+  popup.classList.remove("hidden");
+  popup.setAttribute("aria-hidden","false");
+  renderCatalogCalendar(catalogDateState.viewYear, catalogDateState.viewMonth);
+}
+
+function closeCatalogDatePopup(){
+  const popup = document.getElementById("catalogDateRangePopup");
+  popup.classList.add("hidden");
+  popup.setAttribute("aria-hidden","true");
+}
+
+function initializeCatalogDatePicker(){
+  document.getElementById("catalogDateRangeButton").addEventListener("click", event => {
+    event.stopPropagation();
+    openCatalogDatePopup();
+  });
+
+  const popup = document.getElementById("catalogDateRangePopup");
+  popup.addEventListener("click", event => event.stopPropagation());
+
+  document.addEventListener("click", () => {
+    if(!popup.classList.contains("hidden")) closeCatalogDatePopup();
+  });
+
+  updateCatalogDateButton();
+}
+
+function renderCatalog(){
+  const container = document.getElementById("catalog-container");
+  const summary = document.getElementById("catalogSummary");
+  const filtered = allSellerProducts.filter(productMatchesFilters);
+  const sorted = sortProducts(filtered);
+
+  if(!sorted.length){
+    summary.textContent = "No products match the selected filters.";
+    container.innerHTML = `
+      <div class="empty-state">
+        <h3>No products found</h3>
+        <p>Try changing the search terms or category filter.</p>
+      </div>
+    `;
+    return;
+  }
+
+  summary.textContent = `Showing ${sorted.length} product${sorted.length === 1 ? "" : "s"}.`;
+  container.innerHTML = sorted.map(product => {
+    const image = product.images && product.images.length ? product.images[0] : "default.png";
+    const stock = Number(product.stock) || 0;
+    const stockClass = stock <= 5 ? "badge-danger" : "badge-success";
+
+    return `
+      <article class="product-card" data-id="${product._id}">
+        <div class="product-image-wrap">
+          <img src="/uploads/${escapeHtml(image)}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
+          <span class="badge ${stockClass}">${stock <= 5 ? "Low Stock" : "In Stock"}</span>
+        </div>
+        <div class="product-body">
+          <div class="product-top">
+            <div>
+              <h3>${escapeHtml(product.medicine_name)}</h3>
+              <p class="product-brand">${escapeHtml(product.brand || "Unbranded")}</p>
+            </div>
+            <strong>${formatCurrency(product.price)}</strong>
+          </div>
+          <div class="product-meta">
+            <span>${escapeHtml(formatCategory(product.category))}</span>
+            <span>Stock: ${stock}</span>
+            <span>Expiry: ${escapeHtml(formatDate(product.expiry_date))}</span>
+          </div>
+          <p class="product-description">${escapeHtml(product.description || "No description provided.")}</p>
+          <div class="product-actions">
+            <button type="button" class="secondary-btn" onclick="openProductPage('${product._id}')">View Product</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function openProductPage(productId){
+  const product = allSellerProducts.find(item => String(item._id) === String(productId));
+  if(product){
+    localStorage.setItem("selectedProduct", JSON.stringify(product));
+    localStorage.setItem("isSellerView", "true");
+  }
+  window.location.href = "PRODUCTPAGE.HTML";
+}
+
+async function loadCatalog(){
+  const container = document.getElementById("catalog-container");
+  container.innerHTML = `<div class="empty-state"><h3>Loading catalog...</h3><p>Please wait while your product inventory is loaded.</p></div>`;
+  try{
+    allSellerProducts = await window.fetchJson(`${BASE_URL}/api/seller-medicines/${encodeURIComponent(sellerEmail)}`, {}, "Server error or invalid response");
+    renderCatalog();
+  }
+  catch(error){
+    console.error("Error loading catalog:", error);
+    container.innerHTML = `<div class="empty-state"><h3>Unable to load catalog</h3><p>${escapeHtml(window.getApiErrorMessage(error))}</p></div>`;
+    document.getElementById("catalogSummary").textContent = "Failed to load product catalog.";
+  }
+}
+
+function attachCatalogFilters(){
+  ["catalogSearch", "catalogCategory", "priceSort"].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("input", renderCatalog);
+    el.addEventListener("change", renderCatalog);
+  });
+}
+
+loadNavbar();
+attachCatalogFilters();
+initializeCatalogDatePicker();
+loadCatalog();
+
+document.getElementById("refreshCatalogBtn").addEventListener("click", loadCatalog);
+</script>
+</body>
+</html>

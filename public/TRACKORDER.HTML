@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Delivery | MedDeliver</title>
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+}
+
+body{
+background:
+radial-gradient(circle at top left, rgba(0,188,212,0.12), transparent 24%),
+radial-gradient(circle at top right, rgba(255,77,109,0.14), transparent 22%),
+linear-gradient(180deg, #f4f7fb 0%, #eef4f8 100%);
+color:#18212f;
+min-height:100vh;
+max-width: 1100px;
+margin: 0 auto;
+padding: 20px;
+}
+
+a{
+text-decoration:none;
+color:inherit;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 56px;
+background:#081018;
+color:#ffffff;
+position:sticky;
+top:0;
+z-index:20;
+box-shadow:0 12px 30px rgba(0,0,0,0.12);
+border-radius: 16px;
+margin-bottom: 24px;
+}
+
+.logo{
+font-size:22px;
+font-weight:700;
+letter-spacing:0.4px;
+color:#ffffff;
+}
+
+.navbar nav{
+display:flex;
+align-items:center;
+gap:22px;
+}
+
+.navbar nav a{
+font-size:14px;
+color:rgba(255,255,255,0.9);
+transition:color 0.2s ease;
+}
+
+.navbar nav a:hover{
+color:#7be0ec;
+}
+
+.track-shell{
+max-width:1280px;
+margin:0 auto;
+padding:34px 22px 56px;
+}
+
+.page-head{
+display:flex;
+justify-content:space-between;
+gap:16px;
+align-items:flex-start;
+margin-bottom:24px;
+}
+
+.eyebrow{
+font-size:12px;
+font-weight:700;
+letter-spacing:0.16em;
+text-transform:uppercase;
+color:#007b92;
+margin-bottom:10px;
+}
+
+.page-head h1{
+font-size:clamp(30px, 4vw, 44px);
+line-height:1.08;
+margin-bottom:10px;
+color:#102033;
+}
+
+.page-head p{
+font-size:16px;
+line-height:1.7;
+color:#5b6c7e;
+max-width:760px;
+}
+
+.ghost-link{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+padding:12px 16px;
+border-radius:14px;
+background:#eef7fa;
+color:#0d6574;
+font-weight:700;
+white-space:nowrap;
+}
+
+.panel{
+background:rgba(255,255,255,0.88);
+backdrop-filter:blur(10px);
+border:1px solid rgba(255,255,255,0.65);
+border-radius:28px;
+padding:26px;
+box-shadow:0 20px 48px rgba(21,34,50,0.08);
+margin-bottom: 20px;
+}
+
+.summary-stack{
+display:grid;
+gap:16px;
+}
+
+.summary-card{
+padding:18px;
+border-radius:22px;
+background:#f8fbfd;
+border:1px solid #e4edf4;
+}
+
+.summary-card h3{
+font-size:16px;
+margin-bottom:8px;
+color:#102033;
+}
+
+.items-container{
+display:grid;
+gap:12px;
+}
+
+.order-item-row{
+display:flex;
+gap:14px;
+align-items:center;
+padding:12px 0;
+border-bottom:1px solid rgba(16,32,51,0.08);
+min-height:76px;
+}
+
+.order-item-row:last-child{
+border-bottom:none;
+}
+
+.order-item-row img{
+width:56px;
+height:56px;
+min-width:56px;
+aspect-ratio:1 / 1;
+display:block;
+object-fit:cover;
+border-radius:12px;
+background:#f2f5f9;
+}
+
+.order-item-details{
+display:grid;
+gap:4px;
+}
+
+.order-item-details strong{
+font-size:14px;
+color:#102033;
+}
+
+.order-item-details span{
+font-size:13px;
+color:#5e7084;
+}
+
+.summary-card p{
+font-size:14px;
+line-height:1.7;
+color:#5e7084;
+white-space:pre-line;
+word-break:break-word;
+}
+
+.hidden{
+display:none !important;
+}
+
+.empty-state{
+background:linear-gradient(180deg, #f8fbfd 0%, #f2f7fa 100%);
+border:1px dashed #c6d6e4;
+border-radius:22px;
+padding:36px 24px;
+text-align:center;
+}
+
+.empty-state h2{
+font-size:28px;
+margin-bottom:10px;
+color:#142235;
+}
+
+.empty-state p{
+font-size:15px;
+line-height:1.7;
+color:#607288;
+max-width:540px;
+margin:0 auto 18px;
+}
+
+.primary-link{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+border:none;
+border-radius:14px;
+padding:14px 18px;
+font-weight:700;
+background:linear-gradient(135deg, #00b4d8, #0077b6);
+color:#ffffff;
+box-shadow:0 14px 24px rgba(0,119,182,0.18);
+}
+
+@media(max-width:920px){
+.track-layout{
+grid-template-columns:1fr;
+}
+}
+
+@media(max-width:760px){
+.navbar{
+padding:16px 18px;
+flex-direction:column;
+gap:12px;
+}
+
+.navbar nav{
+gap:16px;
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.track-shell{
+padding:22px 14px 44px;
+}
+
+.page-head{
+flex-direction:column;
+}
+
+.panel{
+padding:20px;
+border-radius:22px;
+}
+}
+
+.info-card {
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  background: #f0f9ff;
+  border-left: 4px solid #0ea5e9;
+}
+
+.info-card h4 {
+  font-size: 15px;
+  margin-bottom: 6px;
+  color: #0c4a6e;
+}
+
+.info-card p {
+  font-size: 17px;
+  font-weight: 600;
+  color: #075985;
+}
+
+.pending {
+  background: #fefce8;
+  border-left: 4px solid #eab308;
+}
+
+.pending h4 {
+  color: #713f12;
+}
+
+.pending p {
+  color: #854d0e;
+}
+
+</style>
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="track-shell">
+<section class="page-head">
+<div>
+<p class="eyebrow">Tracking</p>
+<h1>Track Delivery</h1>
+<p>View your delivery status, estimated time and contact details.</p>
+</div>
+<a id="backLink" href="ORDERS.HTML" class="ghost-link">Back</a>
+</section>
+
+<section id="emptyState" class="empty-state hidden">
+<h2>No tracking data available</h2>
+<p>Select an order first, then open tracking again.</p>
+<a id="emptyBackLink" href="ORDERS.HTML" class="primary-link">Go Back</a>
+</section>
+
+<section id="trackContent" class="hidden">
+
+<div class="panel">
+  <h2 style="margin-bottom: 18px; color: #102033;">Delivery Information</h2>
+  
+  <div id="buyerCard" class="info-card">
+    <h4>Buyer Name</h4>
+    <p id="buyerName">Loading...</p>
+  </div>
+
+  <div id="productsCard" class="info-card">
+    <h4>Products</h4>
+    <div id="productsList">Loading...</div>
+  </div>
+
+  <div id="distanceCard" class="info-card">
+    <h4>Distance</h4>
+    <p id="distance">Loading...</p>
+  </div>
+
+  <div id="etaCard" class="info-card">
+    <h4>Estimated Delivery Time</h4>
+    <p id="eta">Loading...</p>
+  </div>
+
+  <div id="orderTimeCard" class="info-card">
+    <h4>Order Time</h4>
+    <p id="orderTime">Loading...</p>
+  </div>
+
+  <div id="contactCard" class="info-card">
+    <h4>Delivery Boy Phone</h4>
+    <p id="contact">Loading...</p>
+  </div>
+</div>
+
+</section>
+</main>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function orderLineItems(order){
+const meds = Array.isArray(order.medicines) ? order.medicines : [];
+if(meds.length){
+return meds.map((i) => ({
+name: i.medicine_name || i.name || "Item",
+qty: i.quantity ?? i.qty ?? 1,
+image: i.image || "default.png"
+}));
+}
+const items = Array.isArray(order.items) ? order.items : [];
+return items.map((i) => ({
+name: i.name || "Item",
+qty: i.quantity ?? i.qty ?? 1,
+image: i.image || "default.png"
+}));
+}
+
+async function loadOrder(){
+loadNavbar();
+
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get("order_id");
+
+const emptyEl = document.getElementById("emptyState");
+const contentEl = document.getElementById("trackContent");
+
+if(!orderId){
+emptyEl.classList.remove("hidden");
+contentEl.classList.add("hidden");
+return;
+}
+
+try{
+const response = await fetch(`${BASE_URL}/api/order/${encodeURIComponent(orderId)}`);
+const order = await window.parseJsonResponse(response);
+
+if(!response.ok){
+emptyEl.querySelector("h2").textContent = "Order not found";
+emptyEl.querySelector("p").textContent = (order && order.message) || "Check your orders list and try again.";
+emptyEl.classList.remove("hidden");
+contentEl.classList.add("hidden");
+return;
+}
+
+emptyEl.classList.add("hidden");
+contentEl.classList.remove("hidden");
+
+const buyerName =
+order.buyer_details?.name ||
+order.buyer_name ||
+"—";
+    document.getElementById("buyerName").textContent = buyerName;
+
+    // Check if order is marked as delivered
+    const isDelivered = localStorage.getItem("delivered_" + order._id) === "true";
+
+    if (isDelivered) {
+      // Add delivered status card
+      const deliveredCard = document.createElement('div');
+      deliveredCard.className = 'info-card';
+      deliveredCard.style.background = '#ecfdf3';
+      deliveredCard.style.borderLeft = '4px solid #22c55e';
+      deliveredCard.innerHTML = `
+        <h4 style="color: #166534;">Status</h4>
+        <p style="color: #166534; font-weight:700;">✅ Delivered</p>
+        <p style="font-size:14px; color:#15803d; margin-top:4px;">Order successfully delivered</p>
+      `;
+      document.querySelector('.panel').insertBefore(deliveredCard, document.getElementById('buyerCard'));
+
+      // Update ETA to show Completed
+      document.getElementById("eta").textContent = "Completed";
+      document.getElementById("etaCard").style.background = "#ecfdf3";
+      document.getElementById("etaCard").style.borderLeft = "4px solid #22c55e";
+      document.querySelector('#etaCard h4').style.color = "#166534";
+      document.querySelector('#etaCard p').style.color = "#166534";
+    }
+
+    const lines = orderLineItems(order);
+const listEl = document.getElementById("productsList");
+if(!lines.length){
+listEl.innerHTML = "<p>No line items on this order.</p>";
+} else {
+listEl.innerHTML = lines.map((line) => `
+<div class="order-item-row">
+<img src="/uploads/${escapeHtml(line.image)}" alt="">
+<div class="order-item-details">
+<strong>${escapeHtml(line.name)}</strong>
+<span>Qty: ${escapeHtml(String(line.qty))}</span>
+</div>
+</div>
+`).join("");
+}
+
+document.getElementById("distance").textContent = window.formatDistance(order.distanceKm);
+let etaText = "Location unavailable";
+if(Number.isFinite(Number(order.etaMin)) && Number.isFinite(Number(order.etaMax))){
+etaText = `${order.etaMin} - ${order.etaMax} mins`;
+} else if(order.eta && String(order.eta).trim() && !/^calculating/i.test(String(order.eta))){
+etaText = window.formatETA(order.eta);
+}
+document.getElementById("eta").textContent = etaText;
+document.getElementById("orderTime").textContent = order.orderTime || "—";
+document.getElementById("contact").textContent =
+order.deliveryBoyPhone && String(order.deliveryBoyPhone).trim()
+? order.deliveryBoyPhone
+: "Not Assigned";
+}
+catch(err){
+console.error(err);
+document.getElementById("emptyState").classList.remove("hidden");
+document.getElementById("trackContent").classList.add("hidden");
+}
+}
+
+loadOrder();
+</script>
+
+</body>
+</html>

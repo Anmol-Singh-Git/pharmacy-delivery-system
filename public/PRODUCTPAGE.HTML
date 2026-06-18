@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Details | MedDeliver</title>
+<link rel="stylesheet" href="PRODUCTPAGE.CSS">
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="page-shell">
+<div id="statusMessage" class="status-message hidden"></div>
+
+<section id="productPage" class="product-page hidden">
+<div class="page-head">
+<div>
+<p class="eyebrow">Product Details</p>
+<h1 id="productTitle">Loading product...</h1>
+<p id="productSubtitle" class="page-copy">Review full product information before buying or managing this item.</p>
+</div>
+<a id="backLink" href="LISTINGPAGE.HTML" class="ghost-link">Back</a>
+</div>
+
+<section class="product-layout">
+<div class="gallery-column">
+<div class="gallery-card" id="galleryCard">
+<div class="main-image-wrap" id="mainImageWrap">
+<div id="zoomLens" class="zoom-lens hidden"></div>
+<img id="mainProductImage" src="/uploads/default.png" alt="Product image">
+<span id="stockBadge" class="badge badge-success">In Stock</span>
+</div>
+<div id="zoomPane" class="zoom-pane hidden"></div>
+<div id="thumbnailContainer" class="thumbnail-row"></div>
+</div>
+
+<section class="details-panel description-card">
+<div class="description-head">
+<div>
+<p class="eyebrow">About This Product</p>
+<h3 id="productDescriptionTitle">Seller Description</h3>
+</div>
+<p class="description-note">Shared by the seller to help buyers understand what this product is for and why they may need it.</p>
+</div>
+<div id="productDescriptionBody" class="description-copy">Seller details will appear here.</div>
+</section>
+</div>
+
+<div class="details-card">
+<div class="price-row">
+<div>
+<p id="productBrand" class="brand-text">Brand</p>
+<h2 id="productName">Product Name</h2>
+</div>
+<strong id="productPrice" class="price-text">Rs 0</strong>
+</div>
+
+<div class="chip-row">
+<span id="categoryChip" class="info-chip">Category</span>
+<span id="prescriptionChip" class="info-chip">Prescription</span>
+<span id="sellerChip" class="info-chip">Seller</span>
+<span id="distanceChip" class="info-chip">Distance</span>
+</div>
+
+<div class="info-grid">
+<article class="info-box">
+<span>Available Stock</span>
+<strong id="stockValue">0</strong>
+</article>
+<article class="info-box">
+<span>Expiry Date</span>
+<strong id="expiryValue">Not provided</strong>
+</article>
+<article class="info-box">
+<span>Manufacturer</span>
+<strong id="manufacturerValue">Not provided</strong>
+</article>
+<article class="info-box">
+<span>Medical Store</span>
+<strong id="sellerValue">Not available</strong>
+</article>
+<article class="info-box">
+<span>Store Address</span>
+<strong id="sellerAddressValue">Not available</strong>
+ </article>
+<article class="info-box">
+<span>Distance</span>
+<strong id="distanceValue">Distance unavailable</strong>
+</article>
+</div>
+
+<div class="details-panel">
+<h3>Product Information</h3>
+<dl class="detail-list">
+<div>
+<dt>Name</dt>
+<dd id="detailName">-</dd>
+</div>
+<div>
+<dt>Brand</dt>
+<dd id="detailBrand">-</dd>
+</div>
+<div>
+<dt>Category</dt>
+<dd id="detailCategory">-</dd>
+</div>
+<div>
+<dt>Price</dt>
+<dd id="detailPrice">-</dd>
+</div>
+<div>
+<dt>Stock</dt>
+<dd id="detailStock">-</dd>
+</div>
+<div>
+<dt>Expiry</dt>
+<dd id="detailExpiry">-</dd>
+</div>
+<div>
+<dt>Manufacturer</dt>
+<dd id="detailManufacturer">-</dd>
+</div>
+<div>
+<dt>Prescription Required</dt>
+<dd id="detailPrescription">-</dd>
+</div>
+</dl>
+</div>
+
+<div class="details-panel">
+<h3>Seller Information</h3>
+<dl class="detail-list">
+<div>
+<dt>Pharmacy</dt>
+<dd id="detailSellerStore">-</dd>
+</div>
+<div>
+<dt>Seller Email</dt>
+<dd id="detailSellerEmail">-</dd>
+</div>
+<div>
+<dt>Seller Mobile</dt>
+<dd id="detailSellerMobile">-</dd>
+</div>
+<div>
+<dt>Seller Address</dt>
+<dd id="detailSellerAddress">-</dd>
+</div>
+<div>
+<dt>Distance</dt>
+<dd id="detailDistance">-</dd>
+</div>
+</dl>
+</div>
+
+<div id="distanceActions" class="action-row hidden">
+</div>
+
+<div id="buyerActions" class="action-row hidden">
+<button type="button" id="addToCartBtn" class="primary-btn" onclick="addToCart()">Add to Cart</button>
+<a href="LISTINGPAGE.HTML" class="secondary-btn">Continue Shopping</a>
+</div>
+
+<div id="sellerActions" class="action-row hidden">
+<button type="button" class="primary-btn" onclick="openEditModal()">Edit Product</button>
+<button type="button" class="danger-btn" onclick="deleteProduct()">Delete Product</button>
+<a href="SELLER-DASHBOARD.HTML" class="secondary-btn">Back to Dashboard</a>
+</div>
+</div>
+</section>
+</section>
+
+<section id="emptyState" class="empty-state hidden">
+<h2>Product not available</h2>
+<p>This page needs a selected product. Go back to the product listing and open an item again.</p>
+<a href="LISTINGPAGE.HTML" class="primary-link">Browse Products</a>
+</section>
+</main>
+
+<div id="editModal" class="modal" aria-hidden="true">
+<div class="modal-dialog">
+<div class="modal-head">
+<div>
+<p class="eyebrow">Seller Edit</p>
+<h3>Update Product</h3>
+</div>
+<button type="button" class="icon-btn" onclick="closeEditModal()">Close</button>
+</div>
+
+<form id="editProductForm" class="edit-form" enctype="multipart/form-data">
+<label class="field">
+<span>Product Name</span>
+<input type="text" name="medicine_name" id="edit_medicine_name" required>
+</label>
+
+<label class="field">
+<span>Brand</span>
+<input type="text" name="brand" id="edit_brand" required>
+</label>
+
+<label class="field">
+<span>Category</span>
+<select name="category" id="edit_category" required>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurvedic</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+</label>
+
+<label class="field">
+<span>Price</span>
+<input type="number" name="price" id="edit_price" min="0" step="0.01" required>
+</label>
+
+<label class="field">
+<span>Stock</span>
+<input type="number" name="stock" id="edit_stock" min="0" step="1" required>
+</label>
+
+<label class="field">
+<span>Expiry Date</span>
+<input type="date" name="expiry_date" id="edit_expiry_date">
+</label>
+
+<label class="field">
+<span>Manufacturer</span>
+<input type="text" name="manufacturer" id="edit_manufacturer">
+</label>
+
+<label class="field">
+<span>Prescription Required</span>
+<select name="prescription_required" id="edit_prescription_required">
+<option value="No">No Prescription</option>
+<option value="Yes">Prescription Required</option>
+</select>
+</label>
+
+<label class="field field-full">
+<span>Product Details</span>
+<textarea
+name="description"
+id="edit_description"
+rows="6"
+placeholder="Describe what this product is for, how it helps, and the key benefits buyers should know before ordering."
+></textarea>
+<small>Write simple paragraphs or heading-style notes for buyers.</small>
+</label>
+
+<label class="field field-full">
+<span>Replace Images</span>
+<input type="file" id="editImagesInput" name="images" accept="image/*" multiple>
+<small id="editImageHint">Leave empty to keep current images.</small>
+</label>
+
+<div class="action-row field-full">
+<button type="submit" id="saveEditBtn" class="primary-btn">Save Changes</button>
+<button type="button" class="secondary-btn" onclick="closeEditModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+const buyerEmail = localStorage.getItem("buyer_email");
+const sellerEmail = localStorage.getItem("seller_email");
+const buyerProfile = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+
+let currentProduct = null;
+let isSellerView = false;
+let buyerLocation = normalizeLocation(buyerProfile.location);
+if(!buyerLocation && window.readMedDeliverStoredCoords){
+buyerLocation = window.readMedDeliverStoredCoords();
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
+}
+
+function formatCategory(category){
+return String(category || "General")
+.replace(/_/g, " ")
+.toLowerCase()
+.replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function formatDate(value){
+if(!value) return "Not provided";
+
+const date = new Date(value);
+if(Number.isNaN(date.getTime())){
+return value;
+}
+
+return date.toLocaleDateString("en-IN", {
+day: "2-digit",
+month: "short",
+year: "numeric"
+});
+}
+
+function normalizeLocation(location){
+if(!location) return null;
+
+const latitude = Number(location.latitude);
+const longitude = Number(location.longitude);
+
+if(!Number.isFinite(latitude) || !Number.isFinite(longitude)){
+return null;
+}
+
+return { latitude, longitude };
+}
+
+function toRadians(value){
+return value * (Math.PI / 180);
+}
+
+function calculateDistanceKm(from, to){
+if(!from || !to) return null;
+
+const earthRadius = 6371;
+const dLat = toRadians(to.latitude - from.latitude);
+const dLng = toRadians(to.longitude - from.longitude);
+
+const a =
+Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+Math.cos(toRadians(from.latitude)) *
+Math.cos(toRadians(to.latitude)) *
+Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+return earthRadius * c;
+}
+
+function getDistanceText(product){
+const distance = calculateDistanceKm(
+buyerLocation,
+normalizeLocation(product?.seller_details?.location)
+);
+
+if(distance === null){
+return "Distance unavailable";
+}
+
+return `${distance.toFixed(1)} km from your location`;
+}
+
+function showStatus(message, type){
+const status = document.getElementById("statusMessage");
+status.textContent = message;
+status.className = `status-message ${type}`;
+status.classList.remove("hidden");
+
+clearTimeout(showStatus.timer);
+showStatus.timer = setTimeout(() => {
+status.classList.add("hidden");
+}, 3500);
+}
+
+function updateImageHint(count){
+const hint = document.getElementById("editImageHint");
+hint.textContent = count ? `${count} image(s) selected.` : "Leave empty to keep current images.";
+}
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+if(!buyerEmail && !sellerEmail){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="LOGINPAGE.HTML">Login</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(sellerEmail){
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function showEmptyState(){
+document.getElementById("productPage").classList.add("hidden");
+document.getElementById("emptyState").classList.remove("hidden");
+}
+
+function showProductPage(){
+document.getElementById("productPage").classList.remove("hidden");
+document.getElementById("emptyState").classList.add("hidden");
+}
+
+function setMainImage(imageName){
+document.getElementById("mainProductImage").src = `/uploads/${imageName || "default.png"}`;
+}
+
+function renderThumbnails(images){
+const container = document.getElementById("thumbnailContainer");
+const imageList = images.length ? images : ["default.png"];
+
+container.innerHTML = imageList.map((image, index) => `
+<button type="button" class="thumb-btn ${index === 0 ? "active" : ""}" data-image="${escapeHtml(image)}">
+<img src="/uploads/${escapeHtml(image)}" alt="Product thumbnail ${index + 1}">
+</button>
+`).join("");
+}
+
+function updateSellerBuyerActions(){
+document.getElementById("buyerActions").classList.toggle("hidden", isSellerView);
+document.getElementById("sellerActions").classList.toggle("hidden", !isSellerView);
+document.getElementById("distanceActions").classList.toggle("hidden", isSellerView || Boolean(buyerLocation));
+
+const backLink = document.getElementById("backLink");
+backLink.href = isSellerView ? "SELLER-DASHBOARD.HTML" : "LISTINGPAGE.HTML";
+backLink.textContent = isSellerView ? "Back to Dashboard" : "Back to Products";
+}
+
+function renderProduct(product){
+currentProduct = product;
+
+const images = Array.isArray(product.images) && product.images.length ? product.images : ["default.png"];
+const stock = Number(product.stock) || 0;
+const stockText = stock > 0 ? `${stock} units available` : "Out of stock";
+const prescriptionText = product.prescription_required === "Yes" ? "Prescription Required" : "No Prescription";
+const sellerDetails = product.seller_details || {};
+const sellerText = sellerDetails.pharmacy_name || sellerDetails.owner_name || product.seller_email || "Not available";
+const sellerAddressText = [
+sellerDetails.address || "",
+sellerDetails.city || "",
+sellerDetails.pincode || ""
+].filter(Boolean).join(", ") || "Not provided";
+const sellerEmailText = sellerDetails.email || product.seller_email || "Not available";
+const sellerMobileText = sellerDetails.mobile || "Not provided";
+const distanceText = getDistanceText(product);
+const descriptionText = String(product.description || "").trim();
+
+document.title = `${product.medicine_name || "Product"} | MedDeliver`;
+
+document.getElementById("productTitle").textContent = product.medicine_name || "Product Details";
+document.getElementById("productSubtitle").textContent = `${formatCategory(product.category)} by ${product.brand || "Unknown Brand"} - ${sellerText}`;
+document.getElementById("productBrand").textContent = product.brand || "Unknown Brand";
+document.getElementById("productName").textContent = product.medicine_name || "Unnamed Product";
+document.getElementById("productPrice").textContent = formatCurrency(product.price);
+document.getElementById("categoryChip").textContent = formatCategory(product.category);
+document.getElementById("prescriptionChip").textContent = prescriptionText;
+document.getElementById("sellerChip").textContent = sellerText;
+document.getElementById("distanceChip").textContent = distanceText;
+document.getElementById("stockValue").textContent = stockText;
+document.getElementById("expiryValue").textContent = formatDate(product.expiry_date);
+document.getElementById("manufacturerValue").textContent = product.manufacturer || "Not provided";
+document.getElementById("sellerValue").textContent = sellerText;
+document.getElementById("sellerAddressValue").textContent = sellerAddressText;
+document.getElementById("distanceValue").textContent = distanceText;
+document.getElementById("detailName").textContent = product.medicine_name || "Not provided";
+document.getElementById("detailBrand").textContent = product.brand || "Not provided";
+document.getElementById("detailCategory").textContent = formatCategory(product.category);
+document.getElementById("detailPrice").textContent = formatCurrency(product.price);
+document.getElementById("detailStock").textContent = stockText;
+document.getElementById("detailExpiry").textContent = formatDate(product.expiry_date);
+document.getElementById("detailManufacturer").textContent = product.manufacturer || "Not provided";
+document.getElementById("detailPrescription").textContent = prescriptionText;
+document.getElementById("detailSellerStore").textContent = sellerText;
+document.getElementById("detailSellerEmail").textContent = sellerEmailText;
+document.getElementById("detailSellerMobile").textContent = sellerMobileText;
+document.getElementById("detailSellerAddress").textContent = sellerAddressText;
+document.getElementById("detailDistance").textContent = distanceText;
+document.getElementById("productDescriptionTitle").textContent = descriptionText ? "Seller Description" : "Product Overview";
+document.getElementById("productDescriptionBody").textContent = descriptionText || "The seller has not added extra product details yet. Once provided, buyers will see what the product is for, how it helps, and its key benefits here.";
+
+const stockBadge = document.getElementById("stockBadge");
+stockBadge.textContent = stock > 0 ? "In Stock" : "Out of Stock";
+stockBadge.className = `badge ${stock > 0 ? "badge-success" : "badge-danger"}`;
+
+const addToCartBtn = document.getElementById("addToCartBtn");
+if(addToCartBtn){
+addToCartBtn.disabled = stock <= 0;
+addToCartBtn.textContent = stock > 0 ? "Add to Cart" : "Out of Stock";
+}
+
+setMainImage(images[0]);
+renderThumbnails(images);
+updateSellerBuyerActions();
+showProductPage();
+
+localStorage.setItem("selectedProduct", JSON.stringify(product));
+}
+
+async function loadSelectedProduct(){
+const storedRaw = localStorage.getItem("selectedProduct");
+
+if(!storedRaw){
+showEmptyState();
+return;
+}
+
+try{
+const storedProduct = JSON.parse(storedRaw);
+isSellerView = Boolean(
+sellerEmail &&
+storedProduct &&
+storedProduct.seller_email &&
+storedProduct.seller_email === sellerEmail
+);
+
+if(!isSellerView){
+localStorage.removeItem("isSellerView");
+}
+
+if(storedProduct && storedProduct._id){
+try{
+const freshProduct = await window.fetchJson(
+`${BASE_URL}/api/medicine/${storedProduct._id}`,
+{},
+"Server error or invalid response"
+);
+if(freshProduct){
+renderProduct(freshProduct);
+}
+else{
+showEmptyState();
+}
+return;
+}
+catch(fetchError){
+console.error("Unable to fetch fresh product:", fetchError);
+}
+}
+
+renderProduct(storedProduct);
+}
+catch(error){
+console.error("Error loading selected product:", error);
+showEmptyState();
+}
+}
+
+function addToCart(){
+if(isSellerView) return;
+
+if(!currentProduct){
+showStatus("Product not loaded yet.", "error");
+return;
+}
+
+if(!buyerEmail){
+alert("Login as buyer first");
+window.location.href = "LOGINPAGE.HTML";
+return;
+}
+
+const cart = JSON.parse(localStorage.getItem("cart")) || [];
+const existing = cart.find(item =>
+(currentProduct._id && item.medicine_id === currentProduct._id) ||
+(!currentProduct._id && item.medicine_name === currentProduct.medicine_name)
+);
+
+if(existing){
+existing.quantity += 1;
+}
+else{
+cart.push({
+medicine_id: currentProduct._id,
+medicine_name: currentProduct.medicine_name,
+seller_email: currentProduct.seller_email,
+price: currentProduct.price,
+image: currentProduct.images?.[0] || "default.png",
+prescription_required: currentProduct.prescription_required || "No",
+quantity: 1
+});
+}
+
+localStorage.setItem("cart", JSON.stringify(cart));
+window.refreshCartNavLabel();
+showStatus("Added to cart.", "success");
+}
+
+function openEditModal(){
+if(!isSellerView || !currentProduct) return;
+
+document.getElementById("editProductForm").reset();
+document.getElementById("edit_medicine_name").value = currentProduct.medicine_name || "";
+document.getElementById("edit_brand").value = currentProduct.brand || "";
+document.getElementById("edit_category").value = currentProduct.category || "TABLET";
+document.getElementById("edit_price").value = currentProduct.price ?? "";
+document.getElementById("edit_stock").value = currentProduct.stock ?? "";
+document.getElementById("edit_expiry_date").value = currentProduct.expiry_date ? String(currentProduct.expiry_date).slice(0, 10) : "";
+document.getElementById("edit_manufacturer").value = currentProduct.manufacturer || "";
+document.getElementById("edit_prescription_required").value = currentProduct.prescription_required || "No";
+document.getElementById("edit_description").value = currentProduct.description || "";
+updateImageHint(0);
+
+const modal = document.getElementById("editModal");
+modal.classList.add("open");
+modal.setAttribute("aria-hidden", "false");
+}
+
+function closeEditModal(){
+const modal = document.getElementById("editModal");
+modal.classList.remove("open");
+modal.setAttribute("aria-hidden", "true");
+document.getElementById("editProductForm").reset();
+updateImageHint(0);
+}
+
+async function saveProductChanges(event){
+event.preventDefault();
+
+if(!currentProduct || !currentProduct._id){
+showStatus("Product ID missing.", "error");
+return;
+}
+
+const submitButton = document.getElementById("saveEditBtn");
+submitButton.disabled = true;
+submitButton.textContent = "Saving...";
+
+try{
+const formData = new FormData(event.currentTarget);
+
+await window.fetchJson(`${BASE_URL}/api/update-medicine/${currentProduct._id}`, {
+method: "PUT",
+body: formData
+}, "Server error or invalid response");
+
+closeEditModal();
+showStatus("Product updated successfully.", "success");
+await loadSelectedProduct();
+}
+catch(error){
+console.error("Error updating product:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+finally{
+submitButton.disabled = false;
+submitButton.textContent = "Save Changes";
+}
+}
+
+async function deleteProduct(){
+if(!isSellerView || !currentProduct || !currentProduct._id) return;
+
+if(!confirm("Delete this product?")) return;
+
+try{
+await window.fetchJson(`${BASE_URL}/api/delete-medicine/${currentProduct._id}`, {
+method: "DELETE"
+}, "Server error or invalid response");
+
+localStorage.removeItem("selectedProduct");
+localStorage.removeItem("isSellerView");
+window.location.href = "SELLER-DASHBOARD.HTML";
+}
+catch(error){
+console.error("Error deleting product:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+}
+
+document.getElementById("thumbnailContainer").addEventListener("click", (event) => {
+const button = event.target.closest(".thumb-btn");
+if(!button) return;
+
+document.querySelectorAll(".thumb-btn").forEach(item => item.classList.remove("active"));
+button.classList.add("active");
+setMainImage(button.dataset.image);
+});
+
+document.getElementById("editImagesInput").addEventListener("change", (event) => {
+updateImageHint(event.target.files ? event.target.files.length : 0);
+});
+
+document.getElementById("editProductForm").addEventListener("submit", saveProductChanges);
+document.getElementById("editModal").addEventListener("click", (event) => {
+if(event.target.id === "editModal"){
+closeEditModal();
+}
+});
+document.addEventListener("keydown", (event) => {
+if(event.key === "Escape"){
+closeEditModal();
+}
+});
+
+function initImageZoom() {
+  const wrap = document.getElementById("mainImageWrap");
+  const img = document.getElementById("mainProductImage");
+  const lens = document.getElementById("zoomLens");
+  const pane = document.getElementById("zoomPane");
+  
+  if(!wrap || !img || !lens || !pane) return;
+
+  wrap.addEventListener("mouseenter", function() {
+    if (window.innerWidth <= 980) return;
+    lens.classList.remove("hidden");
+    pane.classList.remove("hidden");
+    pane.style.backgroundImage = `url('${img.src}')`;
+  });
+
+  wrap.addEventListener("mouseleave", function() {
+    lens.classList.add("hidden");
+    pane.classList.add("hidden");
+  });
+
+  wrap.addEventListener("mousemove", function(e) {
+    if (window.innerWidth <= 980) return;
+    const rect = wrap.getBoundingClientRect();
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
+    
+    const ZOOM_RATIO = 2.0; 
+    let lensW = pane.offsetWidth / ZOOM_RATIO;
+    let lensH = pane.offsetHeight / ZOOM_RATIO;
+    
+    lens.style.width = lensW + "px";
+    lens.style.height = lensH + "px";
+
+    let lensX = x - (lensW / 2);
+    let lensY = y - (lensH / 2);
+
+    if (lensX < 0) lensX = 0;
+    if (lensY < 0) lensY = 0;
+    if (lensX > rect.width - lensW) lensX = rect.width - lensW;
+    if (lensY > rect.height - lensH) lensY = rect.height - lensH;
+
+    lens.style.left = lensX + "px";
+    lens.style.top = lensY + "px";
+
+    let percentX = lensX / (rect.width - lensW) || 0;
+    let percentY = lensY / (rect.height - lensH) || 0;
+
+    pane.style.backgroundPosition = `${percentX * 100}% ${percentY * 100}%`;
+  });
+}
+
+initImageZoom();
+
+loadNavbar();
+loadSelectedProduct();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | MedDeliver</title>
+<link rel="stylesheet" href="LOGINPAGE.CSS">
+<link rel="stylesheet" href="logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="auth-shell">
+<section class="auth-card">
+<div class="auth-left">
+<p class="eyebrow">Welcome Back</p>
+<h1>Login to continue with MedDeliver</h1>
+<p>
+Access your orders, manage your cart, and continue buying from trusted pharmacies with a faster and cleaner flow.
+</p>
+
+<ul class="feature-list">
+<li>Fast delivery updates</li>
+<li>Secure transactions</li>
+<li>Easy order tracking</li>
+<li>Trusted pharmacies</li>
+</ul>
+</div>
+
+<div class="auth-right">
+<h2>Login</h2>
+<p class="auth-copy">Use your buyer or seller credentials to continue.</p>
+
+<form id="loginForm" class="auth-form">
+<input type="email" id="email" placeholder="Email Address" required>
+<input type="password" id="password" placeholder="Password" required>
+<button type="submit">Login</button>
+</form>
+
+<p class="helper-link">
+New buyer?
+<a href="REGISTERPAGE.HTML">Create buyer account</a>
+</p>
+
+<p class="helper-link">
+Want to sell?
+<a href="SELLER.HTML">Create seller account</a>
+</p>
+</div>
+</section>
+</main>
+
+<footer>
+<p>&copy; 2026 MedDeliver | Secure Login</p>
+</footer>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+
+function loadNavbar(){
+const navbar = document.getElementById("navbar");
+
+const buyer = localStorage.getItem("buyer_email");
+const seller = localStorage.getItem("seller_email");
+
+if(!buyer && !seller){
+navbar.innerHTML = `
+<header class="navbar">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="REGISTERPAGE.HTML">Register</a>
+</nav>
+</header>
+`;
+return;
+}
+
+if(buyer){
+navbar.innerHTML = `
+<header class="navbar">
+<a href="/HOMEPAGE.HTML" class="logo-container">
+  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+</a>
+<nav>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="ORDERS.HTML">Orders</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+return;
+}
+
+navbar.innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function askForLocationPermission(role){
+  if(!navigator.geolocation){
+    return Promise.reject(new Error("Location is not supported by this browser."));
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+
+        if(role === "buyer"){
+          const buyerProfile = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+          buyerProfile.location = location;
+          localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
+        }
+
+        if(role === "seller"){
+          const sellerProfile = JSON.parse(localStorage.getItem("seller_profile") || "{}");
+          sellerProfile.location = location;
+          localStorage.setItem("seller_profile", JSON.stringify(sellerProfile));
+        }
+
+        resolve(location);
+      },
+      error => {
+        if(error.code === error.PERMISSION_DENIED){
+          reject(new Error("Location access is mandatory for product tracking and smooth delivery. Please allow access so buyer and seller locations can be used to calculate distance accurately."));
+          return;
+        }
+        reject(new Error("Unable to fetch your location right now."));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000
+      }
+    );
+  });
+}
+
+async function login(){
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if(email === "" || password === ""){
+    alert("Please enter email and password");
+    return;
+  }
+
+  try{
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await window.parseJsonResponse(response);
+
+    if(!response.ok || !data.success){
+      alert(data.message || "Invalid credentials");
+      return;
+    }
+
+    localStorage.setItem("email", data.email);
+    localStorage.setItem("role", data.role);
+
+    if(data.role === "seller"){
+      localStorage.setItem("seller_email", data.email);
+      localStorage.setItem("seller_profile", JSON.stringify(data.profile || {}));
+    } else {
+      localStorage.setItem("buyer_email", data.email);
+      localStorage.setItem("buyer_profile", JSON.stringify(data.profile || {}));
+    }
+
+    try{
+      await askForLocationPermission(data.role);
+    }
+    catch(error){
+      alert(error.message + " You can still continue, but tracking and delivery experience may be limited until location is enabled.");
+    }
+
+    if(data.role === "seller"){
+      window.location.href = "SELLER-DASHBOARD.HTML";
+    } else {
+      window.location.href = "HOMEPAGE.HTML";
+    }
+  }
+  catch(error){
+    console.log(error);
+    alert(window.getApiErrorMessage(error));
+  }
+}
+
+document.getElementById("loginForm").addEventListener("submit", async (event) => {
+event.preventDefault();
+await login();
+});
+
+loadNavbar();
+</script>
+
+</body>
+</html>

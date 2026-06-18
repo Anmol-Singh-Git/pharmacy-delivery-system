@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Dashboard | MedDeliver</title>
+<link rel="stylesheet" href="SELLER-DASHBOARD.CSS">
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+
+<body>
+
+<div id="navbar"></div>
+
+<main class="dashboard-shell">
+
+<section class="dashboard-hero">
+<div>
+<p class="eyebrow">Seller Workspace</p>
+<h1>Manage inventory, pricing, and incoming orders</h1>
+<p class="hero-copy">
+Keep your catalog accurate, update stock fast, and review new orders from one clean dashboard.
+</p>
+</div>
+
+<div class="hero-card">
+<span class="hero-card-label">Account</span>
+<strong id="sellerNameLabel">Loading...</strong>
+<p id="sellerEmailLabel">Loading seller session...</p>
+<p id="sellerAccountSummary">Inventory and order data refresh from your active seller session.</p>
+    <div class="hero-actions">
+      <button type="button" class="hero-location-btn" onclick="openAccountModal()">Edit Account Details</button>
+    </div>
+</div>
+</section>
+
+<section class="stats-grid">
+<article class="stat-card">
+<span>Total Products</span>
+<strong id="statProducts">0</strong>
+<small>Live products in your catalog</small>
+</article>
+
+<article class="stat-card">
+<span>Low Stock</span>
+<strong id="statLowStock">0</strong>
+<small>Products with stock at 5 or below</small>
+</article>
+
+<article class="stat-card">
+<span>Orders Received</span>
+<strong id="statOrders">0</strong>
+<small>Total orders linked to your account</small>
+</article>
+
+<article class="stat-card">
+<span>Revenue</span>
+<strong id="statRevenue">Rs 0</strong>
+<small>Combined order value</small>
+</article>
+</section>
+
+<div id="statusMessage" class="status-message hidden"></div>
+
+<section class="panel form-panel">
+<div class="section-head">
+<div>
+<p class="section-kicker">Inventory</p>
+<h2>Add New Product</h2>
+</div>
+<button type="button" class="ghost-btn" onclick="cancelForm()">Reset Form</button>
+</div>
+
+<form id="medicineForm" class="dashboard-form" enctype="multipart/form-data">
+<label class="field">
+<span>Product Name</span>
+<input type="text" name="medicine_name" placeholder="Paracetamol 650" required>
+</label>
+
+<label class="field">
+<span>Brand</span>
+<input type="text" name="brand" placeholder="MediCare" required>
+</label>
+
+<label class="field">
+<span>Category</span>
+<select name="category" required>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurvedic</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+</label>
+
+<label class="field">
+<span>Price</span>
+<input type="number" name="price" placeholder="299" min="0" step="0.01" required>
+</label>
+
+<label class="field">
+<span>Stock</span>
+<input type="number" name="stock" placeholder="40" min="0" step="1" required>
+</label>
+
+<label class="field">
+<span>Expiry Date</span>
+<input type="date" name="expiry_date">
+</label>
+
+<label class="field">
+<span>Manufacturer</span>
+<input type="text" name="manufacturer" placeholder="Manufacturer name">
+</label>
+
+<label class="field">
+<span>Prescription Required</span>
+<select name="prescription_required">
+<option value="No">No Prescription</option>
+<option value="Yes">Prescription Required</option>
+</select>
+</label>
+
+<label class="field">
+<span>Delivery Boy Phone</span>
+<input type="text" id="delivery_phone" name="delivery_phone" placeholder="Enter delivery contact number" />
+</label>
+
+<label class="field field-full">
+<span>Product Details</span>
+<textarea
+name="description"
+rows="6"
+placeholder="Describe what this product is for, how it helps, and the key benefits buyers should know before ordering."
+></textarea>
+<small>You can write in short paragraphs, headings, or benefit points.</small>
+</label>
+
+<div class="field field-full">
+<span>Product Images</span>
+<input type="file" id="addImagesInput" name="images" multiple accept="image/*">
+<small id="addImageHint">Upload up to 5 images.</small>
+</div>
+
+<div class="form-actions field-full">
+<button type="submit" id="addProductBtn" class="primary-btn">Add Product</button>
+<button type="button" class="secondary-btn" onclick="cancelForm()">Clear</button>
+</div>
+</form>
+</section>
+
+<section class="panel">
+<div class="section-head">
+<div>
+<p class="section-kicker">Catalog</p>
+<h2>Latest Products</h2>
+</div>
+<button type="button" class="ghost-btn" id="refreshProductsBtn">Refresh</button>
+</div>
+
+<input id="searchInput" placeholder="Search products..." style="width: 100%; padding: 14px 18px; border-radius: 16px; border: 1px solid #d6e0ea; margin-bottom: 24px; font-size: 15px; background: #fff;">
+
+<div id="medicine-container" class="product-grid"></div>
+<div class="panel-footer">
+<a href="SELLER-CATALOG.HTML" class="secondary-btn">View full catalog</a>
+</div>
+</section>
+
+<section class="panel">
+<div class="section-head">
+<div>
+<p class="section-kicker">Orders</p>
+<h2>Latest Orders</h2>
+</div>
+<button type="button" class="ghost-btn" id="refreshOrdersBtn">Refresh</button>
+</div>
+
+<div id="orders-container" class="orders-grid"></div>
+<div class="panel-footer">
+<a href="SELLER-PAST-ORDERS.HTML" class="secondary-btn">View past orders</a>
+</div>
+</section>
+
+</main>
+
+<div id="accountModal" class="modal" aria-hidden="true">
+<div class="modal-dialog">
+<div class="modal-head">
+<div>
+<p class="section-kicker">Seller Account</p>
+<h3>Edit Account Details</h3>
+</div>
+<button type="button" class="icon-btn" onclick="closeAccountModal()">Close</button>
+</div>
+
+<form id="accountForm" class="dashboard-form" enctype="multipart/form-data">
+<label class="field">
+<span>Pharmacy / Store Name</span>
+<input type="text" name="pharmacy_name" id="account_pharmacy_name" required>
+</label>
+
+<label class="field">
+<span>Owner Name</span>
+<input type="text" name="owner_name" id="account_owner_name" required>
+</label>
+
+<label class="field">
+<span>Mobile Number</span>
+<input type="text" name="mobile" id="account_mobile" required>
+</label>
+
+<label class="field">
+<span>Email Address</span>
+<input type="email" name="email" id="account_email" required>
+</label>
+
+<label class="field">
+<span>Shop Address</span>
+<input type="text" name="address" id="account_address" required>
+</label>
+
+<label class="field">
+<span>City</span>
+<input type="text" name="city" id="account_city" required>
+</label>
+
+<label class="field">
+<span>Pincode</span>
+<input type="text" name="pincode" id="account_pincode" required>
+</label>
+
+<label class="field field-full">
+<span>GSTIN</span>
+<input type="text" name="gstin" id="account_gstin" required>
+</label>
+
+<div class="field field-full">
+  <span class="field-label">Shop / Poster Image</span>
+  <div class="account-image-upload">
+    <div class="account-image-current" id="accountCurrentImage">
+      <span class="account-image-placeholder">🏪 No image uploaded yet</span>
+    </div>
+    <label for="accountShopImageInput" class="account-image-drop">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span id="accountShopImageText">Click to upload new image</span>
+      <small>JPG, PNG or WEBP &bull; Optional &bull; Replaces current image</small>
+    </label>
+    <input type="file" id="accountShopImageInput" name="shop_image" accept="image/*" class="account-image-input" onchange="previewAccountShopImage(event)">
+  </div>
+</div>
+
+<input type="hidden" name="latitude" id="accountLatitude">
+<input type="hidden" name="longitude" id="accountLongitude">
+
+
+<div class="form-actions field-full">
+<button type="submit" id="saveAccountBtn" class="primary-btn">Save Account Details</button>
+<button type="button" class="secondary-btn" onclick="closeAccountModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+
+<div id="editModal" class="modal" aria-hidden="true">
+<div class="modal-dialog">
+<div class="modal-head">
+<div>
+<p class="section-kicker">Edit Product</p>
+<h3>Update Product Details</h3>
+</div>
+<button type="button" class="icon-btn" onclick="closeEditModal()">Close</button>
+</div>
+
+<form id="editMedicineForm" class="dashboard-form" enctype="multipart/form-data">
+<label class="field">
+<span>Product Name</span>
+<input type="text" name="medicine_name" id="edit_medicine_name" required>
+</label>
+
+<label class="field">
+<span>Brand</span>
+<input type="text" name="brand" id="edit_brand" required>
+</label>
+
+<label class="field">
+<span>Category</span>
+<select name="category" id="edit_category" required>
+<option value="TABLET">Tablet</option>
+<option value="SYRUP">Syrup</option>
+<option value="CAPSULE">Capsule</option>
+<option value="INJECTION">Injection</option>
+<option value="HEALTHCARE_DEVICES">Healthcare Devices</option>
+<option value="PERSONAL_CARE">Personal Care</option>
+<option value="BABY_CARE">Baby Care</option>
+<option value="NUTRITION">Nutrition</option>
+<option value="AYURVEDIC">Ayurvedic</option>
+<option value="HOME_ESSENTIALS">Home Essentials</option>
+</select>
+</label>
+
+<label class="field">
+<span>Price</span>
+<input type="number" name="price" id="edit_price" min="0" step="0.01" required>
+</label>
+
+<label class="field">
+<span>Stock</span>
+<input type="number" name="stock" id="edit_stock" min="0" step="1" required>
+</label>
+
+<label class="field">
+<span>Expiry Date</span>
+<input type="date" name="expiry_date" id="edit_expiry_date">
+</label>
+
+<label class="field">
+<span>Manufacturer</span>
+<input type="text" name="manufacturer" id="edit_manufacturer">
+</label>
+
+<label class="field">
+<span>Prescription Required</span>
+<select name="prescription_required" id="edit_prescription_required">
+<option value="No">No Prescription</option>
+<option value="Yes">Prescription Required</option>
+</select>
+</label>
+
+<label class="field field-full">
+<span>Product Details</span>
+<textarea
+name="description"
+id="edit_description"
+rows="6"
+placeholder="Describe what this product is for, how it helps, and the key benefits buyers should know before ordering."
+></textarea>
+<small>Keep it clear and practical so buyers can understand the product quickly.</small>
+</label>
+
+<div class="field field-full">
+<span>Replace Images</span>
+<input type="file" id="editImagesInput" name="images" multiple accept="image/*">
+<small id="editImageHint">Leave empty to keep current images.</small>
+</div>
+
+<div class="form-actions field-full">
+<button type="submit" id="saveEditBtn" class="primary-btn">Save Changes</button>
+<button type="button" class="secondary-btn" onclick="closeEditModal()">Cancel</button>
+</div>
+</form>
+</div>
+</div>
+
+<script src="api.js"></script>
+<script>
+const BASE_URL = window.API_BASE;
+let sellerEmail = localStorage.getItem("seller_email");
+let sellerProfile = {};
+const currencyFormatter = new Intl.NumberFormat("en-IN", {
+ maximumFractionDigits: 0
+});
+
+let sellerProducts = [];
+let sellerOrders = [];
+let editingProductId = null;
+
+try{
+sellerProfile = JSON.parse(localStorage.getItem("seller_profile") || "{}");
+}
+catch(error){
+sellerProfile = {};
+}
+
+if(!sellerEmail){
+alert("Seller login required");
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#39;");
+}
+
+function formatCurrency(value){
+return `Rs ${currencyFormatter.format(Number(value) || 0)}`;
+}
+
+function formatDate(value){
+if(!value) return "Not provided";
+
+const date = new Date(value);
+if(Number.isNaN(date.getTime())) return "Not provided";
+
+return date.toLocaleDateString("en-IN", {
+day: "2-digit",
+month: "short",
+year: "numeric"
+});
+}
+
+function formatCategory(category){
+return String(category || "General")
+.replace(/_/g, " ")
+.toLowerCase()
+.replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function formatTime(minutes) {
+  if(!minutes || minutes < 1) return "Now";
+  if(minutes < 60) return `${Math.round(minutes)} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return mins > 0 ? `${hours} hr ${mins} min` : `${hours} hr`;
+}
+
+function normalizeLocation(location){
+if(!location) return null;
+
+const latitude = Number(location.latitude ?? location.lat ?? location.coordinates?.[1]);
+const longitude = Number(location.longitude ?? location.lng ?? location.coordinates?.[0]);
+
+if(!Number.isFinite(latitude) || !Number.isFinite(longitude)){
+return null;
+}
+
+return { latitude, longitude };
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+const R = 6371;
+const dLat = (lat2-lat1) * Math.PI/180;
+const dLon = (lon2-lon1) * Math.PI/180;
+
+const a =
+Math.sin(dLat/2)*Math.sin(dLat/2) +
+Math.cos(lat1*Math.PI/180) *
+Math.cos(lat2*Math.PI/180) *
+Math.sin(dLon/2)*Math.sin(dLon/2);
+
+const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+return (R*c).toFixed(2);
+}
+
+function getDeliveryDistanceText(order){
+const buyerLocation = normalizeLocation(order?.buyer_details?.location);
+const deliveryLocation = normalizeLocation(order?.delivery_location);
+
+if(!buyerLocation || !deliveryLocation){
+return "Waiting for live location";
+}
+
+return `${getDistance(
+deliveryLocation.latitude,
+deliveryLocation.longitude,
+buyerLocation.latitude,
+buyerLocation.longitude
+)} km away`;
+}
+
+function getProductById(id){
+return sellerProducts.find(product => product._id === id);
+}
+
+function getStatusClass(status){
+const normalized = String(status || "").toLowerCase().replace("acceptance", "approval");
+
+if(normalized.includes("partial")) return "status-warning";
+if(normalized.includes("accepted") || normalized.includes("approved") || normalized.includes("delivered") || normalized.includes("ordered")) return "status-success";
+if(normalized.includes("rejected") || normalized.includes("cancel")) return "status-danger";
+if(normalized.includes("pending") || normalized.includes("waiting")) return "status-warning";
+
+return "status-info";
+}
+
+function normalizeOrderStatusLabel(status){
+return String(status || "Waiting for Approval").replace(/Waiting for Acceptance/gi, "Waiting for Approval");
+}
+
+function getCompactPrescriptionLabel(name){
+const text = String(name || "Prescription").trim();
+return text.length > 18 ? `${text.slice(0, 18)}...` : text;
+}
+
+function setButtonLoading(button, loading, loadingText){
+if(!button) return;
+
+if(loading){
+button.dataset.originalText = button.textContent;
+button.textContent = loadingText;
+button.disabled = true;
+}
+else{
+button.textContent = button.dataset.originalText || button.textContent;
+button.disabled = false;
+}
+}
+
+function showStatus(message, type){
+const status = document.getElementById("statusMessage");
+
+status.textContent = message;
+status.className = `status-message ${type}`;
+status.classList.remove("hidden");
+
+clearTimeout(showStatus.timer);
+showStatus.timer = setTimeout(() => {
+status.classList.add("hidden");
+}, 4000);
+}
+
+function updateImageHint(inputId, hintId, emptyText){
+const input = document.getElementById(inputId);
+const hint = document.getElementById(hintId);
+
+if(!input || !hint) return;
+
+const count = input.files ? input.files.length : 0;
+hint.textContent = count ? `${count} image(s) selected.` : emptyText;
+}
+
+function syncSellerSession(email, profile){
+if(email){
+sellerEmail = email;
+localStorage.setItem("seller_email", email);
+}
+
+sellerProfile = profile && typeof profile === "object" ? profile : {};
+localStorage.setItem("seller_profile", JSON.stringify(sellerProfile));
+
+renderSellerAccount();
+fillAccountLocationFields();
+}
+
+function renderSellerAccount(){
+const storeName =
+sellerProfile.pharmacy_name ||
+sellerProfile.shopName ||
+sellerEmail ||
+"Seller Account";
+const contactEmail = sellerProfile.email || sellerEmail || "Seller session active";
+const summary = [
+sellerProfile.owner_name ? `Owner: ${sellerProfile.owner_name}` : "",
+sellerProfile.mobile ? `Mobile: ${sellerProfile.mobile}` : "",
+sellerProfile.gstin ? `GSTIN: ${sellerProfile.gstin}` : "GSTIN not added"
+].filter(Boolean).join(" | ");
+
+document.getElementById("sellerNameLabel").textContent = storeName;
+document.getElementById("sellerEmailLabel").textContent = contactEmail;
+document.getElementById("sellerAccountSummary").textContent =
+summary || "Inventory and order data refresh from your active seller session.";
+}
+
+function fillAccountLocationFields(){
+const latitude =
+sellerProfile.latitude ??
+sellerProfile.location?.latitude ??
+"";
+const longitude =
+sellerProfile.longitude ??
+sellerProfile.location?.longitude ??
+"";
+
+document.getElementById("accountLatitude").value = latitude;
+document.getElementById("accountLongitude").value = longitude;
+const accountLocationStatus = document.getElementById("accountLocationStatus");
+if(accountLocationStatus){
+accountLocationStatus.textContent =
+latitude !== "" && longitude !== ""
+? "Current store location is saved. You can refresh it if needed."
+: "Location is optional but recommended.";
+}
+}
+
+function populateAccountForm(){
+  document.getElementById("accountForm").reset();
+  document.getElementById("account_pharmacy_name").value = sellerProfile.pharmacy_name || sellerProfile.shopName || "";
+  document.getElementById("account_owner_name").value = sellerProfile.owner_name || "";
+  document.getElementById("account_mobile").value = sellerProfile.mobile || "";
+  document.getElementById("account_email").value = sellerProfile.email || sellerEmail || "";
+  document.getElementById("account_address").value = sellerProfile.address || "";
+  document.getElementById("account_city").value = sellerProfile.city || "";
+  document.getElementById("account_pincode").value = sellerProfile.pincode || "";
+  document.getElementById("account_gstin").value = sellerProfile.gstin || "";
+
+  // Restore shop image preview
+  const currentImageBox = document.getElementById("accountCurrentImage");
+  const shopImage = sellerProfile.shop_image || "";
+  if(shopImage){
+    currentImageBox.innerHTML = `
+      <img src="/uploads/${escapeHtml(shopImage)}" alt="Current shop image" class="account-current-img">
+      <span class="account-current-label">Current image</span>
+    `;
+  } else {
+    currentImageBox.innerHTML = `<span class="account-image-placeholder">🏪 No image uploaded yet</span>`;
+  }
+  document.getElementById("accountShopImageText").textContent = "Click to upload new image";
+
+  fillAccountLocationFields();
+}
+
+
+
+
+function loadNavbar(){
+document.getElementById("navbar").innerHTML = `
+<header class="navbar">
+<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<nav>
+<a href="HOMEPAGE.HTML">Home</a>
+<a href="LISTINGPAGE.HTML">Products</a>
+<a href="#" onclick="logout()">Logout</a>
+</nav>
+</header>
+`;
+}
+
+function logout(){
+localStorage.clear();
+window.location.href = "LOGINPAGE.HTML";
+}
+
+function openAccountModal(){
+populateAccountForm();
+const modal = document.getElementById("accountModal");
+modal.classList.add("open");
+modal.setAttribute("aria-hidden", "false");
+}
+
+function closeAccountModal(){
+const modal = document.getElementById("accountModal");
+modal.classList.remove("open");
+modal.setAttribute("aria-hidden", "true");
+document.getElementById("accountForm").reset();
+fillAccountLocationFields();
+}
+
+async function loadSellerProfile(){
+try{
+const result = await window.fetchJson(
+`${BASE_URL}/api/seller-profile/${encodeURIComponent(sellerEmail)}`,
+{},
+"Server error or invalid response"
+);
+
+syncSellerSession(result.email || sellerEmail, result.profile || {});
+}
+catch(error){
+console.error("Error loading seller profile:", error);
+renderSellerAccount();
+}
+}
+
+function cancelForm(){
+document.getElementById("medicineForm").reset();
+updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
+}
+
+function openProductPage(productId){
+const product = getProductById(productId);
+if(!product) return;
+
+localStorage.setItem("selectedProduct", JSON.stringify(product));
+localStorage.setItem("isSellerView", "true");
+window.location.href = "PRODUCTPAGE.HTML";
+}
+
+function renderStats(){
+const lowStock = sellerProducts.filter(product => Number(product.stock) <= 5).length;
+const revenue = sellerOrders.reduce((sum, order) => {
+const sellerItems = Array.isArray(order.medicines)
+? order.medicines.filter(item => item.seller_email === sellerEmail)
+: [];
+
+return sum + sellerItems.reduce((itemSum, item) => {
+if(String(item.status || "").toLowerCase() === "rejected"){
+return itemSum;
+}
+return itemSum + ((Number(item.price) || 0) * (Number(item.quantity) || 0));
+}, 0);
+}, 0);
+
+document.getElementById("statProducts").textContent = sellerProducts.length;
+document.getElementById("statLowStock").textContent = lowStock;
+document.getElementById("statOrders").textContent = sellerOrders.length;
+document.getElementById("statRevenue").textContent = formatCurrency(revenue);
+}
+
+function renderProducts(){
+const container = document.getElementById("medicine-container");
+
+if(!sellerProducts.length){
+container.innerHTML = `
+<div class="empty-state">
+<h3>No products added yet</h3>
+<p>Add your first item from the form above to start building your catalog.</p>
+</div>
+`;
+return;
+}
+
+const visibleProducts = sellerProducts.slice(0, 6);
+container.innerHTML = visibleProducts.map(product => {
+const image = product.images && product.images.length ? product.images[0] : "default.png";
+const stock = Number(product.stock) || 0;
+const stockClass = stock <= 5 ? "badge-danger" : "badge-success";
+
+return `
+<article class="product-card" data-id="${product._id}">
+<div class="product-image-wrap">
+<img src="/uploads/${escapeHtml(image)}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
+<span class="badge ${stockClass}">${stock <= 5 ? "Low Stock" : "In Stock"}</span>
+</div>
+
+<div class="product-body">
+<div class="product-top">
+<div>
+<h3>${escapeHtml(product.medicine_name)}</h3>
+<p class="product-brand">${escapeHtml(product.brand || "Unbranded")}</p>
+</div>
+<strong>${formatCurrency(product.price)}</strong>
+</div>
+
+<div class="product-meta">
+<span>${escapeHtml(formatCategory(product.category))}</span>
+<span>Stock: ${stock}</span>
+<span>Expiry: ${escapeHtml(formatDate(product.expiry_date))}</span>
+<span>Manufacturer: ${escapeHtml(product.manufacturer || "Not added")}</span>
+<span>Prescription: ${escapeHtml(product.prescription_required || "No")}</span>
+</div>
+<div class="product-actions">
+<button type="button" class="ghost-btn" data-action="preview">Preview</button>
+<button type="button" class="ghost-btn" data-action="edit">Edit</button>
+<button type="button" class="danger-btn" data-action="delete">Delete</button>
+</div>
+</div>
+</article>
+`;
+}).join("");
+}
+
+function getPrescriptionStatusClass(status){
+const normalized = String(status || "").toLowerCase();
+
+if(normalized === "approved" || normalized === "not required") return "status-success";
+if(normalized === "rejected") return "status-danger";
+return "status-warning";
+}
+
+function getSellerOrderItems(order){
+const items = Array.isArray(order.medicines) ? order.medicines : [];
+return items.filter(item => item.seller_email === sellerEmail);
+}
+
+function getSellerOrderPrescriptions(order, sellerItems){
+const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+const sellerKeys = new Set(
+sellerItems.map(item => `${String(item.seller_email || "").toLowerCase()}::${String(item.medicine_name || "").toLowerCase()}`)
+);
+
+return prescriptions.filter(entry => {
+const entryKey = `${String(entry.seller_email || "").toLowerCase()}::${String(entry.medicine_name || "").toLowerCase()}`;
+
+if(sellerKeys.has(entryKey)){
+return true;
+}
+
+return sellerItems.some(item =>
+String(item.medicine_name || "").toLowerCase() === String(entry.medicine_name || "").toLowerCase()
+);
+});
+}
+
+function getSellerPendingApprovalItems(order, sellerItems){
+return sellerItems.filter(item =>
+item.requires_prescription &&
+String(item.status || "") === "Waiting for Approval"
+);
+}
+
+function openOrderTracking(orderId, page){
+const order = sellerOrders.find(entry => entry._id === orderId);
+if(!order) return;
+
+localStorage.setItem("selectedOrderForTracking", JSON.stringify(order));
+window.location.href = `${page}?order_id=${encodeURIComponent(orderId)}`;
+}
+
+function copyDeliveryLink(orderId){
+const link = `${window.location.origin}/DELIVERY-TRACKER.HTML?order_id=${encodeURIComponent(orderId)}`;
+navigator.clipboard.writeText(link).then(() => {
+showStatus("Delivery link copied to clipboard!", "success");
+}).catch(err => {
+console.error("Failed to copy link:", err);
+showStatus("Failed to copy link. Please copy manually: " + link, "error");
+});
+}
+
+function shareOnWhatsApp(orderId){
+const link = `${window.location.origin}/DELIVERY-TRACKER.HTML?order_id=${encodeURIComponent(orderId)}`;
+const message = `Delivery Tracking Link: ${link}`;
+const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+window.open(whatsappUrl, '_blank');
+}
+
+function buildOrderActions(order, sellerItems){
+const sellerPrescriptions = getSellerOrderPrescriptions(order, sellerItems);
+const pendingSellerItems = getSellerPendingApprovalItems(order, sellerItems);
+const prescriptionLinks = sellerPrescriptions.length
+? `<div class="prescription-links">${sellerPrescriptions.map(entry => `
+<a
+href="/uploads/${encodeURIComponent(entry.file)}"
+target="_blank"
+rel="noopener noreferrer"
+class="ghost-btn ui-btn-sm"
+title="View prescription for ${escapeHtml(entry.medicine_name || "medicine")}"
+>
+View ${escapeHtml(getCompactPrescriptionLabel(entry.medicine_name))}
+</a>
+`).join("")}</div>`
+: `<span class="status-note status-success">No Prescription Required</span>`;
+
+const orderStatus = normalizeOrderStatusLabel(order.order_status || order.status);
+    const trackingButtons = "";
+
+if(pendingSellerItems.length){
+return `
+<div class="order-actions">
+${prescriptionLinks}
+<button type="button" class="primary-btn ui-btn-sm" onclick="updatePrescriptionStatus('${escapeHtml(order._id)}', 'Approved')">Approve Prescription</button>
+<button type="button" class="danger-btn ui-btn-sm" onclick="updatePrescriptionStatus('${escapeHtml(order._id)}', 'Rejected')">Reject Prescription</button>
+</div>
+`;
+}
+
+if(orderStatus === "Waiting for Approval"){
+return `
+<div class="order-actions">
+${prescriptionLinks}
+<button type="button" class="primary-btn ui-btn-sm" onclick="updateOrderStatus('${escapeHtml(order._id)}', 'Accepted')">Accept Order</button>
+<button type="button" class="danger-btn ui-btn-sm" onclick="updateOrderStatus('${escapeHtml(order._id)}', 'Rejected')">Reject Order</button>
+
+</div>
+`;
+}
+
+  const isDelivered = localStorage.getItem("delivered_" + order._id) === "true";
+  
+  if (orderStatus === "Accepted" && !isDelivered) {
+    return `
+    <div class="order-actions">
+    ${prescriptionLinks}
+    ${trackingButtons}
+    <button class="deliver-btn ui-btn-sm" onclick="markAsDelivered('${escapeHtml(order._id)}')">Mark as Delivered</button>
+    </div>
+    `;
+  }
+  
+  const displayStatus = isDelivered ? "Delivered" : orderStatus;
+  
+  return `
+  <div class="order-actions">
+  ${prescriptionLinks}
+  ${trackingButtons}
+  <span class="status-note order-status-chip ${getStatusClass(displayStatus)}">${escapeHtml(displayStatus)}</span>
+  </div>
+  `;
+}
+
+function renderOrders(){
+const container = document.getElementById("orders-container");
+
+if(!sellerOrders.length){
+container.innerHTML = `
+<div class="empty-state">
+<h3>No orders received yet</h3>
+<p>Once buyers place an order for your products, it will appear here.</p>
+</div>
+`;
+return;
+}
+
+const sortedOrders = [...sellerOrders].sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+const visibleOrders = sortedOrders.slice(0, 6);
+const hasOlderOrders = sortedOrders.length > 6;
+
+container.innerHTML = visibleOrders.map(order => {
+const sellerItems = getSellerOrderItems(order);
+
+if(!sellerItems.length){
+return "";
+}
+
+const sellerTotal = sellerItems.reduce((sum, item) => {
+if(String(item.status || "").toLowerCase() === "rejected"){
+return sum;
+}
+return sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0));
+}, 0);
+const sellerPrescriptions = getSellerOrderPrescriptions(order, sellerItems);
+const pendingSellerItems = getSellerPendingApprovalItems(order, sellerItems);
+const prescriptionStatus = sellerPrescriptions.length
+? (order.prescription_status || "Pending")
+: "Not Required";
+const itemMarkup = sellerItems.map(item => `
+<li class="order-item">
+<img src="/uploads/${escapeHtml(item.image || "default.png")}" alt="${escapeHtml(item.medicine_name || "Product")}">
+<div>
+<strong class="ui-line-clamp-1" title="${escapeHtml(item.medicine_name || "Unnamed Product")}">${escapeHtml(item.medicine_name || "Unnamed Product")}</strong>
+<p>Qty: ${escapeHtml(item.quantity || 1)} | ${formatCurrency(item.price)}</p>
+<p>${escapeHtml(item.requires_prescription ? "Prescription Required" : "No Prescription")} | Status: ${escapeHtml(normalizeOrderStatusLabel(item.status || "Ordered"))}</p>
+</div>
+</li>
+`).join("");
+
+return `
+<article class="order-card">
+<div class="order-head">
+<div>
+<p class="order-label">Buyer</p>
+<h3 class="ui-line-clamp-2" title="${escapeHtml(order.buyer_details?.name || "Unknown Buyer")}">${escapeHtml(order.buyer_details?.name || "Unknown Buyer")}</h3>
+<p class="buyer-email ui-line-clamp-1" title="${escapeHtml(order.buyer_details?.email || order.buyer_email || "Email not available")}">${escapeHtml(order.buyer_details?.email || order.buyer_email || "Email not available")}</p>
+</div>
+<span class="status-pill ${getStatusClass(normalizeOrderStatusLabel(order.order_status || order.status))}">${escapeHtml(normalizeOrderStatusLabel(order.order_status || order.status))}</span>
+</div>
+
+<div class="buyer-contact">
+<span>Mobile: ${escapeHtml(order.buyer_details?.mobile || "Not provided")}</span>
+<span>Address: ${escapeHtml([
+order.buyer_details?.address || "",
+order.buyer_details?.city || "",
+order.buyer_details?.pincode || ""
+].filter(Boolean).join(", ") || "Not provided")}</span>
+</div>
+
+<div class="order-meta">
+    <span>Date: ${escapeHtml(formatDate(order.order_date))}</span>
+    <span>Time: ${order.orderTime || ""}</span>
+    <span>Items: ${sellerItems.length}</span>
+    <span>Seller Total: ${formatCurrency(sellerTotal)}</span>
+    <span>Prescription Status: ${escapeHtml(prescriptionStatus)}</span>
+    <span>Pending Prescription Items: ${pendingSellerItems.length}</span>
+    <p>Distance: ${formatDistance(order.distanceKm)}</p>
+    <p>ETA: ${formatETA(order.eta)}</p>
+    <p>Delivery Phone: ${order.deliveryBoyPhone || "Not Assigned"}</p>
+</div>
+
+${buildOrderActions(order, sellerItems)}
+
+<ul class="order-items">
+${itemMarkup || `<li class="order-item"><div><strong>No order items found</strong></div></li>`}
+</ul>
+
+<div class="delivery-assign-block" onclick="event.stopPropagation()">
+<p class="ui-assign-label" style="font-size:13px;font-weight:700;margin:12px 0 8px;color:#102033;">Assign delivery contact</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="tel" class="ghost-btn" style="flex:1;min-width:160px;padding:10px 14px;border:1px solid #d6e0ea;border-radius:12px;background:#fff" id="deliveryPhone-${escapeHtml(String(order._id))}" placeholder="Delivery boy phone" value="${escapeHtml(order.deliveryBoyPhone || "")}">
+<button type="button" class="primary-btn ui-btn-sm" onclick="event.stopPropagation();assignSellerDelivery('${escapeHtml(String(order._id))}')">Assign Delivery Contact</button>
+</div>
+</div>
+</article>
+`;
+}).filter(Boolean).join("");
+}
+
+async function updateOrderStatus(orderId, status){
+try{
+await window.fetchJson(`${BASE_URL}/api/update-order-status`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+order_id: orderId,
+status
+})
+}, "Server error or invalid response");
+
+showStatus(`Order ${status.toLowerCase()} successfully.`, "success");
+await loadSellerOrders();
+}
+catch(error){
+console.error("Error updating order status:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+}
+
+function markAsDelivered(orderId) {
+  localStorage.setItem("delivered_" + orderId, "true");
+  alert("Order marked as delivered");
+  location.reload();
+}
+
+async function updatePrescriptionStatus(orderId, status){
+try{
+await window.fetchJson(`${BASE_URL}/api/update-prescription-status`, {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+order_id: orderId,
+status
+})
+}, "Server error or invalid response");
+
+showStatus(`Prescription ${status.toLowerCase()} successfully.`, "success");
+await loadSellerOrders();
+}
+catch(error){
+console.error("Error updating prescription status:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+}
+
+function openEditModal(productId){
+const product = getProductById(productId);
+if(!product) return;
+
+editingProductId = product._id;
+
+document.getElementById("editMedicineForm").reset();
+
+document.getElementById("edit_medicine_name").value = product.medicine_name || "";
+document.getElementById("edit_brand").value = product.brand || "";
+document.getElementById("edit_category").value = product.category || "TABLET";
+document.getElementById("edit_price").value = product.price ?? "";
+document.getElementById("edit_stock").value = product.stock ?? "";
+document.getElementById("edit_expiry_date").value = product.expiry_date ? String(product.expiry_date).slice(0, 10) : "";
+document.getElementById("edit_manufacturer").value = product.manufacturer || "";
+document.getElementById("edit_prescription_required").value = product.prescription_required || "No";
+document.getElementById("edit_description").value = product.description || "";
+
+updateImageHint("editImagesInput", "editImageHint", "Leave empty to keep current images.");
+
+const modal = document.getElementById("editModal");
+modal.classList.add("open");
+modal.setAttribute("aria-hidden", "false");
+}
+
+function closeEditModal(){
+editingProductId = null;
+const modal = document.getElementById("editModal");
+modal.classList.remove("open");
+modal.setAttribute("aria-hidden", "true");
+document.getElementById("editMedicineForm").reset();
+updateImageHint("editImagesInput", "editImageHint", "Leave empty to keep current images.");
+}
+
+async function handleAccountUpdate(event){
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const submitButton = document.getElementById("saveAccountBtn");
+  const previousEmail = sellerEmail;
+  setButtonLoading(submitButton, true, "Saving...");
+
+  try{
+    const formData = new FormData(form);
+
+    // Remove blank lat/lng so server ignores them
+    if(!String(formData.get("latitude") || "").trim() && !String(formData.get("longitude") || "").trim()){
+      formData.delete("latitude");
+      formData.delete("longitude");
+    }
+
+    const response = await fetch(`${BASE_URL}/api/seller-profile/${encodeURIComponent(previousEmail)}`, {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if(!response.ok || !result.success){
+      throw new Error(result.message || "Server error or invalid response");
+    }
+
+    syncSellerSession(result.email || previousEmail, result.profile || {});
+    closeAccountModal();
+    showStatus("Seller account updated successfully.", "success");
+    await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+  }
+  catch(error){
+    console.error("Error updating seller account:", error);
+    showStatus(error.message || "Failed to update account", "error");
+  }
+  finally{
+    setButtonLoading(submitButton, false, "Saving...");
+  }
+}
+
+function previewAccountShopImage(event){
+  const file = event.target.files[0];
+  const textEl = document.getElementById("accountShopImageText");
+  const currentImageBox = document.getElementById("accountCurrentImage");
+
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e){
+    currentImageBox.innerHTML = `
+      <img src="${e.target.result}" alt="New shop image preview" class="account-current-img">
+      <span class="account-current-label account-current-label--new">New image (not saved yet)</span>
+    `;
+    textEl.textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleAddProduct(event){
+event.preventDefault();
+
+const form = event.currentTarget;
+const submitButton = document.getElementById("addProductBtn");
+setButtonLoading(submitButton, true, "Adding...");
+
+try{
+const formData = new FormData(form);
+formData.append("seller_email", sellerEmail);
+
+await window.fetchJson(`${BASE_URL}/api/add-medicine`, {
+method: "POST",
+body: formData
+}, "Server error or invalid response");
+
+form.reset();
+updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
+showStatus("Product added successfully.", "success");
+
+await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+}
+catch(error){
+console.error("Error adding product:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+finally{
+setButtonLoading(submitButton, false, "Adding...");
+}
+}
+
+async function handleEditProduct(event){
+event.preventDefault();
+
+if(!editingProductId){
+showStatus("Select a product to edit first.", "error");
+return;
+}
+
+const form = event.currentTarget;
+const submitButton = document.getElementById("saveEditBtn");
+setButtonLoading(submitButton, true, "Saving...");
+
+try{
+const formData = new FormData(form);
+
+await window.fetchJson(`${BASE_URL}/api/update-medicine/${editingProductId}`, {
+method: "PUT",
+body: formData
+}, "Server error or invalid response");
+
+closeEditModal();
+showStatus("Product updated successfully.", "success");
+await loadSellerMedicines();
+}
+catch(error){
+console.error("Error updating product:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+finally{
+setButtonLoading(submitButton, false, "Saving...");
+}
+}
+
+async function deleteMedicine(productId){
+if(!confirm("Delete this product?")) return;
+
+try{
+await window.fetchJson(`${BASE_URL}/api/delete-medicine/${productId}`, {
+method: "DELETE"
+}, "Server error or invalid response");
+
+showStatus("Product deleted successfully.", "success");
+await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+}
+catch(error){
+console.error("Error deleting product:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+}
+
+async function loadSellerMedicines(){
+const container = document.getElementById("medicine-container");
+container.innerHTML = `<div class="empty-state"><h3>Loading products...</h3><p>Please wait while your catalog is fetched.</p></div>`;
+
+try{
+sellerProducts = await window.fetchJson(
+`${BASE_URL}/api/seller-medicines/${encodeURIComponent(sellerEmail)}`,
+{},
+"Server error or invalid response"
+);
+renderProducts();
+renderStats();
+}
+catch(error){
+console.error("Error loading products:", error);
+sellerProducts = [];
+container.innerHTML = `<div class="empty-state"><h3>Unable to load products</h3><p>${escapeHtml(window.getApiErrorMessage(error))}</p></div>`;
+renderStats();
+}
+}
+
+async function loadSellerOrders(){
+const container = document.getElementById("orders-container");
+container.innerHTML = `<div class="empty-state"><h3>Loading orders...</h3><p>Please wait while recent orders are fetched.</p></div>`;
+
+try{
+sellerOrders = await window.fetchJson(
+`${BASE_URL}/api/seller-orders/${encodeURIComponent(sellerEmail)}`,
+{},
+"Server error or invalid response"
+);
+renderOrders();
+renderStats();
+}
+catch(error){
+console.error("Error loading orders:", error);
+sellerOrders = [];
+container.innerHTML = `<div class="empty-state"><h3>Unable to load orders</h3><p>${escapeHtml(window.getApiErrorMessage(error))}</p></div>`;
+renderStats();
+}
+}
+
+function handleProductGridClick(event){
+const actionButton = event.target.closest("button[data-action]");
+const card = event.target.closest(".product-card");
+
+if(!card) return;
+
+const productId = card.dataset.id;
+if(!productId) return;
+
+if(!actionButton){
+openProductPage(productId);
+return;
+}
+
+const action = actionButton.dataset.action;
+
+if(action === "preview"){
+openProductPage(productId);
+return;
+}
+
+if(action === "edit"){
+openEditModal(productId);
+return;
+}
+
+if(action === "delete"){
+deleteMedicine(productId);
+}
+}
+
+document.getElementById("medicineForm").addEventListener("submit", handleAddProduct);
+document.getElementById("accountForm").addEventListener("submit", handleAccountUpdate);
+document.getElementById("editMedicineForm").addEventListener("submit", handleEditProduct);
+document.getElementById("medicine-container").addEventListener("click", handleProductGridClick);
+document.getElementById("refreshProductsBtn").addEventListener("click", loadSellerMedicines);
+document.getElementById("refreshOrdersBtn").addEventListener("click", loadSellerOrders);
+document.getElementById("addImagesInput").addEventListener("change", () => {
+updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
+});
+document.getElementById("editImagesInput").addEventListener("change", () => {
+updateImageHint("editImagesInput", "editImageHint", "Leave empty to keep current images.");
+});
+document.getElementById("accountModal").addEventListener("click", (event) => {
+if(event.target.id === "accountModal"){
+closeAccountModal();
+}
+});
+document.getElementById("editModal").addEventListener("click", (event) => {
+if(event.target.id === "editModal"){
+closeEditModal();
+}
+});
+document.addEventListener("keydown", (event) => {
+if(event.key === "Escape"){
+closeAccountModal();
+closeEditModal();
+}
+});
+
+// Search functionality
+const searchInput = document.getElementById("searchInput");
+
+searchInput.addEventListener("input", function () {
+  const val = this.value.toLowerCase();
+
+  document.querySelectorAll(".product-card").forEach(card => {
+    const text = card.innerText.toLowerCase();
+    card.style.display = text.includes(val) ? "block" : "none";
+  });
+});
+
+async function initDashboard(){
+loadNavbar();
+renderSellerAccount();
+await loadSellerProfile();
+await window.syncMedDeliverDeviceLocation();
+await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+}
+
+async function assignSellerDelivery(orderId){
+if(!sellerEmail) return;
+const phoneInput = document.getElementById(`deliveryPhone-${orderId}`);
+const phone = phoneInput ? phoneInput.value.trim() : "";
+
+if(!phone){
+showStatus("Please enter delivery boy phone number", "error");
+return;
+}
+
+try{
+await window.fetchJson(`${BASE_URL}/api/assign-delivery`, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ orderId, phone })
+}, "Server error or invalid response");
+
+showStatus("Delivery contact assigned successfully", "success");
+await loadSellerOrders();
+}
+catch(error){
+console.error("Error assigning delivery contact:", error);
+showStatus(window.getApiErrorMessage(error), "error");
+}
+}
+
+if(sellerEmail){
+initDashboard();
+}
+</script>
+
+</body>
+</html>

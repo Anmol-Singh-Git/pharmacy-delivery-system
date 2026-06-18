@@ -1,0 +1,282 @@
+// Dynamic base URL - automatically works on localhost, network IP, ngrok, or any domain
+// This ensures the app works on: localhost:5000, 192.168.x.x:5000, ngrok URLs, and production domains
+window.API_BASE = window.location.origin;
+
+window.getCartItemKey = function(item = {}) {
+  return String(
+    item.medicine_id ||
+    item._id ||
+    [item.medicine_name || "", item.seller_email || ""].join("::")
+  );
+};
+
+window.getDistinctCartCount = function() {
+  try {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    return new Set(cart.map(window.getCartItemKey).filter(Boolean)).size;
+  } catch (error) {
+    console.error("Unable to read cart count:", error);
+    return 0;
+  }
+};
+
+window.getCartNavLabel = function() {
+  return `Cart (${window.getDistinctCartCount()})`;
+};
+
+window.refreshCartNavLabel = function() {
+  document.querySelectorAll('.navbar nav a[href="CARTPAGE.HTML"]').forEach(link => {
+    link.textContent = window.getCartNavLabel();
+  });
+};
+
+window.parseJsonResponse = async function(response) {
+  const text = await response.text();
+
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (err) {
+    console.error("Invalid JSON:", text);
+    throw new Error("Server did not return JSON");
+  }
+};
+
+window.getApiErrorMessage = function(error, fallbackMessage = "Server error or invalid response") {
+  if (!error) {
+    return fallbackMessage;
+  }
+
+  if (error.message === "Server did not return JSON") {
+    return fallbackMessage;
+  }
+
+  return error.message || fallbackMessage;
+};
+
+window.fetchJson = async function(url, options = {}, fallbackMessage = "Server error or invalid response") {
+  console.log("Calling API...", url);
+
+  const response = await fetch(url, options);
+  const data = await window.parseJsonResponse(response);
+
+  if (!response.ok) {
+    throw new Error(
+      (data && (data.message || data.error)) || fallbackMessage
+    );
+  }
+
+  return data;
+};
+
+// Global helper functions
+function formatETA(eta) {
+  const s = eta == null ? "" : String(eta).trim();
+  if (!s || /^calculating/i.test(s)) {
+    return "Location unavailable";
+  }
+  return s;
+}
+
+function formatDistance(d) {
+  const n = Number(d);
+  return Number.isFinite(n) ? n.toFixed(1) + " km" : "N/A";
+}
+
+// Attach to window for global access
+window.formatETA = formatETA;
+window.formatDistance = formatDistance;
+
+window.MD_LAT_KEY = "md_user_lat";
+window.MD_LNG_KEY = "md_user_lng";
+
+window.readMedDeliverStoredCoords = function readMedDeliverStoredCoords() {
+  const lat = Number(localStorage.getItem(window.MD_LAT_KEY));
+  const lng = Number(localStorage.getItem(window.MD_LNG_KEY));
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { latitude: lat, longitude: lng };
+  }
+  return null;
+};
+
+window.calculateDistance = function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) *
+      Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+};
+
+window.getBuyerLatLngForEta = function getBuyerLatLngForEta() {
+  let lat = Number(localStorage.getItem("lat"));
+  let lng = Number(localStorage.getItem("lng"));
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    return { lat, lng };
+  }
+  const r = window.readMedDeliverStoredCoords && window.readMedDeliverStoredCoords();
+  if (r && Number.isFinite(r.latitude) && Number.isFinite(r.longitude)) {
+    return { lat: r.latitude, lng: r.longitude };
+  }
+  try {
+    const bp = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+    const loc = bp.location;
+    lat = Number(loc?.latitude ?? loc?.lat);
+    lng = Number(loc?.longitude ?? loc?.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  return null;
+};
+
+window.sellerLatLngFromProductData = function sellerLatLngFromProductData(sellerDetails) {
+  if (!sellerDetails || typeof sellerDetails !== "object") {
+    return null;
+  }
+  const lat = Number(
+    sellerDetails.latitude ??
+      sellerDetails.lat ??
+      sellerDetails.location?.latitude ??
+      sellerDetails.location?.lat
+  );
+  const lng = Number(
+    sellerDetails.longitude ??
+      sellerDetails.lng ??
+      sellerDetails.location?.longitude ??
+      sellerDetails.location?.lng
+  );
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+  return { lat, lng };
+};
+
+window.hydrateBuyerCoordsFromServer = async function hydrateBuyerCoordsFromServer() {
+  if (window.getBuyerLatLngForEta && window.getBuyerLatLngForEta()) {
+    return true;
+  }
+  const email = localStorage.getItem("buyer_email");
+  if (!email) {
+    return false;
+  }
+  try {
+    const response = await fetch(
+      `${window.API_BASE}/api/buyer-coords/${encodeURIComponent(email)}`
+    );
+    const data = await window.parseJsonResponse(response);
+    if (!response.ok || !data || !data.success) {
+      return false;
+    }
+    const lat = Number(data.latitude);
+    const lng = Number(data.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return false;
+    }
+    try {
+      localStorage.setItem("lat", String(lat));
+      localStorage.setItem("lng", String(lng));
+      localStorage.setItem(window.MD_LAT_KEY, String(lat));
+      localStorage.setItem(window.MD_LNG_KEY, String(lng));
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      const bp = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+      bp.location = { latitude: lat, longitude: lng };
+      localStorage.setItem("buyer_profile", JSON.stringify(bp));
+    } catch (e) {
+      /* ignore */
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+window.computeEtaLabelForCartOrCheckout = function computeEtaLabelForCartOrCheckout(items) {
+  const buyer = window.getBuyerLatLngForEta && window.getBuyerLatLngForEta();
+  if (!buyer) {
+    return "Location unavailable";
+  }
+  let maxKm = 0;
+  let any = false;
+  const seen = new Set();
+  for (const item of items || []) {
+    const key = String(item.seller_email || "").toLowerCase();
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    const sl = window.sellerLatLngFromProductData(item.seller_details);
+    if (!sl) {
+      continue;
+    }
+    seen.add(key);
+    any = true;
+    const d = window.calculateDistance(buyer.lat, buyer.lng, sl.lat, sl.lng);
+    if (Number.isFinite(d) && d > maxKm) {
+      maxKm = d;
+    }
+  }
+  if (!any) {
+    return "Location unavailable";
+  }
+  const etaMin = Math.round(maxKm * 10);
+  const etaMax = Math.round(maxKm * 15);
+  return `${etaMin} - ${etaMax} mins`;
+};
+
+window.syncMedDeliverDeviceLocation = function syncMedDeliverDeviceLocation() {
+  const buyerEmail = localStorage.getItem("buyer_email");
+  const sellerEmail = localStorage.getItem("seller_email");
+  const email = buyerEmail || sellerEmail;
+  const role = buyerEmail ? "buyer" : "seller";
+  if (!email || !navigator.geolocation) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
+        try {
+          localStorage.setItem(window.MD_LAT_KEY, String(latitude));
+          localStorage.setItem(window.MD_LNG_KEY, String(longitude));
+          localStorage.setItem("lat", String(latitude));
+          localStorage.setItem("lng", String(longitude));
+        } catch (e) {
+          /* ignore */
+        }
+
+        if (buyerEmail) {
+          try {
+            const bp = JSON.parse(localStorage.getItem("buyer_profile") || "{}");
+            bp.location = { latitude, longitude };
+            localStorage.setItem("buyer_profile", JSON.stringify(bp));
+          } catch (e) {
+            /* ignore */
+          }
+        }
+
+        try {
+          await fetch(`${window.API_BASE}/api/update-location`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, role, latitude, longitude })
+          });
+        } catch (e) {
+          /* ignore — non-blocking */
+        }
+        resolve();
+      },
+      () => resolve(),
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 }
+    );
+  });
+};
