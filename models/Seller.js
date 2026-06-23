@@ -33,7 +33,17 @@ const sellerSchema = new mongoose.Schema({
   pharmacy_name: String,
   mobile: String,
   email: String,
-  password: String,
+  password: {
+    type: String,
+    required: [true, "Password is required"],
+    validate: {
+      validator: function(v) {
+        // Enforces: Min 8 chars, Alphanumeric only, >=1 Letter, >=1 Number, No character repeated 3x consecutively
+        return /^(?=.*[A-Za-z])(?=.*\d)(?!.*(.)\1\1)[A-Za-z0-9]{8,}$/.test(v);
+      },
+      message: "Password must be at least 8 alphanumeric characters long, contain at least 1 letter, 1 number, and cannot have any character repeat 3 times consecutively."
+    }
+  },
   address: String,
   city: String,
   pincode: String,

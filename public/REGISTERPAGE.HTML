@@ -163,6 +163,24 @@ const form = event.currentTarget;
 const formData = new FormData(form);
 const data = Object.fromEntries(formData.entries());
 
+const password = data.password;
+if (password.length < 8) {
+  alert("Password must be at least 8 characters long.");
+  return;
+}
+if (!/^[a-zA-Z0-9]+$/.test(password)) {
+  alert("Password must contain only letters and numbers (no special characters).");
+  return;
+}
+if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+  alert("Password must contain at least 1 letter and at least 1 number.");
+  return;
+}
+if (/(.)\1{2}/.test(password)) {
+  alert("Password cannot contain any character repeated three times consecutively.");
+  return;
+}
+
 try{
 const result = await window.fetchJson(`${BASE_URL}/api/buyer-register`, {
 method: "POST",
