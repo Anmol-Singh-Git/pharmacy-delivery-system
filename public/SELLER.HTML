@@ -153,10 +153,29 @@ if (/(.)\1{2}/.test(password)) {
   return;
 }
 
+const fileInput = document.getElementById("shopImageInput");
+const file = fileInput.files[0];
+
+let base64Image = "";
+if (file) {
+  base64Image = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+const data = Object.fromEntries(formData.entries());
+data.shop_image = base64Image;
+
 try{
   const response = await fetch(`${BASE_URL}/api/register`, {
     method: "POST",
-    body: formData
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
   });
 
   const result = await response.json();

@@ -657,7 +657,7 @@ seller_details: sellerMap.get(plainMedicine.seller_email) || null
 /* ================= REGISTRATION ================= */
 /* ================= SELLER REGISTER ================= */
 
-app.post("/api/register", upload.single("shop_image"), async (req, res) => {
+app.post("/api/register", async (req, res) => {
 
 try {
 
@@ -693,7 +693,7 @@ address: req.body.address,
 city: req.body.city,
 pincode: req.body.pincode,
 gstin: req.body.gstin,
-shop_image: req.file ? req.file.filename : "",
+shop_image: req.body.shop_image || "",
 latitude: sellerCoordinates?.latitude,
 longitude: sellerCoordinates?.longitude,
 location: buildSellerGeoLocation(sellerCoordinates)
