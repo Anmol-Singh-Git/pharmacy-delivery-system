@@ -1770,8 +1770,8 @@ pincode: String(req.body.pincode || "").trim(),
 gstin: String(req.body.gstin || "").trim()
 };
 
-if(req.file){
-  sellerUpdate.shop_image = req.file.filename;
+if(req.body.shop_image){
+  sellerUpdate.shop_image = req.body.shop_image;
 }
 
 if(
@@ -1848,9 +1848,6 @@ res.status(500).json({ success: false, message: "Unable to update seller profile
 
 app.put("/api/seller-profile/:email", handleSellerProfileUpdate);
 app.post("/api/seller-profile/:email", handleSellerProfileUpdate);
-
-app.put("/api/seller-profile/:email", upload.single("shop_image"), handleSellerProfileUpdate);
-app.post("/api/seller-profile/:email", upload.single("shop_image"), handleSellerProfileUpdate);
 
 app.put("/api/seller-profile/:email/location", async (req, res) => {
 

@@ -1067,16 +1067,35 @@ async function handleAccountUpdate(event){
 
   try{
     const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
 
     // Remove blank lat/lng so server ignores them
-    if(!String(formData.get("latitude") || "").trim() && !String(formData.get("longitude") || "").trim()){
-      formData.delete("latitude");
-      formData.delete("longitude");
+    if(!String(data.latitude || "").trim() && !String(data.longitude || "").trim()){
+      delete data.latitude;
+      delete data.longitude;
+    }
+
+    const fileInput = document.getElementById("accountShopImageInput");
+    const file = fileInput.files ? fileInput.files[0] : null;
+
+    if (file) {
+      const base64Image = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      data.shop_image = base64Image;
+    } else {
+      delete data.shop_image;
     }
 
     const response = await fetch(`${BASE_URL}/api/seller-profile/${encodeURIComponent(previousEmail)}`, {
       method: "POST",
-      body: formData
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
     });
 
     const result = await response.json();
