@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+mongoose.set('bufferCommands', false);
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -38,11 +39,22 @@ const upload = multer({ storage: storage });
 
 /* ================= DATABASE ================= */
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver")
+const connectDatabase = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+  try {
+    await mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver");
+    console.log("Database connected successfully");
+  } catch (error) {
+    console.error("Database connection failure:", error);
+  }
+};
 
-.then(() => console.log("Database connected"))
-
-.catch(err => console.log("DB Error:", err));
+app.use(async (req, res, next) => {
+  await connectDatabase();
+  next();
+});
 
 const PORT = process.env.PORT || 5000;
 
