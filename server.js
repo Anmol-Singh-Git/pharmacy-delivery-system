@@ -907,6 +907,8 @@ app.post("/api/add-medicine", async (req,res)=>{
 
 try{
 
+const images = req.body.images || [];
+
 const medicine = new Medicine({
 
 medicine_name: req.body.medicine_name,
@@ -919,7 +921,7 @@ manufacturer: req.body.manufacturer,
 prescription_required: req.body.prescription_required,
 description: req.body.description,
   seller_email: req.body.seller_email,
-  images: req.body.image ? [req.body.image] : [],
+  images,
   delivery_phone: req.body.delivery_phone
 
 });
