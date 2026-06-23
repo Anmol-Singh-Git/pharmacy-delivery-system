@@ -1152,11 +1152,29 @@ setButtonLoading(submitButton, true, "Adding...");
 
 try{
 const formData = new FormData(form);
-formData.append("seller_email", sellerEmail);
+const data = Object.fromEntries(formData.entries());
+data.seller_email = sellerEmail;
+
+const fileInput = document.getElementById("addImagesInput");
+const file = fileInput.files ? fileInput.files[0] : null;
+let base64Image = "";
+
+if (file) {
+  base64Image = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+data.image = base64Image;
 
 await window.fetchJson(`${BASE_URL}/api/add-medicine`, {
 method: "POST",
-body: formData
+headers: {
+  "Content-Type": "application/json"
+},
+body: JSON.stringify(data)
 }, "Server error or invalid response");
 
 form.reset();

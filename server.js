@@ -903,7 +903,7 @@ app.post("/api/update-location", async (req, res) => {
 
 /* ================= ADD MEDICINE ================= */
 
-app.post("/api/add-medicine", upload.array("images", 5), async (req,res)=>{
+app.post("/api/add-medicine", async (req,res)=>{
 
 try{
 
@@ -919,7 +919,7 @@ manufacturer: req.body.manufacturer,
 prescription_required: req.body.prescription_required,
 description: req.body.description,
   seller_email: req.body.seller_email,
-  images: req.files.map(file => file.filename),
+  images: req.body.image ? [req.body.image] : [],
   delivery_phone: req.body.delivery_phone
 
 });
@@ -2248,6 +2248,24 @@ app.put("/api/update-medicine/:id", upload.array("images", 5), async (req, res) 
     res.status(500).json({ error: err.message });
   }
 
+});
+
+app.use("/uploads", (req, res, next) => {
+  const decodedPath = decodeURIComponent(req.path);
+  const filename = decodedPath.replace(/^\//, "");
+  if (filename.startsWith("data:")) {
+    const matches = filename.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+    if (matches) {
+      const contentType = matches[1];
+      const buffer = Buffer.from(matches[2], 'base64');
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Content-Length': buffer.length
+      });
+      return res.end(buffer);
+    }
+  }
+  next();
 });
 
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
