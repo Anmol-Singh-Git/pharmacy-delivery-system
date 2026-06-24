@@ -520,7 +520,7 @@ let index = 0;
 
 const interval = setInterval(() => {
 index = (index + 1) % images.length;
-imgTag.src = "/uploads/" + images[index];
+imgTag.src = images[index] && images[index] !== "default.png" ? images[index] : "placeholder-med.png";
 }, 1500);
 
 sliderIntervals.set(card, interval);
@@ -538,7 +538,7 @@ const imgTag = card.querySelector(".product-img");
 const first = imgTag.getAttribute("data-first");
 
 if(first){
-imgTag.src = "/uploads/" + first;
+imgTag.src = first;
 }
 }
 
@@ -622,7 +622,7 @@ return;
 }
 
 list.innerHTML = matches.map(product => {
-const firstImg = (product.images && product.images.length) ? product.images[0] : "default.png";
+const firstImg = (product.images && product.images.length && product.images[0] !== "default.png") ? product.images[0] : "placeholder-med.png";
 const name = escapeHtml(product.medicine_name || "Unnamed Product");
 const details = [
 product.brand ? escapeHtml(product.brand) : "",
@@ -631,7 +631,7 @@ product.category ? escapeHtml(formatCategory(product.category)) : ""
 
 return `
 <a href="PRODUCTPAGE.HTML" class="suggestion-item" onclick="openSuggestedProduct('${encodeProduct(product)}')">
-<img src="/uploads/${escapeHtml(firstImg)}" alt="${name}">
+<img src="${product.images && product.images.length > 0 ? escapeHtml(product.images[0]) : 'placeholder-med.png'}" alt="${name}">
 <div class="suggestion-info">
 <h4>${name}</h4>
 <p>${details || "Healthcare Product"}</p>
@@ -807,7 +807,7 @@ const limited = allProducts.slice(0, 20);
 container.innerHTML = "";
 
 limited.forEach(item => {
-const firstImg = (item.images && item.images.length) ? item.images[0] : "default.png";
+const firstImg = (item.images && item.images.length && item.images[0] !== "default.png") ? item.images[0] : "placeholder-med.png";
 const imagesData = JSON.stringify(item.images || []);
 
 container.innerHTML += `
@@ -816,7 +816,7 @@ container.innerHTML += `
 data-images='${imagesData}'
 onmouseenter="startSlider(this)"
 onmouseleave="stopSlider(this)">
-<img src="/uploads/${firstImg}"
+<img src="${item.images && item.images.length > 0 ? item.images[0] : 'placeholder-med.png'}"
 class="product-img"
 data-first="${firstImg}">
 <h4>${escapeHtml(item.medicine_name)}</h4>

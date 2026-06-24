@@ -629,12 +629,13 @@ return { latitude, longitude };
 }
 
 function resolveImageSrc(image){
-    if(!image){
-        return `${BASE_URL}/uploads/default.png`;
+    if(!image || image === "default.png"){
+        return "placeholder-med.png";
     }
-
-    const path = image.startsWith("/uploads") ? image : `/uploads/${image}`;
-    return `${BASE_URL}${path}`;
+    if(String(image).startsWith("data:") || String(image).startsWith("http") || String(image).startsWith("/")){
+        return image;
+    }
+    return `/uploads/${image}`;
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -869,7 +870,7 @@ ${medicines.map(med => {
     const imageUrl = resolveImageSrc(med.image);
     return `
 <div class="medicine-item">
-<img src="${imageUrl}" alt="${med.medicine_name || 'Medicine'}" loading="lazy" onerror="this.onerror=null;this.src='${BASE_URL}/uploads/default.png'">
+<img src="${imageUrl}" alt="${med.medicine_name || 'Medicine'}" loading="lazy" onerror="this.onerror=null;this.src='placeholder-med.png'">
 <div class="medicine-details">
 <h4>${med.medicine_name || "Unknown Medicine"}</h4>
 <p>Quantity: ${med.quantity || 0}</p>

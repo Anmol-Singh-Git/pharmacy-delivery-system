@@ -187,13 +187,11 @@ return `Rs ${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
 function getCartItemImage(item){
-const image = item.image || "default.png";
-
-if(String(image).startsWith("http") || String(image).startsWith("data:") || String(image).startsWith("/")){
-return image;
-}
-
-return `/uploads/${encodeURIComponent(image)}`;
+  const image = item.image || "";
+  if(image && image !== "default.png"){
+    return image;
+  }
+  return "placeholder-med.png";
 }
 
 function isPrescriptionRequired(item){

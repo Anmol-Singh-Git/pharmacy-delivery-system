@@ -914,7 +914,7 @@ const prescriptionStatus = sellerPrescriptions.length
 : "Not Required";
 const itemMarkup = sellerItems.map(item => `
 <li class="order-item">
-<img src="/uploads/${escapeHtml(item.image || "default.png")}" alt="${escapeHtml(item.medicine_name || "Product")}">
+<img src="${item.image && item.image !== 'default.png' ? escapeHtml(item.image) : 'placeholder-med.png'}" alt="${escapeHtml(item.medicine_name || "Product")}">
 <div>
 <strong class="ui-line-clamp-1" title="${escapeHtml(item.medicine_name || "Unnamed Product")}">${escapeHtml(item.medicine_name || "Unnamed Product")}</strong>
 <p>Qty: ${escapeHtml(item.quantity || 1)} | ${formatCurrency(item.price)}</p>

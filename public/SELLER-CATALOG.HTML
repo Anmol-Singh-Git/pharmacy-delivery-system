@@ -394,14 +394,14 @@ function renderCatalog(){
 
   summary.textContent = `Showing ${sorted.length} product${sorted.length === 1 ? "" : "s"}.`;
   container.innerHTML = sorted.map(product => {
-    const image = product.images && product.images.length ? product.images[0] : "default.png";
+    const image = product.images && product.images.length && product.images[0] !== "default.png" ? product.images[0] : "placeholder-med.png";
     const stock = Number(product.stock) || 0;
     const stockClass = stock <= 5 ? "badge-danger" : "badge-success";
 
     return `
       <article class="product-card" data-id="${product._id}">
         <div class="product-image-wrap">
-          <img src="/uploads/${escapeHtml(image)}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
+          <img src="${image && image !== 'default.png' ? escapeHtml(image) : 'placeholder-med.png'}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
           <span class="badge ${stockClass}">${stock <= 5 ? "Low Stock" : "In Stock"}</span>
         </div>
         <div class="product-body">

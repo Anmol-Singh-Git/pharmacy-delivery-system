@@ -516,7 +516,7 @@ listEl.innerHTML = "<p>No line items on this order.</p>";
 } else {
 listEl.innerHTML = lines.map((line) => `
 <div class="order-item-row">
-<img src="/uploads/${escapeHtml(line.image)}" alt="">
+<img src="${line.image && line.image !== 'default.png' ? escapeHtml(line.image) : 'placeholder-med.png'}" alt="">
 <div class="order-item-details">
 <strong>${escapeHtml(line.name)}</strong>
 <span>Qty: ${escapeHtml(String(line.qty))}</span>

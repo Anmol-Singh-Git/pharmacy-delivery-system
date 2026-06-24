@@ -31,7 +31,7 @@
 <div class="gallery-card" id="galleryCard">
 <div class="main-image-wrap" id="mainImageWrap">
 <div id="zoomLens" class="zoom-lens hidden"></div>
-<img id="mainProductImage" src="/uploads/default.png" alt="Product image">
+<img id="mainProductImage" src="placeholder-med.png" alt="Product image">
 <span id="stockBadge" class="badge badge-success">In Stock</span>
 </div>
 <div id="zoomPane" class="zoom-pane hidden"></div>
@@ -444,16 +444,16 @@ document.getElementById("emptyState").classList.add("hidden");
 }
 
 function setMainImage(imageName){
-document.getElementById("mainProductImage").src = `/uploads/${imageName || "default.png"}`;
+document.getElementById("mainProductImage").src = imageName && imageName !== "default.png" ? imageName : 'placeholder-med.png';
 }
 
 function renderThumbnails(images){
 const container = document.getElementById("thumbnailContainer");
-const imageList = images.length ? images : ["default.png"];
+const imageList = images.length ? images : ["placeholder-med.png"];
 
 container.innerHTML = imageList.map((image, index) => `
 <button type="button" class="thumb-btn ${index === 0 ? "active" : ""}" data-image="${escapeHtml(image)}">
-<img src="/uploads/${escapeHtml(image)}" alt="Product thumbnail ${index + 1}">
+<img src="${image && image !== "default.png" ? escapeHtml(image) : 'placeholder-med.png'}" alt="Product thumbnail ${index + 1}">
 </button>
 `).join("");
 }

@@ -496,7 +496,7 @@ function renderPastOrders(){
     const detailsOpen = expandedOrderId === order._id;
 
     const firstItem = Array.isArray(order.medicines) && order.medicines.length ? order.medicines[0] : null;
-    const firstImage = firstItem && firstItem.image ? escapeHtml(firstItem.image) : "default.png";
+    const firstImage = firstItem && firstItem.image && firstItem.image !== "default.png" ? escapeHtml(firstItem.image) : "placeholder-med.png";
     const firstName = firstItem ? escapeHtml(firstItem.medicine_name || firstItem.name || "Product") : "No items";
     const firstCategory = firstItem ? escapeHtml(formatCategory(firstItem.category)) : "";
     const firstPriceText = firstItem ? formatCurrency(firstItem.price) : "";
@@ -522,7 +522,7 @@ function renderPastOrders(){
 
         ${firstItem ? `
         <div class="order-summary-block">
-          <img class="order-summary-img" src="/uploads/${firstImage}" alt="${firstName}">
+          <img class="order-summary-img" src="${firstImage}" alt="${firstName}">
           <div class="order-summary-copy">
             <strong>${firstName}</strong>
             <p>${firstCategory}</p>

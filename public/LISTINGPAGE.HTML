@@ -605,7 +605,7 @@ let index = 0;
 
 const interval = setInterval(() => {
 index = (index + 1) % images.length;
-imgTag.src = "/uploads/" + images[index];
+imgTag.src = images[index] && images[index] !== "default.png" ? images[index] : "placeholder-med.png";
 }, 1500);
 
 sliderIntervals.set(card, interval);
@@ -623,7 +623,7 @@ const imgTag = card.querySelector(".product-img");
 const first = imgTag.getAttribute("data-first");
 
 if(first){
-imgTag.src = "/uploads/" + first;
+imgTag.src = first;
 }
 }
 
@@ -654,7 +654,7 @@ activeCategoryFilter !== "all"
 );
 
 medicines.forEach(medicine => {
-const firstImg = medicine.images && medicine.images.length ? medicine.images[0] : "default.png";
+const firstImg = medicine.images && medicine.images.length && medicine.images[0] !== "default.png" ? medicine.images[0] : "placeholder-med.png";
 const imagesData = JSON.stringify(medicine.images || []);
 const showAddToCart = !sellerEmail;
 const medicineName = escapeHtml(medicine.medicine_name || "Medicine");
@@ -672,7 +672,7 @@ onmouseleave="stopSlider(this)">
 ${prescriptionBadge}
 <span class="card-category-tag ui-badge-pill" title="${categoryLabel}">${categoryLabel}</span>
 </div>
-<img src="/uploads/${firstImg}"
+<img src="${medicine.images && medicine.images.length > 0 ? medicine.images[0] : 'placeholder-med.png'}"
 class="product-img"
 data-first="${firstImg}"
 alt="${medicineName}">
