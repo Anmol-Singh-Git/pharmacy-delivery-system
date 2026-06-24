@@ -595,10 +595,11 @@ function populateAccountForm(){
 
   // Restore shop image preview
   const currentImageBox = document.getElementById("accountCurrentImage");
-  const shopImage = sellerProfile.shop_image || "";
+  const seller = sellerProfile;
+  const shopImage = seller.shop_image || "";
   if(shopImage){
     currentImageBox.innerHTML = `
-      <img src="/uploads/${escapeHtml(shopImage)}" alt="Current shop image" class="account-current-img">
+      <img src="${seller.shop_image ? seller.shop_image : 'placeholder-banner.png'}" alt="Current shop image" class="account-current-img">
       <span class="account-current-label">Current image</span>
     `;
   } else {

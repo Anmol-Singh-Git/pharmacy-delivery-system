@@ -735,7 +735,7 @@ const actionMarkup = pharmacy.email
 : `<button type="button" disabled>View Products Unavailable</button>`;
 
 const shopImageMarkup = pharmacy.shop_image
-  ? `<div class="pharmacy-card-banner"><img src="/uploads/${escapeHtml(pharmacy.shop_image)}" alt="${escapeHtml(pharmacy.name || "Pharmacy")} shop" class="pharmacy-banner-img"></div>`
+  ? `<div class="pharmacy-card-banner"><img src="${pharmacy.shop_image ? pharmacy.shop_image : 'placeholder-banner.png'}" alt="${escapeHtml(pharmacy.name || "Pharmacy")} shop" class="pharmacy-banner-img"></div>`
   : `<div class="pharmacy-card-banner pharmacy-card-banner--placeholder"><span class="pharmacy-banner-icon">🏪</span></div>`;
 
 return `
