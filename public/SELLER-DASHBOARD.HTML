@@ -711,15 +711,13 @@ return;
 
 const visibleProducts = sellerProducts.slice(0, 6);
 container.innerHTML = visibleProducts.map(product => {
-const firstImage = product.images && product.images.length > 0 ? product.images[0] : "";
-const image = firstImage.startsWith("data:") ? firstImage : (firstImage ? `/uploads/${firstImage}` : "/uploads/default.png");
 const stock = Number(product.stock) || 0;
 const stockClass = stock <= 5 ? "badge-danger" : "badge-success";
 
 return `
 <article class="product-card" data-id="${product._id}">
 <div class="product-image-wrap">
-<img src="${image}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
+<img src="${product.images && product.images.length > 0 ? product.images[0] : 'https://placehold.co/300x200?text=No+Image'}" alt="${escapeHtml(product.medicine_name)}" class="product-img">
 <span class="badge ${stockClass}">${stock <= 5 ? "Low Stock" : "In Stock"}</span>
 </div>
 
