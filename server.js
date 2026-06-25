@@ -15,9 +15,11 @@ const Razorpay = require("razorpay");
 
 const helmet = require("helmet");
 const jwt = require("jsonwebtoken");
+const session = require("express-session");
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 const app = express();
+app.set("trust proxy", 1);
 
 /* ================= MIDDLEWARE ================= */
 
@@ -38,6 +40,18 @@ app.use(cors({
     }
     const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
     return callback(new Error(msg), false);
+  }
+}));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'medideliver-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    path: '/', // CRITICAL: Ensures cookie is sent on ALL subpages and HTML documents
+    secure: true, // Required for HTTPS deployments on Vercel
+    sameSite: 'none', // Allows cross-origin session synchronization
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
