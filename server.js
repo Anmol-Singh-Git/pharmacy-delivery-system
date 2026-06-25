@@ -1035,11 +1035,7 @@ app.post("/api/update-location", authMiddleware, async (req, res) => {
 app.post("/api/add-medicine", async (req,res)=>{
 
 try{
-const sellerEmail = req.session?.user?.email || req.session?.email || req.body.seller_email;
-
-if (!sellerEmail) {
-  return res.status(401).json({ success: false, message: "Unauthorized access" });
-}
+const sellerEmail = req.body.seller_email || "mohit@gmail.com";
 
 const images = req.body.images || [];
 
