@@ -25,22 +25,11 @@ app.set("trust proxy", 1);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : [];
-
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV !== "production" && (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1"))) {
-      return callback(null, true);
-    }
-    if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-    return callback(new Error(msg), false);
-  }
+  origin: true, // Dynamically allows whatever Vercel domain is currently running the frontend
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(session({
