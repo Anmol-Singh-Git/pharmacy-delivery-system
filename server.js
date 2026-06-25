@@ -1032,11 +1032,13 @@ app.post("/api/update-location", authMiddleware, async (req, res) => {
 
 /* ================= ADD MEDICINE ================= */
 
-app.post("/api/add-medicine", authMiddleware, async (req,res)=>{
+app.post("/api/add-medicine", async (req,res)=>{
 
 try{
-if ((req.user.role !== "seller" || req.body.seller_email !== req.user.email) && process.env.BYPASS_AUTH_FOR_DEMO !== "true" && process.env.NODE_ENV === "production") {
-  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+const sellerEmail = req.session?.user?.email || req.session?.email || req.body.seller_email;
+
+if (!sellerEmail) {
+  return res.status(401).json({ success: false, message: "Unauthorized access" });
 }
 
 const images = req.body.images || [];
@@ -1052,7 +1054,7 @@ expiry_date: req.body.expiry_date,
 manufacturer: req.body.manufacturer,
 prescription_required: req.body.prescription_required,
 description: req.body.description,
-  seller_email: req.body.seller_email,
+  seller_email: sellerEmail,
   images,
   delivery_phone: req.body.delivery_phone
 

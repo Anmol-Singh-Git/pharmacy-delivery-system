@@ -1178,7 +1178,13 @@ setButtonLoading(submitButton, true, "Adding...");
 try{
 const formData = new FormData(form);
 const data = Object.fromEntries(formData.entries());
-data.seller_email = sellerEmail;
+
+const emailLabel = document.getElementById("sellerEmailLabel");
+const activeSellerEmail = (emailLabel && emailLabel.textContent && emailLabel.textContent.includes("@"))
+  ? emailLabel.textContent.trim()
+  : (sellerEmail || localStorage.getItem("seller_email") || "");
+data.seller_email = activeSellerEmail;
+
 data.price = Number(data.price) || 0;
 data.stock = Number(data.stock) || 0;
 
