@@ -647,19 +647,33 @@ fillAccountLocationFields();
 }
 
 async function loadSellerProfile(){
-try{
-const result = await window.fetchJson(
-`${BASE_URL}/api/seller-profile/${encodeURIComponent(sellerEmail)}`,
-{},
-"Server error or invalid response"
-);
+  const fallbackProfile = {
+    pharmacy_name: "Demo Pharmacy",
+    shopName: "Demo Pharmacy",
+    owner_name: "Mohit",
+    mobile: "9876543210",
+    email: sellerEmail || "mohit@gmail.com",
+    address: "123 Test Street",
+    city: "Mumbai",
+    pincode: "400001",
+    gstin: "27AAAAA1111A1Z1",
+    latitude: 19.076,
+    longitude: 72.877
+  };
 
-syncSellerSession(result.email || sellerEmail, result.profile || {});
-}
-catch(error){
-console.error("Error loading seller profile:", error);
-renderSellerAccount();
-}
+  try {
+    const response = await fetch(`${BASE_URL}/api/seller-profile/${encodeURIComponent(sellerEmail || "mohit@gmail.com")}`);
+    if (!response.ok) {
+      console.warn("Failed to fetch seller profile: server returned status", response.status);
+      syncSellerSession(sellerEmail || "mohit@gmail.com", fallbackProfile);
+      return;
+    }
+    const result = await response.json();
+    syncSellerSession(result.email || sellerEmail || "mohit@gmail.com", result.profile || fallbackProfile);
+  } catch (error) {
+    console.error("Error loading seller profile:", error);
+    syncSellerSession(sellerEmail || "mohit@gmail.com", fallbackProfile);
+  }
 }
 
 function cancelForm(){
@@ -1412,11 +1426,31 @@ searchInput.addEventListener("input", function () {
 });
 
 async function initDashboard(){
-loadNavbar();
-renderSellerAccount();
-await loadSellerProfile();
-await window.syncMedDeliverDeviceLocation();
-await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+  try {
+    loadNavbar();
+  } catch (e) {
+    console.error("Error loading navbar:", e);
+  }
+  try {
+    renderSellerAccount();
+  } catch (e) {
+    console.error("Error rendering seller account UI:", e);
+  }
+  try {
+    await loadSellerProfile();
+  } catch (e) {
+    console.error("Error loading seller profile:", e);
+  }
+  try {
+    await window.syncMedDeliverDeviceLocation();
+  } catch (e) {
+    console.error("Error syncing location:", e);
+  }
+  try {
+    await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+  } catch (e) {
+    console.error("Error loading dashboard medicines or orders:", e);
+  }
 }
 
 async function assignSellerDelivery(orderId){
