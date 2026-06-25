@@ -1088,8 +1088,10 @@ app.get("/api/medicines", async (req, res) => {
     const latParam = req.query.lat || req.query.latitude;
     const lngParam = req.query.lng || req.query.longitude;
 
-    const hasCoords = latParam !== undefined && latParam !== null && String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" &&
-      lngParam !== undefined && lngParam !== null && String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null";
+    const hasCoords = latParam !== undefined && latParam !== null && 
+      String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" && String(latParam).trim() !== "NaN" &&
+      lngParam !== undefined && lngParam !== null && 
+      String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null" && String(lngParam).trim() !== "NaN";
 
     let userLocation = undefined;
     if (hasCoords) {
@@ -1113,11 +1115,15 @@ app.get("/api/medicines", async (req, res) => {
         }).select("email");
 
         const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
-        const geoFilter = { seller_email: { $in: nearbySellerEmails } };
-
-        finalMedicineFilter = Object.keys(medicineFilter).length
-          ? { $and: [medicineFilter, geoFilter] }
-          : geoFilter;
+        
+        if (nearbySellerEmails.length > 0) {
+          const geoFilter = { seller_email: { $in: nearbySellerEmails } };
+          finalMedicineFilter = Object.keys(medicineFilter).length
+            ? { $and: [medicineFilter, geoFilter] }
+            : geoFilter;
+        } else {
+          console.log("No nearby sellers found, falling back to global catalog");
+        }
       } catch (geoError) {
         console.error("Geospatial seller lookup failed, using global lookup:", geoError);
       }

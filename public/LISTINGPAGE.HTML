@@ -674,38 +674,42 @@ activeCategoryFilter !== "all"
 );
 
 medicines.forEach(medicine => {
-const firstImg = medicine.images && medicine.images.length && medicine.images[0] !== "default.png" ? medicine.images[0] : "placeholder-med.png";
-const imagesData = JSON.stringify(medicine.images || []);
-const showAddToCart = !sellerEmail;
-const medicineName = escapeHtml(medicine.medicine_name || "Medicine");
-const categoryLabel = escapeHtml(formatCategory(medicine.category));
-const prescriptionBadge = String(medicine.prescription_required || "No").toLowerCase() === "yes"
-? `<span class="prescription-badge ui-badge-pill badge-rx" title="Prescription Required">Prescription Required</span>`
-: `<span class="prescription-badge ui-badge-pill badge-ok" title="No Prescription">No Prescription</span>`;
+  try {
+    const firstImg = medicine.images && medicine.images.length && medicine.images[0] !== "default.png" ? medicine.images[0] : "placeholder.png";
+    const imagesData = JSON.stringify(medicine.images || []);
+    const showAddToCart = !sellerEmail;
+    const medicineName = escapeHtml(medicine.medicine_name || "Medicine");
+    const categoryLabel = escapeHtml(formatCategory(medicine.category));
+    const prescriptionBadge = String(medicine.prescription_required || "No").toLowerCase() === "yes"
+      ? `<span class="prescription-badge ui-badge-pill badge-rx" title="Prescription Required">Prescription Required</span>`
+      : `<span class="prescription-badge ui-badge-pill badge-ok" title="No Prescription">No Prescription</span>`;
 
-container.innerHTML += `
-<div class="medicine-card ui-card-equal"
-data-images='${imagesData}'
-onmouseenter="startSlider(this)"
-onmouseleave="stopSlider(this)">
-<div class="card-top-row">
-${prescriptionBadge}
-<span class="card-category-tag ui-badge-pill" title="${categoryLabel}">${categoryLabel}</span>
-</div>
-<img src="${medicine.images && medicine.images.length > 0 ? medicine.images[0] : 'placeholder-med.png'}"
-class="product-img"
-data-first="${firstImg}"
-alt="${medicineName}">
+    container.innerHTML += `
+    <div class="medicine-card ui-card-equal"
+    data-images='${imagesData}'
+    onmouseenter="startSlider(this)"
+    onmouseleave="stopSlider(this)">
+    <div class="card-top-row">
+    ${prescriptionBadge}
+    <span class="card-category-tag ui-badge-pill" title="${categoryLabel}">${categoryLabel}</span>
+    </div>
+    <img src="${medicine.images && medicine.images.length > 0 ? medicine.images[0] : 'placeholder.png'}"
+    class="product-img"
+    data-first="${firstImg}"
+    alt="${medicineName}">
 
-<div class="medicine-card-copy">
-<h3 class="ui-line-clamp-2" title="${medicineName}">${medicineName}</h3>
-${getDistanceMarkup(medicine)}
-<button class="view-product-btn" onclick="event.stopPropagation(); storeProduct(decodeProduct('${encodeProduct(medicine)}')); window.location.href='PRODUCTPAGE.HTML';">View</button>
-</div>
+    <div class="medicine-card-copy">
+    <h3 class="ui-line-clamp-2" title="${medicineName}">${medicineName}</h3>
+    ${getDistanceMarkup(medicine)}
+    <button class="view-product-btn" onclick="event.stopPropagation(); storeProduct(decodeProduct('${encodeProduct(medicine)}')); window.location.href='PRODUCTPAGE.HTML';">View</button>
+    </div>
 
-${showAddToCart ? `<button class="ui-btn-compact" onclick="event.stopPropagation(); event.preventDefault(); addToCart(decodeProduct('${encodeProduct(medicine)}'))">Add to Cart</button>` : ""}
-</div>
-`;
+    ${showAddToCart ? `<button class="ui-btn-compact" onclick="event.stopPropagation(); event.preventDefault(); addToCart(decodeProduct('${encodeProduct(medicine)}'))">Add to Cart</button>` : ""}
+    </div>
+    `;
+  } catch (cardError) {
+    console.error("Error rendering individual medicine card:", cardError, medicine);
+  }
 });
 }
 
