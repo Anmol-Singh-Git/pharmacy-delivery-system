@@ -2,6 +2,15 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 mongoose.set('bufferCommands', false);
+ 
+let cachedMongoose = global.mongoose;
+if (!cachedMongoose) {
+  cachedMongoose = global.mongoose = mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  }).then((m) => m);
+}
+ 
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -130,8 +139,8 @@ const connectDatabase = async () => {
     return;
   }
   try {
-    await mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver");
-    console.log("Database connected successfully");
+    await cachedMongoose;
+    console.log("Database connected successfully (reused cached connection)");
   } catch (error) {
     console.error("Database connection failure:", error);
   }
@@ -1088,9 +1097,9 @@ app.get("/api/medicines", async (req, res) => {
     const latParam = req.query.lat || req.query.latitude;
     const lngParam = req.query.lng || req.query.longitude;
 
-    const hasCoords = latParam !== undefined && latParam !== null && 
+    const hasCoords = latParam !== undefined && latParam !== null &&
       String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" && String(latParam).trim() !== "NaN" &&
-      lngParam !== undefined && lngParam !== null && 
+      lngParam !== undefined && lngParam !== null &&
       String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null" && String(lngParam).trim() !== "NaN";
 
     let userLocation = undefined;
@@ -1115,7 +1124,7 @@ app.get("/api/medicines", async (req, res) => {
         }).select("email");
 
         const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
-        
+
         if (nearbySellerEmails.length > 0) {
           const geoFilter = { seller_email: { $in: nearbySellerEmails } };
           finalMedicineFilter = Object.keys(medicineFilter).length
@@ -1905,10 +1914,10 @@ async function getSellerDashboardData(req, res) {
     const emailToQuery = req.session?.user?.email || getActiveUserEmail(req) || req.params.email || "mohit@gmail.com";
 
     const seller = await Seller.findOne({ email: emailToQuery });
-    
+
     // Calculate stats
     const totalProducts = await Medicine.countDocuments({ seller_email: emailToQuery });
-    
+
     const orders = await Order.find({ "location.seller_email": emailToQuery });
     const revenue = orders.reduce((sum, order) => {
       const sellerItems = Array.isArray(order.medicines)

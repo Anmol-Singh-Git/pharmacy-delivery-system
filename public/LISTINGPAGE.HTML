@@ -1060,33 +1060,39 @@ updateSearchUi();
 
 async function loadMedicines(){
 try{
-const categoryQuery = activeCategoryFilter !== "all"
-? `?category=${encodeURIComponent(getCategoryQueryValue(activeCategoryFilter))}`
-: "";
-const data = await window.fetchJson(
-`${BASE_URL}/api/medicines${categoryQuery}`,
-{},
-"Server error or invalid response"
-);
-allMedicines = Array.isArray(data) ? data : (Array.isArray(data?.medicines) ? data.medicines : []);
-console.log('loadMedicines: loaded', allMedicines.length, 'medicines');
+  const params = new URLSearchParams();
+  if(activeCategoryFilter !== "all"){
+    params.set("category", getCategoryQueryValue(activeCategoryFilter));
+  }
+  if(buyerLocation && buyerLocation.latitude && buyerLocation.longitude){
+    params.set("lat", buyerLocation.latitude);
+    params.set("lng", buyerLocation.longitude);
+  }
+  const queryStr = params.toString() ? "?" + params.toString() : "";
+  const data = await window.fetchJson(
+    `${BASE_URL}/api/medicines${queryStr}`,
+    {},
+    "Server error or invalid response"
+  );
+  allMedicines = Array.isArray(data) ? data : (Array.isArray(data?.medicines) ? data.medicines : []);
+  console.log('loadMedicines: loaded', allMedicines.length, 'medicines');
 
-if(currentSearchMode === "pharmacies"){
-if(buyerLocation){
-await fetchNearbyPharmacies(false);
-}
-else{
-showEmptyState("Enable location access to search nearby pharmacies.");
-}
-return;
-}
+  if(currentSearchMode === "pharmacies"){
+    if(buyerLocation){
+      await fetchNearbyPharmacies(false);
+    }
+    else{
+      showEmptyState("Enable location access to search nearby pharmacies.");
+    }
+    return;
+  }
 
-filterMedicines();
+  filterMedicines();
 }
 catch(error){
-console.log(error);
-setLocationStatus(window.getApiErrorMessage(error), "error", false);
-showEmptyState("Server error or invalid response");
+  console.log(error);
+  setLocationStatus(window.getApiErrorMessage(error), "error", false);
+  showEmptyState("Server error or invalid response");
 }
 }
 
@@ -1109,22 +1115,25 @@ try {
 }
 
 (async function initListing(){
-  if(buyerEmail){
-    try {
-      await window.syncMedDeliverDeviceLocation();
-    } catch (err) {
-      console.error("Failed to sync location:", err);
-    }
-    try {
-      hydrateBuyerLocationFromStorage();
-    } catch (err) {
-      console.error("Failed to hydrate location after sync:", err);
-    }
-  }
+  // 1. Immediately trigger the non-blocking product fetch and draw on screen
   try {
     await loadMedicines();
   } catch (err) {
-    console.error("Failed to load medicines:", err);
+    console.error("Failed to load medicines initially:", err);
+  }
+
+  // 2. Perform the geolocation request asynchronously in the background
+  if (buyerEmail) {
+    (async () => {
+      try {
+        await window.syncMedDeliverDeviceLocation();
+        hydrateBuyerLocationFromStorage();
+        // Once successfully retrieved coordinates, dynamically recalculate and sort listing client-side smoothly
+        filterMedicines();
+      } catch (err) {
+        console.error("Background location sync/update failed:", err);
+      }
+    })();
   }
 })();
 </script>

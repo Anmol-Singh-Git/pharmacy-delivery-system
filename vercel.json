@@ -4,17 +4,22 @@
     {
       "src": "server.js",
       "use": "@vercel/node",
-      "config": {
-        "includeFiles": "public/**"
-      }
+      "config": { "includeFiles": "public/**" }
     }
   ],
   "rewrites": [
+    { "source": "/(.*)", "destination": "/server.js" }
+  ],
+  "cleanUrls": true,
+  "headers": [
     {
       "source": "/(.*)",
-      "destination": "/server.js"
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+        }
+      ]
     }
-  ],
-  "cleanUrls": true
+  ]
 }
-
