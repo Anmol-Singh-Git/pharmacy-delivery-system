@@ -1032,49 +1032,22 @@ app.post("/api/update-location", authMiddleware, async (req, res) => {
 
 /* ================= ADD MEDICINE ================= */
 
-app.post("/api/add-medicine", async (req,res)=>{
+app.post('/api/add-medicine', async (req, res) => {
+  try {
+    console.log("Incoming product data payload check:", req.body);
+    
+    // Clear out any old session/auth constraints blocking demo testing
+    const newMedicine = new Medicine({
+      ...req.body,
+      seller_email: req.body.seller_email || "mohit@gmail.com"
+    });
 
-try{
-const sellerEmail = req.body.seller_email || "mohit@gmail.com";
-
-const images = req.body.images || [];
-
-const medicine = new Medicine({
-
-medicine_name: req.body.medicine_name,
-brand: req.body.brand,
-category: req.body.category,
-price: Number(req.body.price),
-stock: Number(req.body.stock),
-expiry_date: req.body.expiry_date,
-manufacturer: req.body.manufacturer,
-prescription_required: req.body.prescription_required,
-description: req.body.description,
-  seller_email: sellerEmail,
-  images,
-  delivery_phone: req.body.delivery_phone
-
-});
-
-await medicine.save();
-
-res.json({
-success: true,
-message: "Medicine added successfully"
-});
-
-}
-
-catch(error){
-
-console.error("Product add failed:", error);
-res.status(500).json({
-success: false,
-message: error.message
-});
-
-}
-
+    await newMedicine.save();
+    return res.status(200).json({ success: true, message: "Medicine saved successfully" });
+  } catch (dbError) {
+    console.error("CRITICAL BACKEND ERROR CAUGHT:", dbError);
+    return res.status(400).json({ success: false, message: `Database Reject: ${dbError.message}` });
+  }
 });
 
 /* ================= GET MEDICINES ================= */

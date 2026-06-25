@@ -1202,35 +1202,45 @@ if (data.image) {
   delete data.image;
 }
 
-const response = await fetch(`${BASE_URL}/api/add-medicine`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(data)
-});
+try {
+  const response = await fetch(`${BASE_URL}/api/add-medicine`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
 
-if (!response.ok) {
-  const errorData = await response.json().catch(() => ({}));
-  const displayError = errorData.message || "Server error or invalid response";
+  if (!response.ok) {
+    const rawText = await response.text();
+    console.error("Raw Server Error Output:", rawText);
+    
+    const errorBanner = document.getElementById("statusMessage");
+    if (errorBanner) {
+      // Attempt to parse JSON error message, otherwise fallback to raw text snippet
+      try {
+        const parsedError = JSON.parse(rawText);
+        errorBanner.textContent = parsedError.message || "Server Error";
+      } catch {
+        errorBanner.textContent = `Server Error (${response.status}): Check developer console for details.`;
+      }
+      errorBanner.className = "status-message error";
+      errorBanner.classList.remove("hidden");
+    }
+    return;
+  }
+
+  const resData = await response.json();
+  form.reset();
+  updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
+  showStatus("Product added successfully.", "success");
+  await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+} catch (err) {
+  console.error("Frontend Submission Crash:", err);
   const errorBanner = document.getElementById("statusMessage");
   if (errorBanner) {
-    errorBanner.textContent = displayError;
+    errorBanner.textContent = "Network error or script execution crash.";
     errorBanner.className = "status-message error";
     errorBanner.classList.remove("hidden");
   }
-  return;
-}
-
-form.reset();
-updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
-showStatus("Product added successfully.", "success");
-
-await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
-}
-catch(error){
-console.error("Error adding product:", error);
-showStatus(window.getApiErrorMessage(error), "error");
 }
 finally{
 setButtonLoading(submitButton, false, "Adding...");
