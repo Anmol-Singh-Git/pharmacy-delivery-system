@@ -1027,13 +1027,13 @@ if(Number.isFinite(buyerLat) && Number.isFinite(buyerLng)){
 }
 
 try{
-const result = await window.fetchJson(`${BASE_URL}/api/update-location`, {
+const result = await window.fetchJson(`${BASE_URL}/api/update-delivery-location`, {
 method: "POST",
 headers: {
 "Content-Type": "application/json"
 },
 body: JSON.stringify({
-orderId: currentOrderId,
+order_id: currentOrderId,
 lat: deliveryLat,
 lng: deliveryLng
 })

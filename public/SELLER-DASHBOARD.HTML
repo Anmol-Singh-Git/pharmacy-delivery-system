@@ -1179,6 +1179,8 @@ try{
 const formData = new FormData(form);
 const data = Object.fromEntries(formData.entries());
 data.seller_email = sellerEmail;
+data.price = Number(data.price) || 0;
+data.stock = Number(data.stock) || 0;
 
 const fileInput = document.getElementById("addImagesInput");
 const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;

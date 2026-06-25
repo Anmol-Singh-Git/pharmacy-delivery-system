@@ -270,7 +270,11 @@ const items = Array.isArray(order.medicines) && order.medicines.length
 ? order.medicines
 : (Array.isArray(order.items) ? order.items : []);
 const first = items[0] || {};
-const pid = first.medicine_id || first._id || "";
+let pid = first.medicine_id || "";
+if(!pid && first.name && Array.isArray(order.medicines)){
+  const match = order.medicines.find(m => String(m.medicine_name || "").toLowerCase() === String(first.name).toLowerCase());
+  pid = match?.medicine_id || "";
+}
 if(pid){
 window.location.href = `PRODUCTDETAILS.HTML?product_id=${encodeURIComponent(String(pid))}`;
 return;

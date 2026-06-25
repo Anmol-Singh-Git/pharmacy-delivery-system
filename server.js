@@ -666,6 +666,27 @@ seller_details: sellerMap.get(plainMedicine.seller_email) || null
 });
 }
 
+async function restoreRejectedMedicinesStock(oldMedicines, newMedicines) {
+  const oldList = Array.isArray(oldMedicines) ? oldMedicines : [];
+  const newList = Array.isArray(newMedicines) ? newMedicines : [];
+
+  for (let i = 0; i < newList.length; i++) {
+    const newItem = newList[i];
+    const oldItem = oldList[i] || {};
+
+    if (newItem.status === "Rejected" && oldItem.status !== "Rejected") {
+      const medicineId = newItem.medicine_id;
+      if (medicineId) {
+        const dbMedicine = await Medicine.findById(medicineId);
+        if (dbMedicine) {
+          dbMedicine.stock = (Number(dbMedicine.stock) || 0) + (Number(newItem.quantity) || 0);
+          await dbMedicine.save();
+        }
+      }
+    }
+  }
+}
+
 /* ================= REGISTRATION ================= */
 /* ================= SELLER REGISTER ================= */
 
@@ -915,7 +936,7 @@ medicine_name: req.body.medicine_name,
 brand: req.body.brand,
 category: req.body.category,
 price: Number(req.body.price),
-stock: req.body.stock,
+stock: Number(req.body.stock),
 expiry_date: req.body.expiry_date,
 manufacturer: req.body.manufacturer,
 prescription_required: req.body.prescription_required,
@@ -1231,6 +1252,14 @@ medicine_name: item.medicine_name,
 if(!dbMedicine) continue;
 
 const quantity = Math.max(1, Number(item.quantity) || 1);
+
+if (dbMedicine.stock < quantity) {
+  return res.status(400).json({
+    success: false,
+    message: "Requested quantity exceeds available stock."
+  });
+}
+
 const requiresPrescription = String(dbMedicine.prescription_required || "No").toLowerCase() === "yes";
 const groupSellerEmail = String(dbMedicine.seller_email || "").trim();
 const groupKey = groupSellerEmail;
@@ -1518,24 +1547,25 @@ app.post("/api/update-order-status", async (req, res) => {
 
 try{
 
-const { order_id, status } = req.body;
+const orderId = req.body.order_id || req.body.orderId;
+const { status } = req.body;
 const allowedStatuses = ["Accepted", "Rejected", "Out for Delivery", "Delivered"];
 
-if(!order_id || !allowedStatuses.includes(status)){
+if(!orderId || !allowedStatuses.includes(status)){
 return res.status(400).json({
 success: false,
 message: "Valid order_id and order status are required"
 });
 }
 
-if(!mongoose.Types.ObjectId.isValid(order_id)){
+if(!mongoose.Types.ObjectId.isValid(orderId)){
 return res.status(400).json({
 success: false,
 message: "Valid order_id and order status are required"
 });
 }
 
-const order = await Order.findById(order_id);
+const order = await Order.findById(orderId);
 
 if(!order){
 return res.status(404).json({
@@ -1614,6 +1644,7 @@ order.status = status;
 order.order_status = status;
 }
 
+await restoreRejectedMedicinesStock(currentSnapshot.medicines, order.medicines);
 await order.save();
 
 res.json({
@@ -1640,24 +1671,25 @@ app.post("/api/update-prescription-status", async (req, res) => {
 
 try{
 
-const { order_id, status } = req.body;
+const orderId = req.body.order_id || req.body.orderId;
+const { status } = req.body;
 const allowedStatuses = ["Approved", "Rejected"];
 
-if(!order_id || !allowedStatuses.includes(status)){
+if(!orderId || !allowedStatuses.includes(status)){
 return res.status(400).json({
 success: false,
 message: "Valid order_id and prescription status are required"
 });
 }
 
-if(!mongoose.Types.ObjectId.isValid(order_id)){
+if(!mongoose.Types.ObjectId.isValid(orderId)){
 return res.status(400).json({
 success: false,
 message: "Valid order_id and prescription status are required"
 });
 }
 
-const order = await Order.findById(order_id);
+const order = await Order.findById(orderId);
 
 if(!order){
 return res.status(404).json({
@@ -1687,6 +1719,7 @@ message: "No prescription approvals are pending for this order"
 
 applyPrescriptionDecision(order, status);
 
+await restoreRejectedMedicinesStock(currentSnapshot.medicines, order.medicines);
 await order.save();
 
 res.json({
@@ -1956,7 +1989,7 @@ app.post("/api/save-store-location", handleStoreLocationSave);
 
 async function handleAssignDeliveryPhone(req, res) {
   try {
-    const orderId = req.body.orderId;
+    const orderId = req.body.order_id || req.body.orderId;
     const phone = String(req.body.phone ?? req.body.deliveryBoyPhone ?? "").trim();
 
     if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
@@ -2041,17 +2074,17 @@ app.post("/api/update-delivery-location", async (req, res) => {
 
 try{
 
-const { order_id } = req.body;
+const orderId = req.body.order_id || req.body.orderId;
 const location = parseLocation(req.body);
 
-if(!order_id || !mongoose.Types.ObjectId.isValid(order_id) || !location){
+if(!orderId || !mongoose.Types.ObjectId.isValid(orderId) || !location){
 return res.status(400).json({
 success: false,
 message: "Valid order_id, lat, and lng are required"
 });
 }
 
-const order = await Order.findById(order_id);
+const order = await Order.findById(orderId);
 
 if(!order){
 return res.status(404).json({
@@ -2168,7 +2201,7 @@ app.post("/api/create-order", async (req,res)=>{
 
 try{
 
-	const { amount } = req.body;
+	const amount = Number(req.body.amount);
 
 	const options = {
 

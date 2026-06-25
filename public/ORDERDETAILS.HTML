@@ -582,11 +582,17 @@ function getOrderItemImage(item){
 
 function getPrescriptionForItem(order, item){
 const prescriptions = Array.isArray(order.prescriptions) ? order.prescriptions : [];
+const itemName = String(item.medicine_name || item.name || "").toLowerCase();
+const medItem = Array.isArray(order.medicines)
+  ? order.medicines.find(m => String(m.medicine_name || "").toLowerCase() === itemName)
+  : null;
+const medId = item.medicine_id || medItem?.medicine_id;
+const itemSeller = item.seller_email || medItem?.seller_email || order.seller_email;
 
 return prescriptions.find(entry => {
-const sameMedicineId = entry.medicine_id && item.medicine_id && String(entry.medicine_id) === String(item.medicine_id);
-const sameMedicineName = String(entry.medicine_name || "").toLowerCase() === String(item.medicine_name || "").toLowerCase();
-const sameSeller = String(entry.seller_email || "").toLowerCase() === String(item.seller_email || "").toLowerCase();
+const sameMedicineId = entry.medicine_id && medId && String(entry.medicine_id) === String(medId);
+const sameMedicineName = String(entry.medicine_name || "").toLowerCase() === itemName;
+const sameSeller = String(entry.seller_email || "").toLowerCase() === String(itemSeller || "").toLowerCase();
 
 return sameMedicineId || (sameMedicineName && sameSeller);
 });
