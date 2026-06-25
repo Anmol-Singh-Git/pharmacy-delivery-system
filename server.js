@@ -13,13 +13,71 @@ const Order = require("./models/Order");
 
 const Razorpay = require("razorpay");
 
+const helmet = require("helmet");
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+
 const app = express();
 
 /* ================= MIDDLEWARE ================= */
 
-app.use(cors());
+app.use(helmet());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(",") 
+  : [];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV !== "production" && (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1"))) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
+  }
+}));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+function nosqlSanitizer(req, res, next) {
+  const sanitize = (obj) => {
+    if (obj instanceof Object) {
+      for (const key in obj) {
+        if (key.startsWith('$')) {
+          delete obj[key];
+        } else if (obj[key] instanceof Object) {
+          sanitize(obj[key]);
+        }
+      }
+    }
+  };
+  sanitize(req.body);
+  sanitize(req.query);
+  sanitize(req.params);
+  next();
+}
+
+app.use(nosqlSanitizer);
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false, message: "Unauthorized access" });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: "Invalid or expired token" });
+  }
+}
 
 /* ================= MULTER CONFIG ================= */
 
@@ -736,10 +794,12 @@ location: buildSellerGeoLocation(sellerCoordinates)
 await seller.save();
 
 /* ✅ IMPORTANT CHANGE */
+const token = jwt.sign({ email: seller.email, role: "seller" }, JWT_SECRET, { expiresIn: "24h" });
 res.json({
 success: true,
 email: seller.email,
 role: "seller",
+token,
 profile: cleanPublicSeller(seller)
 });
 
@@ -776,10 +836,12 @@ location: parseLocation(req.body)
 await buyer.save();
 
 /* ✅ IMPORTANT CHANGE */
+const token = jwt.sign({ email: buyer.email, role: "buyer" }, JWT_SECRET, { expiresIn: "24h" });
 res.json({
 success: true,
 email: buyer.email,
 role: "buyer",
+token,
 profile: cleanPrivateBuyer(buyer)
 });
 
@@ -808,10 +870,12 @@ const buyer = await Buyer.findOne({ email, password });
 
 if (buyer) {
 
+const token = jwt.sign({ email: buyer.email, role: "buyer" }, JWT_SECRET, { expiresIn: "24h" });
 return res.json({
 success: true,
 role: "buyer",
 email: buyer.email,
+token,
 profile: cleanPrivateBuyer(buyer)
 });
 
@@ -823,10 +887,12 @@ const seller = await Seller.findOne({ email, password });
 
 if (seller) {
 
+const token = jwt.sign({ email: seller.email, role: "seller" }, JWT_SECRET, { expiresIn: "24h" });
 return res.json({
 success: true,
 role: "seller",
 email: seller.email,
+token,
 profile: cleanPublicSeller(seller)
 });
 
@@ -854,9 +920,12 @@ message: "Server error"
 
 });
 
-app.get("/api/buyer-coords/:email", async (req, res) => {
+app.get("/api/buyer-coords/:email", authMiddleware, async (req, res) => {
   try {
     const email = String(req.params.email || "").trim();
+    if (req.user.email !== email && req.user.role !== "seller") {
+      return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+    }
     if (!email) {
       return res.status(400).json({ success: false, message: "Email required" });
     }
@@ -884,8 +953,11 @@ app.get("/api/buyer-coords/:email", async (req, res) => {
   }
 });
 
-app.post("/api/update-location", async (req, res) => {
+app.post("/api/update-location", authMiddleware, async (req, res) => {
   const email = String(req.body.email || "").trim();
+  if (req.user.email !== email) {
+    return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+  }
   const role = String(req.body.role || "").trim();
   const latitude = Number(req.body.latitude ?? req.body.lat);
   const longitude = Number(req.body.longitude ?? req.body.lng);
@@ -924,9 +996,12 @@ app.post("/api/update-location", async (req, res) => {
 
 /* ================= ADD MEDICINE ================= */
 
-app.post("/api/add-medicine", async (req,res)=>{
+app.post("/api/add-medicine", authMiddleware, async (req,res)=>{
 
 try{
+if (req.user.role !== "seller" || req.body.seller_email !== req.user.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const images = req.body.images || [];
 
@@ -1207,11 +1282,14 @@ message: "Error fetching seller medicines"
 
 /* ================= PLACE ORDER ================= */
 
-app.post("/api/place-order", upload.any(), async (req,res)=>{
+app.post("/api/place-order", authMiddleware, upload.any(), async (req,res)=>{
 
 try{
 
 const buyer_email = req.body.buyer_email;
+if (req.user.role !== "buyer" || buyer_email !== req.user.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 const medicines = parseRequestPayload(req.body.medicines, []);
 const prescriptions = parseRequestPayload(req.body.prescriptions, []);
 const delivery_details = parseRequestPayload(req.body.delivery_details, {});
@@ -1489,9 +1567,12 @@ message: "Order failed"
 
 /* ================= SELLER ORDERS ================= */
 
-app.get("/api/seller-orders/:email", async (req,res)=>{
+app.get("/api/seller-orders/:email", authMiddleware, async (req,res)=>{
 
 try{
+if (req.user.email !== req.params.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const orders = await Order.find({ "medicines.seller_email": req.params.email })
 .sort({ createdAt: -1 });
@@ -1543,7 +1624,7 @@ message: "Unable to fetch accepted delivery orders"
 
 });
 
-app.post("/api/update-order-status", async (req, res) => {
+app.post("/api/update-order-status", authMiddleware, async (req, res) => {
 
 try{
 
@@ -1572,6 +1653,13 @@ return res.status(404).json({
 success: false,
 message: "Order not found"
 });
+}
+
+if (order.seller_email !== req.user.email) {
+  return res.status(403).json({
+    success: false,
+    message: "Forbidden: Access denied"
+  });
 }
 
 const currentSnapshot = syncOrderState(order);
@@ -1667,7 +1755,7 @@ message: "Unable to update order status"
 
 });
 
-app.post("/api/update-prescription-status", async (req, res) => {
+app.post("/api/update-prescription-status", authMiddleware, async (req, res) => {
 
 try{
 
@@ -1742,9 +1830,12 @@ message: "Unable to update prescription status"
 
 });
 
-app.get("/api/seller-profile/:email", async (req, res) => {
+app.get("/api/seller-profile/:email", authMiddleware, async (req, res) => {
 
 try{
+if (req.user.email !== req.params.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const seller = await Seller.findOne({ email: req.params.email });
 
@@ -1772,6 +1863,9 @@ res.status(500).json({ success: false, message: "Unable to fetch seller profile"
 async function handleSellerProfileUpdate(req, res){
 
 try{
+if (req.user.email !== req.params.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const currentSeller = await Seller.findOne({ email: req.params.email });
 
@@ -1881,12 +1975,15 @@ res.status(500).json({ success: false, message: "Unable to update seller profile
 
 }
 
-app.put("/api/seller-profile/:email", handleSellerProfileUpdate);
-app.post("/api/seller-profile/:email", handleSellerProfileUpdate);
+app.put("/api/seller-profile/:email", authMiddleware, handleSellerProfileUpdate);
+app.post("/api/seller-profile/:email", authMiddleware, handleSellerProfileUpdate);
 
-app.put("/api/seller-profile/:email/location", async (req, res) => {
+app.put("/api/seller-profile/:email/location", authMiddleware, async (req, res) => {
 
 try{
+if (req.user.email !== req.params.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const location = parseLocation(req.body);
 
@@ -1932,6 +2029,9 @@ res.status(500).json({ success: false, message: "Unable to update seller locatio
 async function handleStoreLocationSave(req, res){
 
 try{
+if (req.user.email !== req.body.seller_email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 const seller_email = String(req.body.seller_email || "").trim();
 const location = parseLocation(req.body);
@@ -2006,11 +2106,23 @@ async function handleAssignDeliveryPhone(req, res) {
       });
     }
 
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      { deliveryBoyPhone: phone },
-      { new: true }
-    );
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
+      });
+    }
+
+    if (order.seller_email !== req.user.email) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Access denied"
+      });
+    }
+
+    order.deliveryBoyPhone = phone;
+    await order.save();
 
     if (!order) {
       return res.status(404).json({
@@ -2032,8 +2144,8 @@ async function handleAssignDeliveryPhone(req, res) {
   }
 }
 
-app.post("/api/assign-delivery-contact", handleAssignDeliveryPhone);
-app.post("/api/assign-delivery", handleAssignDeliveryPhone);
+app.post("/api/assign-delivery-contact", authMiddleware, handleAssignDeliveryPhone);
+app.post("/api/assign-delivery", authMiddleware, handleAssignDeliveryPhone);
 
 async function handleGetOrderById(req, res) {
   try {
@@ -2044,11 +2156,26 @@ async function handleGetOrderById(req, res) {
     if (!order) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.email !== order.buyer_email && decoded.email !== order.seller_email) {
+          return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+        }
+      } catch (err) {
+        return res.status(401).json({ success: false, message: "Invalid token" });
+      }
+    }
     res.json(buildOrderSnapshot(order));
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
+
+app.get("/api/razorpay-key", (req, res) => {
+  res.json({ key: process.env.RAZORPAY_KEY_ID || "rzp_test_SS3TBCR3eyB1WK" });
+});
 
 app.get("/api/orders/:id", handleGetOrderById);
 app.get("/api/order/:id", handleGetOrderById);
@@ -2091,6 +2218,18 @@ return res.status(404).json({
 success: false,
 message: "Order not found"
 });
+}
+
+if (req.headers.authorization) {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.email !== order.buyer_email && decoded.email !== order.seller_email) {
+      return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+    }
+  } catch (err) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
+  }
 }
 
 const currentSnapshot = syncOrderState(order);
@@ -2138,11 +2277,14 @@ message: "Unable to update delivery location: " + error.message
 
 });
 
-app.get("/api/orders", async(req,res)=>{
+app.get("/api/orders", authMiddleware, async(req,res)=>{
 
 try{
 
 const buyerEmail = req.query.buyer_email;
+if (req.user.email !== buyerEmail) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 if(!buyerEmail){
 return res.status(400).json({
@@ -2171,11 +2313,20 @@ message: "Error fetching orders"
 
 /* ================= DELETE MEDICINE ================= */
 
-app.delete("/api/delete-medicine/:id", async (req,res)=>{
+app.delete("/api/delete-medicine/:id", authMiddleware, async (req,res)=>{
 
 try{
 
 const id = req.params.id;
+
+const medicine = await Medicine.findById(id);
+if (!medicine) {
+  return res.status(404).json({ success: false, message: "Medicine not found" });
+}
+
+if (medicine.seller_email !== req.user.email) {
+  return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+}
 
 await Medicine.findByIdAndDelete(id);
 
@@ -2250,9 +2401,17 @@ app.get("/api/medicine/:id", async (req, res) => {
 
 /* ================= UPDATE MEDICINE ================= */
 
-app.put("/api/update-medicine/:id", upload.array("images", 5), async (req, res) => {
+app.put("/api/update-medicine/:id", authMiddleware, upload.array("images", 5), async (req, res) => {
 
   try {
+    const medicine = await Medicine.findById(req.params.id);
+    if (!medicine) {
+      return res.status(404).json({ error: "Medicine not found" });
+    }
+
+    if (medicine.seller_email !== req.user.email) {
+      return res.status(403).json({ error: "Forbidden: Access denied" });
+    }
 
     const updateData = {
       medicine_name: req.body.medicine_name,

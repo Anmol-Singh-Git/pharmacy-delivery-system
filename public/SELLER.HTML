@@ -189,6 +189,9 @@ try{
   localStorage.clear();
   localStorage.setItem("seller_email", result.email);
   localStorage.setItem("seller_profile", JSON.stringify(result.profile || {}));
+  if (result.token) {
+    localStorage.setItem("token", result.token);
+  }
 
   try{
     await askForLocationPermission("seller");

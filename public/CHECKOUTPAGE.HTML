@@ -716,6 +716,8 @@ async function payOnline(){
 if(!validateDeliveryDetails()) return;
 if(!validatePrescriptionFiles()) return;
 
+try {
+const keyResponse = await window.fetchJson(`${BASE_URL}/api/razorpay-key`, {}, "Unable to retrieve payment configuration");
 const order = await window.fetchJson(`${BASE_URL}/api/create-order`, {
 method: "POST",
 headers: {
@@ -727,7 +729,7 @@ amount: Number(total)
 }, "Server error or invalid response");
 
 const options = {
-key: "rzp_test_SS3TBCR3eyB1WK",
+key: keyResponse.key,
 amount: order.amount,
 currency: "INR",
 name: "MedDeliver",
@@ -766,6 +768,9 @@ alert(window.getApiErrorMessage(error));
 
 const rzp = new Razorpay(options);
 rzp.open();
+} catch(error) {
+alert(window.getApiErrorMessage(error));
+}
 }
 
 document.addEventListener("change", (event) => {

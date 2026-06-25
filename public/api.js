@@ -1,3 +1,25 @@
+// Intercept all outgoing fetch requests to automatically inject JWT authentication headers
+(function() {
+  const originalFetch = window.fetch;
+  window.fetch = async function (url, options = {}) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      options.headers = options.headers || {};
+      if (options.headers instanceof Headers) {
+        options.headers.set("Authorization", `Bearer ${token}`);
+      } else if (Array.isArray(options.headers)) {
+        const hasAuth = options.headers.some(h => h[0].toLowerCase() === 'authorization');
+        if (!hasAuth) {
+          options.headers.push(["Authorization", `Bearer ${token}`]);
+        }
+      } else {
+        options.headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+    return originalFetch(url, options);
+  };
+})();
+
 // Dynamic base URL - automatically works on localhost, network IP, ngrok, or any domain
 // This ensures the app works on: localhost:5000, 192.168.x.x:5000, ngrok URLs, and production domains
 window.API_BASE = window.location.origin;
