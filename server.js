@@ -1570,12 +1570,23 @@ message: "Order failed"
 app.get("/api/seller-orders/:email", authMiddleware, async (req,res)=>{
 
 try{
-if (req.user.email !== req.params.email) {
+const loggedInUserEmail = req.user?.email || req.session?.user?.email || req.session?.email;
+if (!loggedInUserEmail || loggedInUserEmail !== req.params.email) {
   return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
 }
 
-const orders = await Order.find({ "medicines.seller_email": req.params.email })
-.sort({ createdAt: -1 });
+const orders = await Order.find({
+  $or: [
+    { "location.seller_email": loggedInUserEmail },
+    { "seller_email": loggedInUserEmail },
+    { "medicines.seller_email": loggedInUserEmail },
+    { "seller_details.email": loggedInUserEmail }
+  ]
+}).sort({ createdAt: -1 });
+
+if (!orders || orders.length === 0) {
+  return res.status(200).json([]);
+}
 
 res.json(orders.map(order => buildOrderSnapshot(order)));
 
@@ -2280,20 +2291,22 @@ message: "Unable to update delivery location: " + error.message
 app.get("/api/orders", authMiddleware, async(req,res)=>{
 
 try{
+const loggedInUserEmail = req.user?.email || req.session?.user?.email || req.session?.email;
+const requestedEmail = req.query.buyer_email || loggedInUserEmail;
 
-const buyerEmail = req.query.buyer_email;
-if (req.user.email !== buyerEmail) {
+if (!loggedInUserEmail) {
+  return res.status(401).json({ success: false, message: "Unauthorized access" });
+}
+
+if (requestedEmail !== loggedInUserEmail) {
   return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
 }
 
-if(!buyerEmail){
-return res.status(400).json({
-success: false,
-message: "Buyer email required"
-});
-}
+const orders = await Order.find({ buyer_email: loggedInUserEmail });
 
-const orders = await Order.find({ buyer_email: buyerEmail });
+if (!orders || orders.length === 0) {
+  return res.status(200).json([]);
+}
 
 res.json(orders.map(order => buildOrderSnapshot(order)));
 
