@@ -1037,46 +1037,52 @@ app.post('/api/add-medicine', async (req, res) => {
 /* ================= GET MEDICINES ================= */
 
 app.get("/api/medicines", async (req, res) => {
-
   try {
+    let medicineFilter = {};
 
-    const categoryCodes = resolveCategoryCodes(req.query.category);
-    const searchTerm = String(req.query.search || req.query.q || "").trim();
-    let medicineFilter = categoryCodes && categoryCodes.length > 0
-      ? {
-        category: categoryCodes.length === 1
+    // Category filter parsing
+    if (req.query.category) {
+      const categoryCodes = resolveCategoryCodes(req.query.category);
+      if (categoryCodes && categoryCodes.length > 0) {
+        medicineFilter.category = categoryCodes.length === 1
           ? categoryCodes[0]
-          : { $in: categoryCodes }
+          : { $in: categoryCodes };
       }
-      : {};
-
-    if (searchTerm) {
-      const searchRegex = new RegExp(escapeRegex(searchTerm), "i");
-      const matchingSellers = await Seller.find({
-        $or: [
-          { shopName: searchRegex },
-          { pharmacy_name: searchRegex },
-          { owner_name: searchRegex },
-          { city: searchRegex },
-          { pincode: searchRegex }
-        ]
-      }).select("email");
-      const matchingSellerEmails = matchingSellers.map(seller => seller.email).filter(Boolean);
-      const searchFilter = {
-        $or: [
-          { medicine_name: searchRegex },
-          { brand: searchRegex },
-          { category: searchRegex },
-          ...(matchingSellerEmails.length ? [{ seller_email: { $in: matchingSellerEmails } }] : [])
-        ]
-      };
-
-      medicineFilter = Object.keys(medicineFilter).length
-        ? { $and: [medicineFilter, searchFilter] }
-        : searchFilter;
     }
 
+    // Search query parsing
+    const searchTerm = String(req.query.search || req.query.q || "").trim();
+    if (searchTerm) {
+      const searchRegex = new RegExp(escapeRegex(searchTerm), "i");
+      try {
+        const matchingSellers = await Seller.find({
+          $or: [
+            { shopName: searchRegex },
+            { pharmacy_name: searchRegex },
+            { owner_name: searchRegex },
+            { city: searchRegex },
+            { pincode: searchRegex }
+          ]
+        }).select("email");
+        const matchingSellerEmails = matchingSellers.map(seller => seller.email).filter(Boolean);
+        const searchFilter = {
+          $or: [
+            { medicine_name: searchRegex },
+            { brand: searchRegex },
+            { category: searchRegex },
+            ...(matchingSellerEmails.length ? [{ seller_email: { $in: matchingSellerEmails } }] : [])
+          ]
+        };
 
+        medicineFilter = Object.keys(medicineFilter).length
+          ? { $and: [medicineFilter, searchFilter] }
+          : searchFilter;
+      } catch (searchErr) {
+        console.error("Subquery search mapping failed:", searchErr);
+      }
+    }
+
+    // Geospatial filter parsing
     const latParam = req.query.lat || req.query.latitude;
     const lngParam = req.query.lng || req.query.longitude;
 
@@ -1085,59 +1091,70 @@ app.get("/api/medicines", async (req, res) => {
       lngParam !== undefined && lngParam !== null &&
       String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null" && String(lngParam).trim() !== "NaN";
 
-    let userLocation = undefined;
-    if (hasCoords) {
-      userLocation = parseCoordinatePair(latParam, lngParam);
-    }
-
     let finalMedicineFilter = { ...medicineFilter };
 
-    if (userLocation) {
+    if (hasCoords) {
       try {
-        const nearbySellers = await Seller.find({
-          location: {
-            $near: {
-              $geometry: {
-                type: "Point",
-                coordinates: [userLocation.longitude, userLocation.latitude]
-              },
-              $maxDistance: 25 * 1000 // 25 km
+        const userLocation = parseCoordinatePair(latParam, lngParam);
+        if (userLocation) {
+          const nearbySellers = await Seller.find({
+            location: {
+              $near: {
+                $geometry: {
+                  type: "Point",
+                  coordinates: [userLocation.longitude, userLocation.latitude]
+                },
+                $maxDistance: 25 * 1000 // 25 km
+              }
             }
+          }).select("email");
+
+          const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
+
+          if (nearbySellerEmails.length > 0) {
+            const geoFilter = { seller_email: { $in: nearbySellerEmails } };
+            finalMedicineFilter = Object.keys(medicineFilter).length
+              ? { $and: [medicineFilter, geoFilter] }
+              : geoFilter;
           }
-        }).select("email");
-
-        const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
-
-        if (nearbySellerEmails.length > 0) {
-          const geoFilter = { seller_email: { $in: nearbySellerEmails } };
-          finalMedicineFilter = Object.keys(medicineFilter).length
-            ? { $and: [medicineFilter, geoFilter] }
-            : geoFilter;
-        } else {
-          console.log("No nearby sellers found, falling back to global catalog");
         }
       } catch (geoError) {
-        console.error("Geospatial seller lookup failed, using global lookup:", geoError);
+        console.error("Geospatial seller lookup failed, bypassing geolocation filter restriction:", geoError);
       }
     }
 
-    const finalMedicines = await Medicine.find(finalMedicineFilter);
+    let query = Medicine.find(finalMedicineFilter);
+
+    // Sorting rules parsing
+    const sortParam = req.query.sort;
+    if (sortParam) {
+      if (sortParam === "price-asc" || sortParam === "price_asc" || sortParam === "low") {
+        query = query.sort({ price: 1 });
+      } else if (sortParam === "price-desc" || sortParam === "price_desc" || sortParam === "high") {
+        query = query.sort({ price: -1 });
+      } else if (sortParam === "stock-asc" || sortParam === "stock_asc") {
+        query = query.sort({ stock: 1 });
+      } else if (sortParam === "stock-desc" || sortParam === "stock_desc") {
+        query = query.sort({ stock: -1 });
+      }
+    }
+
+    const finalMedicines = await query;
     const enrichedMedicines = await enrichMedicinesWithSellerDetails(finalMedicines);
 
-    res.json(enrichedMedicines);
+    res.json(enrichedMedicines || []);
 
+  } catch (error) {
+    console.error("Primary medicine fetch failed, fallback to global lookup:", error);
+    try {
+      const fallbackMedicines = await Medicine.find({});
+      const enriched = await enrichMedicinesWithSellerDetails(fallbackMedicines);
+      res.json(enriched || []);
+    } catch (fallbackError) {
+      console.error("Fallback lookup failed:", fallbackError);
+      res.json([]);
+    }
   }
-
-  catch (error) {
-
-    console.log(error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching medicines"
-    });
-
-  }
-
 });
 
 app.get("/api/nearby-pharmacies", async (req, res) => {
