@@ -2,15 +2,11 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 mongoose.set('bufferCommands', false);
- 
-let cachedMongoose = global.mongoose;
-if (!cachedMongoose) {
-  cachedMongoose = global.mongoose = mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  }).then((m) => m);
+
+if (!global.mongooseCache) {
+  global.mongooseCache = { conn: null, promise: null };
 }
- 
+
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -135,20 +131,43 @@ const upload = multer({ storage: storage });
 /* ================= DATABASE ================= */
 
 const connectDatabase = async () => {
-  if (mongoose.connection.readyState >= 1) {
-    return;
+  const cached = global.mongooseCache;
+
+  if (cached.conn) {
+    return cached.conn;
   }
+
+  if (!cached.promise) {
+    const opts = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      bufferCommands: false
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/medideliver", opts).then((m) => {
+      console.log("Database connected successfully (new connection established)");
+      return m;
+    });
+  }
+
   try {
-    await cachedMongoose;
-    console.log("Database connected successfully (reused cached connection)");
+    cached.conn = await cached.promise;
   } catch (error) {
-    console.error("Database connection failure:", error);
+    cached.promise = null; // Reset promise on failure so we can try again
+    throw error;
   }
+
+  return cached.conn;
 };
 
 app.use(async (req, res, next) => {
-  await connectDatabase();
-  next();
+  try {
+    await connectDatabase();
+  } catch (error) {
+    console.error("Database connection middleware error:", error);
+  } finally {
+    next();
+  }
 });
 
 const PORT = process.env.PORT || 5000;
