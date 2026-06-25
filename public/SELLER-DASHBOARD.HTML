@@ -1202,13 +1202,25 @@ if (data.image) {
   delete data.image;
 }
 
-await window.fetchJson(`${BASE_URL}/api/add-medicine`, {
-method: "POST",
-headers: {
-  "Content-Type": "application/json"
-},
-body: JSON.stringify(data)
-}, "Server error or invalid response");
+const response = await fetch(`${BASE_URL}/api/add-medicine`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(data)
+});
+
+if (!response.ok) {
+  const errorData = await response.json().catch(() => ({}));
+  const displayError = errorData.message || "Server error or invalid response";
+  const errorBanner = document.getElementById("statusMessage");
+  if (errorBanner) {
+    errorBanner.textContent = displayError;
+    errorBanner.className = "status-message error";
+    errorBanner.classList.remove("hidden");
+  }
+  return;
+}
 
 form.reset();
 updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");

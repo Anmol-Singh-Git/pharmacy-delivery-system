@@ -1067,10 +1067,10 @@ message: "Medicine added successfully"
 
 catch(error){
 
-console.log(error);
+console.error("Product add failed:", error);
 res.status(500).json({
 success: false,
-message: "Error adding medicine"
+message: error.message
 });
 
 }
