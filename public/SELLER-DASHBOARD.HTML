@@ -1183,82 +1183,79 @@ function compressImage(file, maxWidth = 1024) {
 }
 
 async function handleAddProduct(event){
-event.preventDefault();
+  event.preventDefault();
 
-const form = event.currentTarget;
-const submitButton = document.getElementById("addProductBtn");
-setButtonLoading(submitButton, true, "Adding...");
+  const form = event.currentTarget;
+  const submitButton = document.getElementById("addProductBtn");
+  setButtonLoading(submitButton, true, "Adding...");
 
-try{
-const formData = new FormData(form);
-const data = Object.fromEntries(formData.entries());
+  try {
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
 
-const emailLabel = document.getElementById("sellerEmailLabel");
-const activeSellerEmail = (emailLabel && emailLabel.textContent && emailLabel.textContent.includes("@"))
-  ? emailLabel.textContent.trim()
-  : (sellerEmail || localStorage.getItem("seller_email") || "");
-data.seller_email = activeSellerEmail;
+    const emailLabel = document.getElementById("sellerEmailLabel");
+    const activeSellerEmail = (emailLabel && emailLabel.textContent && emailLabel.textContent.includes("@"))
+      ? emailLabel.textContent.trim()
+      : (sellerEmail || localStorage.getItem("seller_email") || "");
+    data.seller_email = activeSellerEmail;
 
-data.price = Number(data.price) || 0;
-data.stock = Number(data.stock) || 0;
+    data.price = Number(data.price) || 0;
+    data.stock = Number(data.stock) || 0;
 
-const fileInput = document.getElementById("addImagesInput");
-const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
-let imagesPayload = [];
+    const fileInput = document.getElementById("addImagesInput");
+    const file = fileInput.files && fileInput.files.length > 0 ? fileInput.files[0] : null;
+    let imagesPayload = [];
 
-if (file) {
-  const compressedBase64 = await compressImage(file);
-  imagesPayload = [compressedBase64];
-}
+    if (file) {
+      const compressedBase64 = await compressImage(file);
+      imagesPayload = [compressedBase64];
+    }
 
-data.images = imagesPayload;
-if (data.image) {
-  delete data.image;
-}
+    data.images = imagesPayload;
+    if (data.image) {
+      delete data.image;
+    }
 
-try {
-  const response = await fetch(`${BASE_URL}/api/add-medicine`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
+    const response = await fetch(`${BASE_URL}/api/add-medicine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
 
-  if (!response.ok) {
-    const rawText = await response.text();
-    console.error("Raw Server Error Output:", rawText);
-    
+    if (!response.ok) {
+      const rawText = await response.text();
+      console.error("Raw Server Error Output:", rawText);
+      
+      const errorBanner = document.getElementById("statusMessage");
+      if (errorBanner) {
+        try {
+          const parsedError = JSON.parse(rawText);
+          errorBanner.textContent = parsedError.message || "Server Error";
+        } catch {
+          errorBanner.textContent = `Server Error (${response.status}): Check developer console for details.`;
+        }
+        errorBanner.className = "status-message error";
+        errorBanner.classList.remove("hidden");
+      }
+      return;
+    }
+
+    const resData = await response.json();
+    form.reset();
+    updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
+    showStatus("Product added successfully.", "success");
+    await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
+  } catch (err) {
+    console.error("Frontend Submission Crash:", err);
     const errorBanner = document.getElementById("statusMessage");
     if (errorBanner) {
-      // Attempt to parse JSON error message, otherwise fallback to raw text snippet
-      try {
-        const parsedError = JSON.parse(rawText);
-        errorBanner.textContent = parsedError.message || "Server Error";
-      } catch {
-        errorBanner.textContent = `Server Error (${response.status}): Check developer console for details.`;
-      }
+      errorBanner.textContent = "Network error or script execution crash.";
       errorBanner.className = "status-message error";
       errorBanner.classList.remove("hidden");
     }
-    return;
+  } finally {
+    setButtonLoading(submitButton, false, "Adding...");
   }
-
-  const resData = await response.json();
-  form.reset();
-  updateImageHint("addImagesInput", "addImageHint", "Upload up to 5 images.");
-  showStatus("Product added successfully.", "success");
-  await Promise.all([loadSellerMedicines(), loadSellerOrders()]);
-} catch (err) {
-  console.error("Frontend Submission Crash:", err);
-  const errorBanner = document.getElementById("statusMessage");
-  if (errorBanner) {
-    errorBanner.textContent = "Network error or script execution crash.";
-    errorBanner.className = "status-message error";
-    errorBanner.classList.remove("hidden");
-  }
-}
-finally{
-setButtonLoading(submitButton, false, "Adding...");
-}
 }
 
 async function handleEditProduct(event){
