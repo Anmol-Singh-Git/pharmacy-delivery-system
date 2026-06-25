@@ -208,11 +208,28 @@ onkeydown="handleSearchKeydown(event)"
 }
 
 function loadNavbar(){
-const navbar = document.getElementById("navbar");
-const navSearch = getNavbarSearchMarkup();
+  try {
+    const navElement = document.getElementById("navbar") || document.getElementById("main-header");
+    if (!navElement) return;
 
-if(!buyerEmail && !sellerEmail){
-navbar.innerHTML = `
+    let navSearch = "";
+    try {
+      navSearch = typeof getNavbarSearchMarkup === "function" ? getNavbarSearchMarkup() : "";
+    } catch (searchError) {
+      console.error("Error loading navbar search markup:", searchError);
+    }
+
+    let cartLabel = "Cart";
+    try {
+      if (window.getCartNavLabel) {
+        cartLabel = window.getCartNavLabel();
+      }
+    } catch (cartError) {
+      console.error("Error loading cart nav label:", cartError);
+    }
+
+    if(!buyerEmail && !sellerEmail){
+      navElement.innerHTML = `
 <header class="navbar navbar-search">
 <a href="/HOMEPAGE.HTML" class="logo-container">
   <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
@@ -225,11 +242,11 @@ ${navSearch}
 </nav>
 </header>
 `;
-return;
-}
+      return;
+    }
 
-if(buyerEmail){
-navbar.innerHTML = `
+    if(buyerEmail){
+      navElement.innerHTML = `
 <header class="navbar navbar-search">
 <a href="/HOMEPAGE.HTML" class="logo-container">
   <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
@@ -237,16 +254,16 @@ navbar.innerHTML = `
 ${navSearch}
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
-<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="CARTPAGE.HTML">${cartLabel}</a>
 <a href="ORDERS.HTML">Orders</a>
 <a href="#" onclick="logout()">Logout</a>
 </nav>
 </header>
 `;
-return;
-}
+      return;
+    }
 
-navbar.innerHTML = `
+    navElement.innerHTML = `
 <header class="navbar navbar-search">
 <a class="logo" href="HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 ${navSearch}
@@ -256,6 +273,9 @@ ${navSearch}
 </nav>
 </header>
 `;
+  } catch (err) {
+    console.error("Critical error in loadNavbar:", err);
+  }
 }
 
 function logout(){
@@ -1066,16 +1086,42 @@ showEmptyState("Server error or invalid response");
 }
 }
 
-loadNavbar();
-applyInitialSearchState();
-hydrateBuyerLocationFromStorage();
+try {
+  loadNavbar();
+} catch (navbarError) {
+  console.error("Navbar loading failed:", navbarError);
+}
+
+try {
+  applyInitialSearchState();
+} catch (err) {
+  console.error("Failed to apply initial search state:", err);
+}
+
+try {
+  hydrateBuyerLocationFromStorage();
+} catch (err) {
+  console.error("Failed to hydrate buyer location:", err);
+}
 
 (async function initListing(){
-if(buyerEmail){
-await window.syncMedDeliverDeviceLocation();
-hydrateBuyerLocationFromStorage();
-}
-await loadMedicines();
+  if(buyerEmail){
+    try {
+      await window.syncMedDeliverDeviceLocation();
+    } catch (err) {
+      console.error("Failed to sync location:", err);
+    }
+    try {
+      hydrateBuyerLocationFromStorage();
+    } catch (err) {
+      console.error("Failed to hydrate location after sync:", err);
+    }
+  }
+  try {
+    await loadMedicines();
+  } catch (err) {
+    console.error("Failed to load medicines:", err);
+  }
 })();
 </script>
 

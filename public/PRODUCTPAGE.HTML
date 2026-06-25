@@ -385,10 +385,21 @@ hint.textContent = count ? `${count} image(s) selected.` : "Leave empty to keep 
 }
 
 function loadNavbar(){
-const navbar = document.getElementById("navbar");
+  try {
+    const navElement = document.getElementById("navbar") || document.getElementById("main-header");
+    if (!navElement) return;
 
-if(!buyerEmail && !sellerEmail){
-navbar.innerHTML = `
+    let cartLabel = "Cart";
+    try {
+      if (window.getCartNavLabel) {
+        cartLabel = window.getCartNavLabel();
+      }
+    } catch (cartError) {
+      console.error("Error loading cart nav label:", cartError);
+    }
+
+    if(!buyerEmail && !sellerEmail){
+      navElement.innerHTML = `
 <header class="navbar">
 <a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
@@ -398,11 +409,11 @@ navbar.innerHTML = `
 </nav>
 </header>
 `;
-return;
-}
+      return;
+    }
 
-if(sellerEmail){
-navbar.innerHTML = `
+    if(sellerEmail){
+      navElement.innerHTML = `
 <header class="navbar">
 <a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
@@ -412,20 +423,23 @@ navbar.innerHTML = `
 </nav>
 </header>
 `;
-return;
-}
+      return;
+    }
 
-navbar.innerHTML = `
+    navElement.innerHTML = `
 <header class="navbar">
 <a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
-<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
+<a href="CARTPAGE.HTML">${cartLabel}</a>
 <a href="ORDERS.HTML">Orders</a>
 <a href="#" onclick="logout()">Logout</a>
 </nav>
 </header>
 `;
+  } catch (err) {
+    console.error("Critical error in loadNavbar:", err);
+  }
 }
 
 function logout(){
@@ -785,10 +799,23 @@ function initImageZoom() {
   });
 }
 
-initImageZoom();
+try {
+  initImageZoom();
+} catch (zoomError) {
+  console.error("Failed to initialize zoom:", zoomError);
+}
 
-loadNavbar();
-loadSelectedProduct();
+try {
+  loadNavbar();
+} catch (navbarError) {
+  console.error("Navbar loading failed:", navbarError);
+}
+
+try {
+  loadSelectedProduct();
+} catch (productError) {
+  console.error("Failed to load selected product:", productError);
+}
 </script>
 
 </body>

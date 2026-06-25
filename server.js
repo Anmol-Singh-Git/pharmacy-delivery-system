@@ -1121,8 +1121,47 @@ medicineFilter = Object.keys(medicineFilter).length
 : searchFilter;
 }
 
-const medicines = await Medicine.find(medicineFilter);
-const enrichedMedicines = await enrichMedicinesWithSellerDetails(medicines);
+
+const latParam = req.query.lat || req.query.latitude;
+const lngParam = req.query.lng || req.query.longitude;
+
+const hasCoords = latParam !== undefined && latParam !== null && String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" &&
+                  lngParam !== undefined && lngParam !== null && String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null";
+
+let userLocation = undefined;
+if (hasCoords) {
+  userLocation = parseCoordinatePair(latParam, lngParam);
+}
+
+let finalMedicineFilter = { ...medicineFilter };
+
+if (userLocation) {
+  try {
+    const nearbySellers = await Seller.find({
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [userLocation.longitude, userLocation.latitude]
+          },
+          $maxDistance: 25 * 1000 // 25 km
+        }
+      }
+    }).select("email");
+
+    const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
+    const geoFilter = { seller_email: { $in: nearbySellerEmails } };
+
+    finalMedicineFilter = Object.keys(medicineFilter).length
+      ? { $and: [medicineFilter, geoFilter] }
+      : geoFilter;
+  } catch (geoError) {
+    console.error("Geospatial seller lookup failed, using global lookup:", geoError);
+  }
+}
+
+const finalMedicines = await Medicine.find(finalMedicineFilter);
+const enrichedMedicines = await enrichMedicinesWithSellerDetails(finalMedicines);
 
 res.json(enrichedMedicines);
 
