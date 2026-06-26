@@ -170,6 +170,10 @@ async function login(){
   }
 
   try{
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'LOGINPAGE.HTML:login-submit',message:'client login submit',data:{email,passwordLen:password.length},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
     const response = await fetch("/api/login", {
       method: "POST",
       headers: {
@@ -178,6 +182,10 @@ async function login(){
       body: JSON.stringify({ email, password })
     });
     const data = await window.parseJsonResponse(response);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'LOGINPAGE.HTML:login-response',message:'client login response',data:{status:response.status,ok:response.ok,success:!!data.success,role:data.role||null,message:data.message||null},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
 
     if(!response.ok || !data.success){
       alert(data.message || "Invalid credentials");
@@ -213,6 +221,9 @@ async function login(){
   }
   catch(error){
     console.log(error);
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'LOGINPAGE.HTML:login-catch',message:'client login error',data:{errorMessage:error?.message||String(error)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     alert(window.getApiErrorMessage(error));
   }
 }

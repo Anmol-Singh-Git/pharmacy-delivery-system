@@ -1,10 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-mongoose.set('bufferCommands', false);
+const dns = require("dns");
+
+// Atlas SRV records fail on some Windows DNS setups; public resolvers are reliable.
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
+mongoose.set("bufferCommands", false);
 
 if (mongoose.connection.readyState === 0) {
-  mongoose.connect(process.env.MONGODB_URI)
+  mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 })
     .then(() => console.log("MongoDB connected successfully"))
     .catch(err => console.error("MongoDB connection error:", err));
 }
@@ -882,11 +887,19 @@ app.post("/api/login", async (req, res) => {
 
   const { email, password } = req.body;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-entry',message:'login attempt',data:{email:email||null,hasPassword:!!password,mongooseReadyState:mongoose.connection.readyState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   try {
 
     /* CHECK BUYER */
 
     const buyer = await Buyer.findOne({ email, password });
+
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-buyer-query',message:'buyer lookup done',data:{buyerFound:!!buyer,emailUsed:email||null},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
 
     if (buyer) {
 
@@ -920,6 +933,10 @@ app.post("/api/login", async (req, res) => {
 
     /* INVALID LOGIN */
 
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-invalid',message:'no buyer or seller match',data:{email:email||null},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
     res.status(401).json({
       success: false,
       message: "Invalid email or password"
@@ -930,6 +947,10 @@ app.post("/api/login", async (req, res) => {
   catch (error) {
 
     console.log(error);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-catch',message:'login error',data:{errorName:error?.name,errorMessage:error?.message,mongooseReadyState:mongoose.connection.readyState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     res.status(500).json({
       success: false,
