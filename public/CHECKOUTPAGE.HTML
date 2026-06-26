@@ -770,13 +770,34 @@ updatePrescriptionFileStatus(event.target.dataset.uploadKey);
 }
 });
 
+function renderCheckoutSummary(items, checkoutTotal) {
+    orderMedicines = items.map(item => ({
+        medicine_id: item.id || "",
+        medicine_name: item.name || "",
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        image: "default.png",
+        prescription_required: "No"
+    }));
+    renderOrderSummary();
+}
+
 async function initCheckout(){
 loadNavbar();
 if(window.hydrateBuyerCoordsFromServer){
 await window.hydrateBuyerCoordsFromServer();
 }
-await prepareCheckoutData();
-renderOrderSummary();
+
+const checkoutDataRaw = localStorage.getItem('meddeliver_checkout');
+if (checkoutDataRaw) {
+    const checkoutData = JSON.parse(checkoutDataRaw);
+    renderCheckoutSummary(checkoutData.items, checkoutData.total);
+} else {
+    console.warn('No cart data bridged to checkout');
+    await prepareCheckoutData();
+    renderOrderSummary();
+}
+
 prefillDeliveryDetails();
 renderPrescriptionPanel();
 }

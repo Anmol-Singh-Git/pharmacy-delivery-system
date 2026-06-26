@@ -332,6 +332,15 @@ alert("Cart is empty");
 return;
 }
 
+const cartItems = currentCart;
+const totalAmount = currentCart.reduce((sum, item) => sum + (Number(item.price) || 0) * Number(item.quantity || 1), 0);
+
+const checkoutData = {
+    items: cartItems.map(item => ({ id: item.medicine_id || item._id, name: item.medicine_name || item.name, price: item.price, quantity: item.quantity })),
+    total: totalAmount
+};
+localStorage.setItem('meddeliver_checkout', JSON.stringify(checkoutData));
+
 const orderData = currentCart.map(item => ({
 medicine_id: item.medicine_id || "",
 medicine_name: item.medicine_name,
