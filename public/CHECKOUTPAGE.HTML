@@ -655,6 +655,7 @@ localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
     payload.buyerLng = buyerLng;
   }
 
+  console.log("Sending token:", localStorage.getItem('token'));
   return window.fetchJson(`${BASE_URL}/api/place-order`, {
     method: "POST",
     headers: {

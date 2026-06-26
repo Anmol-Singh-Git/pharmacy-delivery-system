@@ -83,6 +83,8 @@ function nosqlSanitizer(req, res, next) {
 app.use(nosqlSanitizer);
 
 function authMiddleware(req, res, next) {
+  console.log("Received Auth Header:", req.headers.authorization);
+
   // If we bypass auth for demo validation or serverless container swaps
   if (process.env.BYPASS_AUTH_FOR_DEMO === "true" || process.env.NODE_ENV !== "production") {
     const fallbackEmail = req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
@@ -107,7 +109,11 @@ function authMiddleware(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!process.env.JWT_SECRET) {
+      console.warn("WARNING: process.env.JWT_SECRET is unreadable or undefined in this environment. Defaulting to fallback security key.");
+    }
+    const secret = process.env.JWT_SECRET || "supersecretkey";
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (err) {
