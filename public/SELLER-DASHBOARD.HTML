@@ -230,7 +230,7 @@ placeholder="Describe what this product is for, how it helps, and the key benefi
 <input type="text" name="city" id="account_city" required>
 </label>
 
-<div class="field pincode-recalibrate-row">
+<div class="pincode-recalibrate-row">
 <label class="field pincode-field">
 <span>Pincode</span>
 <input type="text" name="pincode" id="account_pincode" required>
@@ -623,7 +623,7 @@ async function recalibrateSellerLocation() {
     document.getElementById("accountLongitude").value = lng;
 
     if (statusEl) {
-      statusEl.textContent = `Location updated: ${lat.toFixed(5)}, ${lng.toFixed(5)} — click Save Account Details to persist.`;
+      statusEl.textContent = `${lat}, ${lng}`;
       statusEl.className = "account-location-status success";
     }
 

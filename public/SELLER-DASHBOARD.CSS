@@ -1034,9 +1034,9 @@ height:200px;
 /* ── Recalibrate Location Button (Seller Account Modal) ── */
 .pincode-recalibrate-row {
   display: flex;
+  flex-direction: row;
   align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .pincode-recalibrate-row .pincode-field {
