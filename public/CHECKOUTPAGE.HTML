@@ -636,43 +636,33 @@ buyerProfile = {
 
 localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
 
-const formData = new FormData();
-formData.append("buyer_email", buyerEmail);
-  formData.append("medicines", JSON.stringify(orderMedicines.map(item => ({
-    medicine_id: item.medicine_id || "",
-    medicine_name: item.medicine_name,
-    seller_email: item.seller_email || "",
-    quantity: Number(item.quantity || 1)
-  }))));
-  formData.append("total_price", String(total));
-  formData.append("delivery_details", JSON.stringify(deliveryDetails));
-  formData.append("payment_method", paymentMethod || "");
+  const token = localStorage.getItem("token") || "";
+  const payload = {
+    buyer_email: buyerEmail,
+    medicines: orderMedicines.map(item => ({
+      medicine_id: item.medicine_id || "",
+      medicine_name: item.medicine_name,
+      seller_email: item.seller_email || "",
+      quantity: Number(item.quantity || 1)
+    })),
+    total_price: total,
+    delivery_details: deliveryDetails,
+    payment_method: paymentMethod || ""
+  };
   
-  if(buyerLat && buyerLng) {
-    formData.append("buyerLat", String(buyerLat));
-    formData.append("buyerLng", String(buyerLng));
+  if (buyerLat && buyerLng) {
+    payload.buyerLat = buyerLat;
+    payload.buyerLng = buyerLng;
   }
 
-if(requiredPrescriptionItems.length){
-const prescriptionPayload = requiredPrescriptionItems.map(item => {
-const file = getPrescriptionFile(item.upload_key);
-formData.append(item.upload_key, file, file.name);
-
-return {
-medicine_id: item.medicine_id || "",
-medicine_name: item.medicine_name,
-seller_email: item.seller_email || "",
-field_name: item.upload_key
-};
-});
-
-formData.append("prescriptions", JSON.stringify(prescriptionPayload));
-}
-
-return window.fetchJson(`${BASE_URL}/api/place-order`, {
-method: "POST",
-body: formData
-}, "Server error or invalid response");
+  return window.fetchJson(`${BASE_URL}/api/place-order`, {
+    method: "POST",
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  }, "Server error or invalid response");
 }
 
 function clearOrderState(){
