@@ -735,7 +735,7 @@ async function enrichMedicinesWithSellerDetails(medicines) {
     });
   }
 
-  const sellers = await Seller.find({ email: { $in: sellerEmails } });
+  const sellers = await Seller.find({ email: { $in: sellerEmails } }).lean();
   const sellerMap = new Map(
     sellers.map(seller => [seller.email, cleanPublicSeller(seller)])
   );
@@ -1065,11 +1065,31 @@ app.post('/api/add-medicine', async (req, res) => {
 
 app.get("/api/medicines", async (req, res) => {
   try {
+    const latParam = req.query.lat || req.query.latitude;
+    const lngParam = req.query.lng || req.query.longitude;
+    const categoryParam = req.query.category;
+    const searchTerm = String(req.query.search || req.query.q || "").trim();
+
+    const hasCoords = latParam !== undefined && latParam !== null &&
+      String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" && String(latParam).trim() !== "NaN";
+
+    const hasCategory = categoryParam !== undefined && categoryParam !== null &&
+      String(categoryParam).trim() !== "" && String(categoryParam).trim() !== "undefined" && String(categoryParam).trim() !== "null" && String(categoryParam).trim() !== "all";
+
+    const hasSearch = searchTerm !== "";
+
+    // 1. Restore Global Unconditional Data Fetching: If coordinates, category, and search are missing, null, or undefined, completely skip filtering.
+    if (!hasCoords && !hasCategory && !hasSearch) {
+      const products = await Medicine.find({}).lean();
+      const enriched = await enrichMedicinesWithSellerDetails(products);
+      return res.json(enriched || []);
+    }
+
     let medicineFilter = {};
 
     // Category filter parsing
-    if (req.query.category) {
-      const categoryCodes = resolveCategoryCodes(req.query.category);
+    if (hasCategory) {
+      const categoryCodes = resolveCategoryCodes(categoryParam);
       if (categoryCodes && categoryCodes.length > 0) {
         medicineFilter.category = categoryCodes.length === 1
           ? categoryCodes[0]
@@ -1078,8 +1098,7 @@ app.get("/api/medicines", async (req, res) => {
     }
 
     // Search query parsing
-    const searchTerm = String(req.query.search || req.query.q || "").trim();
-    if (searchTerm) {
+    if (hasSearch) {
       const searchRegex = new RegExp(escapeRegex(searchTerm), "i");
       try {
         const matchingSellers = await Seller.find({
@@ -1090,7 +1109,7 @@ app.get("/api/medicines", async (req, res) => {
             { city: searchRegex },
             { pincode: searchRegex }
           ]
-        }).select("email");
+        }).select("email").lean();
         const matchingSellerEmails = matchingSellers.map(seller => seller.email).filter(Boolean);
         const searchFilter = {
           $or: [
@@ -1109,17 +1128,9 @@ app.get("/api/medicines", async (req, res) => {
       }
     }
 
-    // Geospatial filter parsing
-    const latParam = req.query.lat || req.query.latitude;
-    const lngParam = req.query.lng || req.query.longitude;
-
-    const hasCoords = latParam !== undefined && latParam !== null &&
-      String(latParam).trim() !== "" && String(latParam).trim() !== "undefined" && String(latParam).trim() !== "null" && String(latParam).trim() !== "NaN" &&
-      lngParam !== undefined && lngParam !== null &&
-      String(lngParam).trim() !== "" && String(lngParam).trim() !== "undefined" && String(lngParam).trim() !== "null" && String(lngParam).trim() !== "NaN";
-
     let finalMedicineFilter = { ...medicineFilter };
 
+    // Geospatial filtering: Only performed if coordinates are present, not missing/null/undefined
     if (hasCoords) {
       try {
         const userLocation = parseCoordinatePair(latParam, lngParam);
@@ -1134,7 +1145,7 @@ app.get("/api/medicines", async (req, res) => {
                 $maxDistance: 25 * 1000 // 25 km
               }
             }
-          }).select("email");
+          }).select("email").lean();
 
           const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
 
@@ -1150,7 +1161,7 @@ app.get("/api/medicines", async (req, res) => {
       }
     }
 
-    let query = Medicine.find(finalMedicineFilter);
+    let query = Medicine.find(finalMedicineFilter).lean();
 
     // Sorting rules parsing
     const sortParam = req.query.sort;
@@ -1174,7 +1185,7 @@ app.get("/api/medicines", async (req, res) => {
   } catch (error) {
     console.error("Primary medicine fetch failed, fallback to global lookup:", error);
     try {
-      const fallbackMedicines = await Medicine.find({});
+      const fallbackMedicines = await Medicine.find({}).lean();
       const enriched = await enrichMedicinesWithSellerDetails(fallbackMedicines);
       res.json(enriched || []);
     } catch (fallbackError) {
