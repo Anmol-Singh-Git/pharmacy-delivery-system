@@ -464,7 +464,7 @@ container.innerHTML += `
 <div class="order-item">
 <div class="order-item-main">
 <div class="order-thumb">
-<img src="${escapeHtml(getOrderItemImage(item))}" alt="${escapeHtml(item.medicine_name)}">
+<img src="${item.image}" alt="${escapeHtml(item.medicine_name)}">
 </div>
 <div>
 <strong>${escapeHtml(item.medicine_name)}</strong>
@@ -776,7 +776,7 @@ function renderCheckoutSummary(items, checkoutTotal) {
         medicine_name: item.name || "",
         price: Number(item.price) || 0,
         quantity: Number(item.quantity) || 1,
-        image: "default.png",
+        image: item.image || "default.png",
         prescription_required: "No"
     }));
     renderOrderSummary();
@@ -784,7 +784,11 @@ function renderCheckoutSummary(items, checkoutTotal) {
 
 async function initCheckout(){
 loadNavbar();
-if(window.hydrateBuyerCoordsFromServer){
+
+const tokenStr = localStorage.getItem('token');
+const isTokenValid = tokenStr && tokenStr !== "null" && tokenStr !== "undefined";
+
+if(window.hydrateBuyerCoordsFromServer && isTokenValid){
 await window.hydrateBuyerCoordsFromServer();
 }
 
