@@ -27,7 +27,13 @@
 <div class="sub-header-search-container" id="subHeaderSearch"></div>
 
 <section class="page-header">
+<div class="page-header-row">
 <h1 id="pageTitle">Browse Products</h1>
+<button type="button" id="resetLocationBtn" class="reset-location-btn" onclick="resetBuyerLocation()" title="Re-detect your GPS location and refresh distances">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><polyline points="22 2 22 8 16 8"/><path d="M22 12A10 10 0 0 0 12 2"/></svg>
+  Reset Location
+</button>
+</div>
 <p id="pageCopy">Find products or locate the nearest pharmacies using your current location.</p>
 </section>
 
@@ -394,10 +400,9 @@ status.className = `location-status ${tone}`;
 
 let badgeHtml = "";
 if (buyerLocation && buyerLocation.latitude && buyerLocation.longitude) {
-  const locStr = `${buyerLocation.latitude.toFixed(4)}, ${buyerLocation.longitude.toFixed(4)}`;
   badgeHtml = `
     <span class="location-badge" onclick="openLocationModal()" title="Click to change location">
-      📍 ${locStr}
+      📍 Location Active
     </span>
   `;
 } else {
@@ -1191,6 +1196,51 @@ function updateDistanceOnVisibleCards(buyerLoc) {
       }
     }
   });
+}
+
+async function resetBuyerLocation() {
+  const btn = document.getElementById("resetLocationBtn");
+  if (!btn) return;
+
+  const origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="reset-loc-spinner"></span> Detecting…`;
+
+  try {
+    const freshLocation = await getCurrentLocation();
+    buyerLocation = freshLocation;
+    saveBuyerLocation(buyerLocation);
+
+    // Persist to server in the background
+    const email = localStorage.getItem("buyer_email") || localStorage.getItem("seller_email");
+    const role = localStorage.getItem("buyer_email") ? "buyer" : "seller";
+    if (email) {
+      fetch(`${BASE_URL}/api/update-location`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role, latitude: freshLocation.latitude, longitude: freshLocation.longitude })
+      }).catch(e => console.error("Reset location server sync failed:", e));
+    }
+
+    // Instantly recalculate distance on all visible medicine cards
+    updateDistanceOnVisibleCards(buyerLocation);
+
+    // Re-render location status badge
+    renderDefaultLocationStatus();
+
+    // If in pharmacy mode, re-fetch nearby pharmacies with new coords
+    if (currentSearchMode === "pharmacies") {
+      await fetchNearbyPharmacies(false);
+    }
+
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Updated!`;
+    setTimeout(() => { btn.innerHTML = origHTML; btn.disabled = false; }, 2000);
+  } catch (err) {
+    console.error("Reset location failed:", err);
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+    alert(err.message || "Could not detect your location. Please check your browser permissions.");
+  }
 }
 
 try {
