@@ -302,3 +302,55 @@ window.syncMedDeliverDeviceLocation = function syncMedDeliverDeviceLocation() {
     );
   });
 };
+
+window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
+  try {
+    const navElement = document.getElementById("navbar") || document.getElementById("main-header");
+    if (!navElement) return;
+
+    const buyerEmail = localStorage.getItem("buyer_email");
+    const sellerEmail = localStorage.getItem("seller_email");
+    const cartLabel = window.getCartNavLabel ? window.getCartNavLabel() : "Cart";
+
+    let linksHtml = "";
+    if (!buyerEmail && !sellerEmail) {
+      linksHtml = `
+        <a href="HOMEPAGE.HTML" class="${activePage === 'home' ? 'active' : ''}">Home</a>
+        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Browse</a>
+        <a href="LOGINPAGE.HTML">Login</a>
+        <a href="REGISTERPAGE.HTML">Register</a>
+      `;
+    } else if (buyerEmail) {
+      linksHtml = `
+        <a href="HOMEPAGE.HTML" class="${activePage === 'home' ? 'active' : ''}">Home</a>
+        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Browse</a>
+        <a href="CARTPAGE.HTML" class="${activePage === 'cart' ? 'active' : ''}">${cartLabel}</a>
+        <a href="ORDERS.HTML" class="${activePage === 'orders' ? 'active' : ''}">Orders</a>
+        <a href="#" onclick="window.logout(); return false;">Logout</a>
+      `;
+    } else {
+      linksHtml = `
+        <a href="SELLER-DASHBOARD.HTML" class="${activePage === 'dashboard' ? 'active' : ''}">Dashboard</a>
+        <a href="#" onclick="window.logout(); return false;">Logout</a>
+      `;
+    }
+
+    navElement.innerHTML = `
+      <header class="navbar">
+        <a href="HOMEPAGE.HTML" class="logo-container">
+          <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+        </a>
+        <nav>
+          ${linksHtml}
+        </nav>
+      </header>
+    `;
+  } catch (err) {
+    console.error("Critical error in window.loadNavbar:", err);
+  }
+};
+
+window.logout = function logout() {
+  localStorage.clear();
+  window.location.href = "LOGINPAGE.HTML";
+};

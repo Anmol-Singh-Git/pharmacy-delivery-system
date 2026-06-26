@@ -24,6 +24,7 @@
 <body>
 
 <div id="navbar"></div>
+<div class="sub-header-search-container" id="subHeaderSearch"></div>
 
 <section class="page-header">
 <h1 id="pageTitle">Browse Products</h1>
@@ -189,7 +190,7 @@ queryValue: "Home Essentials"
 
 function getNavbarSearchMarkup(){
 return `
-<div class="nav-search">
+<div class="unified-search-group">
 <select id="searchMode" onchange="handleSearchModeChange()">
 <option value="medicines">Search Products</option>
 <option value="pharmacies">Search Nearby Pharmacies</option>
@@ -209,78 +210,18 @@ onkeydown="handleSearchKeydown(event)"
 
 function loadNavbar(){
   try {
-    const navElement = document.getElementById("navbar") || document.getElementById("main-header");
-    if (!navElement) return;
-
-    let navSearch = "";
-    try {
-      navSearch = typeof getNavbarSearchMarkup === "function" ? getNavbarSearchMarkup() : "";
-    } catch (searchError) {
-      console.error("Error loading navbar search markup:", searchError);
+    window.renderGlobalNavbar('browse');
+    const subHeader = document.getElementById("subHeaderSearch");
+    if (subHeader) {
+      subHeader.innerHTML = typeof getNavbarSearchMarkup === "function" ? getNavbarSearchMarkup() : "";
     }
-
-    let cartLabel = "Cart";
-    try {
-      if (window.getCartNavLabel) {
-        cartLabel = window.getCartNavLabel();
-      }
-    } catch (cartError) {
-      console.error("Error loading cart nav label:", cartError);
-    }
-
-    if(!buyerEmail && !sellerEmail){
-      navElement.innerHTML = `
-<header class="navbar navbar-search">
-<a href="/HOMEPAGE.HTML" class="logo-container">
-  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
-</a>
-${navSearch}
-<nav>
-<a href="HOMEPAGE.HTML">Home</a>
-<a href="LOGINPAGE.HTML">Login</a>
-<a href="REGISTERPAGE.HTML">Register</a>
-</nav>
-</header>
-`;
-      return;
-    }
-
-    if(buyerEmail){
-      navElement.innerHTML = `
-<header class="navbar navbar-search">
-<a href="/HOMEPAGE.HTML" class="logo-container">
-  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
-</a>
-${navSearch}
-<nav>
-<a href="HOMEPAGE.HTML">Home</a>
-<a href="CARTPAGE.HTML">${cartLabel}</a>
-<a href="ORDERS.HTML">Orders</a>
-<a href="#" onclick="logout()">Logout</a>
-</nav>
-</header>
-`;
-      return;
-    }
-
-    navElement.innerHTML = `
-<header class="navbar navbar-search">
-<a class="logo" href="HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
-${navSearch}
-<nav>
-<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
-<a href="#" onclick="logout()">Logout</a>
-</nav>
-</header>
-`;
   } catch (err) {
-    console.error("Critical error in loadNavbar:", err);
+    console.error("Failed to load standard navbar:", err);
   }
 }
 
 function logout(){
-localStorage.clear();
-window.location.href = "LOGINPAGE.HTML";
+  window.logout();
 }
 
 function storeProduct(medicine){
@@ -450,10 +391,96 @@ return;
 }
 
 status.className = `location-status ${tone}`;
+
+let badgeHtml = "";
+if (buyerLocation && buyerLocation.latitude && buyerLocation.longitude) {
+  const locStr = `${buyerLocation.latitude.toFixed(4)}, ${buyerLocation.longitude.toFixed(4)}`;
+  badgeHtml = `
+    <span class="location-badge" onclick="openLocationModal()" title="Click to change location">
+      📍 ${locStr}
+    </span>
+  `;
+} else {
+  badgeHtml = `
+    <button type="button" class="select-location-badge-btn" onclick="openLocationModal()">
+      📍 Select Location
+    </button>
+  `;
+}
+
 status.innerHTML = `
 ${loading ? '<span class="status-spinner"></span>' : ""}
 <span>${escapeHtml(message)}</span>
+${badgeHtml}
 `;
+}
+
+function openLocationModal() {
+  const modal = document.getElementById("locationModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    if (buyerLocation && buyerLocation.latitude && buyerLocation.longitude) {
+      document.getElementById("modalLat").value = buyerLocation.latitude;
+      document.getElementById("modalLng").value = buyerLocation.longitude;
+    }
+  }
+}
+
+function closeLocationModal() {
+  const modal = document.getElementById("locationModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function useCurrentLocationInModal() {
+  try {
+    const detectBtn = document.querySelector(".modal-btn.secondary");
+    const origText = detectBtn ? detectBtn.textContent : "Detect My Location";
+    if (detectBtn) {
+      detectBtn.textContent = "Detecting...";
+      detectBtn.disabled = true;
+    }
+    
+    const loc = await getCurrentLocation();
+    document.getElementById("modalLat").value = loc.latitude;
+    document.getElementById("modalLng").value = loc.longitude;
+    
+    if (detectBtn) {
+      detectBtn.textContent = origText;
+      detectBtn.disabled = false;
+    }
+  } catch (err) {
+    alert(err.message || "Failed to detect location.");
+    const detectBtn = document.querySelector(".modal-btn.secondary");
+    if (detectBtn) {
+      detectBtn.textContent = "Detect My Location";
+      detectBtn.disabled = false;
+    }
+  }
+}
+
+function saveLocationFromModal() {
+  const latVal = parseFloat(document.getElementById("modalLat").value);
+  const lngVal = parseFloat(document.getElementById("modalLng").value);
+  if (isNaN(latVal) || isNaN(lngVal)) {
+    alert("Please enter valid decimal coordinates for latitude and longitude.");
+    return;
+  }
+  buyerLocation = { latitude: latVal, longitude: lngVal };
+  saveBuyerLocation(buyerLocation);
+  closeLocationModal();
+  
+  // Recalculate distance dynamically on all visible cards
+  updateDistanceOnVisibleCards(buyerLocation);
+  
+  // Update status message with the new pin/coordinates badge
+  renderDefaultLocationStatus();
+  
+  // Trigger a fresh search if we are searching pharmacies
+  if (currentSearchMode === "pharmacies") {
+    fetchNearbyPharmacies(false);
+  }
 }
 
 function renderDefaultLocationStatus(){
@@ -653,6 +680,18 @@ imgTag.src = first;
 }
 }
 
+function resetFilters() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("categoryFilter").value = "all";
+  document.getElementById("priceSort").value = "default";
+  document.getElementById("stockSort").value = "default";
+  activeCategoryFilter = "all";
+  activeSellerFilter = "";
+  currentSearchMode = "medicines";
+  updateSearchUi();
+  loadMedicines();
+}
+
 function displayMedicines(medicines){
 const container = document.getElementById("medicine-container");
 container.classList.remove("pharmacy-view");
@@ -663,7 +702,14 @@ updateResultsHead(
 activeCategoryFilter !== "all" ? `Showing: ${getCategoryLabel(activeCategoryFilter)}` : "Product Results",
 "No products match the current search and filters."
 );
-container.innerHTML = "<p>No products found.</p>";
+container.innerHTML = `
+  <div class="empty-state-card">
+    <div class="empty-icon">🔍</div>
+    <h3>No Products Found</h3>
+    <p>We couldn't find any products matching your search or selected filters. Try adjusting them or resetting them below.</p>
+    <button class="reset-filters-btn" type="button" onclick="resetFilters()">Reset Filters</button>
+  </div>
+`;
 return;
 }
 
@@ -1213,6 +1259,29 @@ try {
   }
 })();
 </script>
+
+<!-- Location Modal -->
+<div id="locationModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close-modal-btn" onclick="closeLocationModal()">&times;</span>
+    <h3>Select Location</h3>
+    <p>Please enter your coordinates to calculate precise distance metrics.</p>
+    <div class="modal-inputs">
+      <div class="input-group">
+        <label for="modalLat">Latitude</label>
+        <input type="number" id="modalLat" step="any" placeholder="e.g. 12.9716">
+      </div>
+      <div class="input-group">
+        <label for="modalLng">Longitude</label>
+        <input type="number" id="modalLng" step="any" placeholder="e.g. 77.5946">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn secondary" onclick="useCurrentLocationInModal()">Detect My Location</button>
+      <button type="button" class="modal-btn primary" onclick="saveLocationFromModal()">Save Coordinates</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

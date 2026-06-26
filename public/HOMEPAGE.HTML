@@ -275,6 +275,7 @@ grid-column:2;
 <label class="search-mode">
 <select id="searchMode" onchange="handleSearchModeChange()">
 <option value="medicines">Search Products</option>
+<option value="pharmacies">Search Nearby Pharmacies</option>
 </select>
 </label>
 
@@ -370,50 +371,11 @@ let allProducts = [];
 let currentSearchMode = "medicines";
 
 function loadNavbar(){
-const navbar = document.getElementById("navbar");
-
-const buyer = localStorage.getItem("buyer_email");
-const seller = localStorage.getItem("seller_email");
-
-if(!buyer && !seller){
-navbar.innerHTML = `
-<header class="navbar">
-<a class="logo" href="HOMEPAGE.HTML"><img src="images/logo.png" alt="meddeliver logo" class="site-logo"></a>
-<nav>
-<a href="LISTINGPAGE.HTML">Products</a>
-<a href="LOGINPAGE.HTML">Login</a>
-</nav>
-</header>
-`;
-}
-else if(buyer){
-navbar.innerHTML = `
-<header class="navbar">
-<a href="/HOMEPAGE.HTML" class="logo-container">
-  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
-</a>
-<nav>
-<a href="LISTINGPAGE.HTML">Products</a>
-<a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
-<a href="ORDERS.HTML">Orders</a>
-<a href="#" onclick="logout()">Logout</a>
-</nav>
-</header>
-`;
-}
-else{
-navbar.innerHTML = `
-<header class="navbar">
-<a href="/HOMEPAGE.HTML" class="logo-container">
-  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
-</a>
-<nav>
-<a href="SELLER-DASHBOARD.HTML">Dashboard</a>
-<a href="#" onclick="logout()">Logout</a>
-</nav>
-</header>
-`;
-}
+  try {
+    window.renderGlobalNavbar('home');
+  } catch (err) {
+    console.error("Failed to load global navbar on homepage:", err);
+  }
 }
 
 function logout(){
@@ -792,6 +754,17 @@ closeSearchCard();
 });
 
 async function loadHomeProducts(){
+const container = document.getElementById("home-products");
+
+// Display loading skeletons immediately
+container.innerHTML = Array(4).fill(0).map(() => `
+  <div class="product-card skeleton-card">
+    <div class="skeleton-img pulse"></div>
+    <div class="skeleton-title pulse"></div>
+    <div class="skeleton-price pulse"></div>
+  </div>
+`).join("");
+
 try{
 const data = await window.fetchJson(
 `${BASE_URL}/api/medicines`,
@@ -801,9 +774,15 @@ const data = await window.fetchJson(
 
 allProducts = Array.isArray(data) ? data : [];
 
-const container = document.getElementById("home-products");
-const limited = allProducts.slice(0, 20);
+if (allProducts.length === 0) {
+  const section = document.querySelector(".products-section");
+  if (section) {
+    section.style.display = "none";
+  }
+  return;
+}
 
+const limited = allProducts.slice(0, 20);
 container.innerHTML = "";
 
 limited.forEach(item => {
