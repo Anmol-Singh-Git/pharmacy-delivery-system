@@ -691,7 +691,21 @@ medicines.forEach(medicine => {
       : `<span class="prescription-badge ui-badge-pill badge-ok" title="No Prescription">No Prescription</span>`;
     const sellerLoc = normalizeLocation(medicine.seller_details?.location || medicine.seller_details);
     const sellerLat = sellerLoc ? sellerLoc.latitude : "";
-    const sellerLng = sellerLoc ? sellerLng.longitude : "";
+    const sellerLng = sellerLoc ? sellerLoc.longitude : "";
+
+    let distanceText = "0.000 km from you";
+    let isDistanceMuted = true;
+    if (buyerLocation && buyerLocation.latitude && buyerLocation.longitude) {
+      try {
+        const distance = getSellerDistance(medicine);
+        if (distance !== null) {
+          distanceText = `${distance.toFixed(3)} km from you`;
+          isDistanceMuted = false;
+        }
+      } catch (distErr) {
+        console.error("Error computing distance in loop:", distErr);
+      }
+    }
 
     container.innerHTML += `
     <div class="medicine-card ui-card-equal"
@@ -711,7 +725,7 @@ medicines.forEach(medicine => {
 
     <div class="medicine-card-copy">
     <h3 class="ui-line-clamp-2" title="${medicineName}">${medicineName}</h3>
-    ${getDistanceMarkup(medicine)}
+    <p class="distance distance-text ${isDistanceMuted ? 'muted' : ''}">${distanceText}</p>
     <button class="view-product-btn" onclick="event.stopPropagation(); storeProduct(decodeProduct('${encodeProduct(medicine)}')); window.location.href='PRODUCTPAGE.HTML';">View</button>
     </div>
 
