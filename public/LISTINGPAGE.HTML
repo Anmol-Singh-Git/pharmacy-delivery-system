@@ -414,7 +414,7 @@ function getDistanceMarkup(medicine){
 const distance = getSellerDistance(medicine);
 
 if(distance === null){
-return `<p class="distance muted">Distance unavailable</p>`;
+return `<p class="distance muted">0.000 km from you</p>`;
 }
 
   return `<p class="distance">${distance.toFixed(3)} km from you</p>`;
@@ -683,10 +683,15 @@ medicines.forEach(medicine => {
     const prescriptionBadge = String(medicine.prescription_required || "No").toLowerCase() === "yes"
       ? `<span class="prescription-badge ui-badge-pill badge-rx" title="Prescription Required">Prescription Required</span>`
       : `<span class="prescription-badge ui-badge-pill badge-ok" title="No Prescription">No Prescription</span>`;
+    const sellerLoc = normalizeLocation(medicine.seller_details?.location || medicine.seller_details);
+    const sellerLat = sellerLoc ? sellerLoc.latitude : "";
+    const sellerLng = sellerLoc ? sellerLng.longitude : "";
 
     container.innerHTML += `
     <div class="medicine-card ui-card-equal"
     data-images='${imagesData}'
+    data-seller-lat="${sellerLat}"
+    data-seller-lng="${sellerLng}"
     onmouseenter="startSlider(this)"
     onmouseleave="stopSlider(this)">
     <div class="card-top-row">
@@ -1058,15 +1063,15 @@ localStorage.removeItem("homepageSearchTerm");
 updateSearchUi();
 }
 
-async function loadMedicines(){
+async function fetchMedicines(lat = null, lng = null){
 try{
   const params = new URLSearchParams();
   if(activeCategoryFilter !== "all"){
     params.set("category", getCategoryQueryValue(activeCategoryFilter));
   }
-  if(buyerLocation && buyerLocation.latitude && buyerLocation.longitude){
-    params.set("lat", buyerLocation.latitude);
-    params.set("lng", buyerLocation.longitude);
+  if(lat && lng){
+    params.set("lat", lat);
+    params.set("lng", lng);
   }
   const queryStr = params.toString() ? "?" + params.toString() : "";
   const data = await window.fetchJson(
@@ -1075,7 +1080,7 @@ try{
     "Server error or invalid response"
   );
   allMedicines = Array.isArray(data) ? data : (Array.isArray(data?.medicines) ? data.medicines : []);
-  console.log('loadMedicines: loaded', allMedicines.length, 'medicines');
+  console.log('fetchMedicines: loaded', allMedicines.length, 'medicines');
 
   if(currentSearchMode === "pharmacies"){
     if(buyerLocation){
@@ -1094,6 +1099,32 @@ catch(error){
   setLocationStatus(window.getApiErrorMessage(error), "error", false);
   showEmptyState("Server error or invalid response");
 }
+}
+
+async function loadMedicines(){
+  const lat = buyerLocation ? buyerLocation.latitude : null;
+  const lng = buyerLocation ? buyerLocation.longitude : null;
+  await fetchMedicines(lat, lng);
+}
+
+function updateDistanceOnVisibleCards(buyerLoc) {
+  if (!buyerLoc || !buyerLoc.latitude || !buyerLoc.longitude) return;
+  const cards = document.querySelectorAll(".medicine-card");
+  cards.forEach(card => {
+    const sellerLat = card.getAttribute("data-seller-lat");
+    const sellerLng = card.getAttribute("data-seller-lng");
+    if (sellerLat && sellerLng) {
+      const sellerLoc = { latitude: Number(sellerLat), longitude: Number(sellerLng) };
+      const distance = calculateDistanceKm(buyerLoc, sellerLoc);
+      if (distance !== null) {
+        const distanceEl = card.querySelector(".distance");
+        if (distanceEl) {
+          distanceEl.textContent = `${distance.toFixed(3)} km from you`;
+          distanceEl.classList.remove("muted");
+        }
+      }
+    }
+  });
 }
 
 try {
@@ -1117,23 +1148,48 @@ try {
 (async function initListing(){
   // 1. Immediately trigger the non-blocking product fetch and draw on screen
   try {
-    await loadMedicines();
+    await fetchMedicines(null, null);
   } catch (err) {
     console.error("Failed to load medicines initially:", err);
   }
 
   // 2. Perform the geolocation request asynchronously in the background
-  if (buyerEmail) {
-    (async () => {
-      try {
-        await window.syncMedDeliverDeviceLocation();
-        hydrateBuyerLocationFromStorage();
-        // Once successfully retrieved coordinates, dynamically recalculate and sort listing client-side smoothly
-        filterMedicines();
-      } catch (err) {
-        console.error("Background location sync/update failed:", err);
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        buyerLocation = { latitude: lat, longitude: lng };
+        
+        try {
+          saveBuyerLocation(buyerLocation);
+          const buyerEmail = localStorage.getItem("buyer_email");
+          const sellerEmail = localStorage.getItem("seller_email");
+          const email = buyerEmail || sellerEmail;
+          const role = buyerEmail ? "buyer" : "seller";
+          if (email) {
+            fetch(`${BASE_URL}/api/update-location`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, role, latitude: lat, longitude: lng })
+            }).catch(e => console.error("Update location background fetch failed:", e));
+          }
+        } catch (e) {
+          console.error("Background location sync failed:", e);
+        }
+
+        // Dynamically update distance labels on already visible cards
+        updateDistanceOnVisibleCards(buyerLocation);
+      },
+      (error) => {
+        console.error("Background geolocation retrieval failed:", error);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000
       }
-    })();
+    );
   }
 })();
 </script>
