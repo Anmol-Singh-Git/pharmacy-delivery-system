@@ -5,61 +5,6 @@ box-sizing:border-box;
 /* font-family: var(--font-body); */
 }
 
-/* ── Page Header Row: title + reset-location button ── */
-.page-header-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.reset-location-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  border: 1px solid rgba(229, 169, 59, 0.35);
-  border-radius: 999px;
-  background: rgba(229, 169, 59, 0.08);
-  color: #b8860b;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.reset-location-btn:hover {
-  background: #e5a93b;
-  color: #ffffff;
-  border-color: #e5a93b;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(229, 169, 59, 0.25);
-}
-
-.reset-location-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.reset-location-btn svg {
-  flex-shrink: 0;
-}
-
-.reset-loc-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid rgba(184, 134, 11, 0.25);
-  border-top-color: #b8860b;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
 body{
 background:
 radial-gradient(circle at top left, rgba(0,188,212,0.12), transparent 24%),

@@ -230,10 +230,17 @@ placeholder="Describe what this product is for, how it helps, and the key benefi
 <input type="text" name="city" id="account_city" required>
 </label>
 
-<label class="field">
+<div class="field pincode-recalibrate-row">
+<label class="field pincode-field">
 <span>Pincode</span>
 <input type="text" name="pincode" id="account_pincode" required>
 </label>
+<button type="button" id="recalibrateBtnSeller" class="recalibrate-location-btn" onclick="recalibrateSellerLocation()">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+  Recalibrate location
+</button>
+</div>
+<p id="accountLocationStatus" class="account-location-status"></p>
 
 <label class="field field-full">
 <span>GSTIN</span>
@@ -580,6 +587,64 @@ latitude !== "" && longitude !== ""
 ? "Current store location is saved. You can refresh it if needed."
 : "Location is optional but recommended.";
 }
+}
+
+async function recalibrateSellerLocation() {
+  const btn = document.getElementById("recalibrateBtnSeller");
+  const statusEl = document.getElementById("accountLocationStatus");
+  if (!btn) return;
+
+  const origHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="recalibrate-spinner"></span> Detecting…';
+  if (statusEl) {
+    statusEl.textContent = "Acquiring GPS signal…";
+    statusEl.className = "account-location-status detecting";
+  }
+
+  try {
+    if (!navigator.geolocation) {
+      throw new Error("Geolocation is not supported by this browser.");
+    }
+
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0
+      });
+    });
+
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    // Write into the hidden form fields so Save Account Details includes them
+    document.getElementById("accountLatitude").value = lat;
+    document.getElementById("accountLongitude").value = lng;
+
+    if (statusEl) {
+      statusEl.textContent = `Location updated: ${lat.toFixed(5)}, ${lng.toFixed(5)} — click Save Account Details to persist.`;
+      statusEl.className = "account-location-status success";
+    }
+
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Location captured';
+    setTimeout(() => { btn.innerHTML = origHTML; btn.disabled = false; }, 2500);
+  } catch (err) {
+    console.error("Recalibrate location failed:", err);
+    btn.innerHTML = origHTML;
+    btn.disabled = false;
+
+    let userMessage = "Could not detect location. Check browser permissions.";
+    if (err.code === 1) userMessage = "Location permission denied. Please allow location access in your browser.";
+    else if (err.code === 2) userMessage = "Location unavailable. Try again in a moment.";
+    else if (err.code === 3) userMessage = "Location request timed out. Please try again.";
+    else if (err.message) userMessage = err.message;
+
+    if (statusEl) {
+      statusEl.textContent = userMessage;
+      statusEl.className = "account-location-status error";
+    }
+  }
 }
 
 function populateAccountForm(){

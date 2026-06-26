@@ -1025,3 +1025,91 @@ height:200px;
   background-color: #218838;
   transform: translateY(-1px);
 }
+
+/* ── Spinner animation ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Recalibrate Location Button (Seller Account Modal) ── */
+.pincode-recalibrate-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pincode-recalibrate-row .pincode-field {
+  flex: 1;
+  min-width: 140px;
+}
+
+.recalibrate-location-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border: 1px solid rgba(0, 123, 146, 0.3);
+  border-radius: 14px;
+  background: rgba(0, 123, 146, 0.06);
+  color: #007b92;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  white-space: nowrap;
+  line-height: 1;
+  height: fit-content;
+}
+
+.recalibrate-location-btn:hover {
+  background: #007b92;
+  color: #ffffff;
+  border-color: #007b92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 123, 146, 0.22);
+}
+
+.recalibrate-location-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.recalibrate-location-btn svg {
+  flex-shrink: 0;
+}
+
+.recalibrate-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 123, 146, 0.2);
+  border-top-color: #007b92;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.account-location-status {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  min-height: 20px;
+  color: #5f7184;
+  margin-top: -8px;
+}
+
+.account-location-status.detecting {
+  color: #007b92;
+}
+
+.account-location-status.success {
+  color: #166534;
+}
+
+.account-location-status.error {
+  color: #be123c;
+}
