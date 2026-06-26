@@ -6,7 +6,7 @@ const dns = require("dns");
 // Atlas SRV records fail on some Windows DNS setups; public resolvers are reliable.
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
-mongoose.set("bufferCommands", false);
+mongoose.set("bufferCommands", true);
 
 if (mongoose.connection.readyState === 0) {
   mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 })
@@ -1039,6 +1039,12 @@ app.post("/api/update-location", authMiddleware, async (req, res) => {
 
 app.post('/api/add-medicine', async (req, res) => {
   try {
+    // Connection readiness guard: wait for MongoDB connection before any write
+    if (mongoose.connection.readyState !== 1) {
+        console.log("Database connection state warming up, waiting for connection sync...");
+        await mongoose.connection.asPromise();
+    }
+
     console.log("Incoming product data payload check:", req.body);
 
     // Clear out any old session/auth constraints blocking demo testing

@@ -1,0 +1,3 @@
+{"sessionId":"504912","location":"server.js:login-entry","message":"login attempt","data":{"email":"nobody@example.com","hasPassword":true,"mongooseReadyState":1},"timestamp":1782484995331,"hypothesisId":"A"}
+{"sessionId":"504912","location":"server.js:login-buyer-query","message":"buyer lookup done","data":{"buyerFound":false,"emailUsed":"nobody@example.com"},"timestamp":1782484995439,"hypothesisId":"B"}
+{"sessionId":"504912","location":"server.js:login-invalid","message":"no buyer or seller match","data":{"email":"nobody@example.com"},"timestamp":1782484995643,"hypothesisId":"B"}
