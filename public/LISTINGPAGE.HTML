@@ -411,13 +411,19 @@ normalizeLocation(medicine.seller_details?.location || medicine.seller_details)
 }
 
 function getDistanceMarkup(medicine){
-const distance = getSellerDistance(medicine);
-
-if(distance === null){
-return `<p class="distance muted">0.000 km from you</p>`;
-}
-
-  return `<p class="distance">${distance.toFixed(3)} km from you</p>`;
+  if (!buyerLocation || !buyerLocation.latitude || !buyerLocation.longitude) {
+    return `<p class="distance distance-text muted">0.000 km from you</p>`;
+  }
+  try {
+    const distance = getSellerDistance(medicine);
+    if(distance === null){
+      return `<p class="distance distance-text muted">0.000 km from you</p>`;
+    }
+    return `<p class="distance distance-text">${distance.toFixed(3)} km from you</p>`;
+  } catch (err) {
+    console.error("Error calculating distance in markup:", err);
+    return `<p class="distance distance-text muted">0.000 km from you</p>`;
+  }
 }
 
 function getSellerAddressLine(medicine){
@@ -1117,7 +1123,7 @@ function updateDistanceOnVisibleCards(buyerLoc) {
       const sellerLoc = { latitude: Number(sellerLat), longitude: Number(sellerLng) };
       const distance = calculateDistanceKm(buyerLoc, sellerLoc);
       if (distance !== null) {
-        const distanceEl = card.querySelector(".distance");
+        const distanceEl = card.querySelector(".distance-text") || card.querySelector(".distance");
         if (distanceEl) {
           distanceEl.textContent = `${distance.toFixed(3)} km from you`;
           distanceEl.classList.remove("muted");
