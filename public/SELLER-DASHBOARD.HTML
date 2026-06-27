@@ -1504,7 +1504,8 @@ async function initDashboard(){
     console.error("Error loading seller profile:", e);
   }
   try {
-    await window.syncMedDeliverDeviceLocation();
+    // Start location sync in background, do not await so we don't block loading
+    window.syncMedDeliverDeviceLocation().catch(e => console.error("Error syncing location:", e));
   } catch (e) {
     console.error("Error syncing location:", e);
   }
