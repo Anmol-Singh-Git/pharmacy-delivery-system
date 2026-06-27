@@ -1758,7 +1758,7 @@ app.get("/api/seller-orders/:email", async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized access: No active session" });
     }
 
-    const orders = await Order.find({ "location.seller_email": userEmail }).sort({ createdAt: -1 });
+    const orders = await Order.find({ seller_email: userEmail }).sort({ createdAt: -1 });
     res.json(orders ? orders.map(order => buildOrderSnapshot(order)) : []);
   } catch (error) {
     console.error("Seller orders retrieval error:", error);
@@ -1773,7 +1773,7 @@ app.get("/api/seller/orders", async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized access: No active session" });
     }
 
-    const orders = await Order.find({ "location.seller_email": userEmail }).sort({ createdAt: -1 });
+    const orders = await Order.find({ seller_email: userEmail }).sort({ createdAt: -1 });
     res.json(orders ? orders.map(order => buildOrderSnapshot(order)) : []);
   } catch (error) {
     console.error("Seller orders retrieval error:", error);
