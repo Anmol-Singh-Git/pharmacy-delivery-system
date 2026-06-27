@@ -533,7 +533,7 @@ etaText = `${order.etaMin} - ${order.etaMax} mins`;
 etaText = window.formatETA(order.eta);
 }
 document.getElementById("eta").textContent = etaText;
-document.getElementById("orderTime").textContent = order.orderTime || "—";
+document.getElementById("orderTime").textContent = window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "—");
 document.getElementById("contact").textContent =
 order.deliveryBoyPhone && String(order.deliveryBoyPhone).trim()
 ? order.deliveryBoyPhone

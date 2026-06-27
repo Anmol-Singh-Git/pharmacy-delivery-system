@@ -1633,10 +1633,12 @@ app.post("/api/place-order", authMiddleware, upload.any(), async (req, res) => {
       }
 
       const now = new Date();
+      order.orderTimestamp = now.toISOString();
       const orderTime = now.toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true
+        hour12: true,
+        timeZone: "Asia/Kolkata"
       });
       order.orderTime = orderTime;
 

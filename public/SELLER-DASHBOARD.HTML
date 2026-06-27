@@ -1024,7 +1024,7 @@ order.buyer_details?.pincode || ""
 
 <div class="order-meta">
     <span>Date: ${escapeHtml(formatDate(order.order_date))}</span>
-    <span>Time: ${order.orderTime || ""}</span>
+    <span>Time: ${window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "")}</span>
     <span>Items: ${sellerItems.length}</span>
     <span>Seller Total: ${formatCurrency(sellerTotal)}</span>
     <span>Prescription Status: ${escapeHtml(prescriptionStatus)}</span>

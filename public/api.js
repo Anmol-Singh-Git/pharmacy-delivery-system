@@ -108,6 +108,26 @@ function formatDistance(d) {
 window.formatETA = formatETA;
 window.formatDistance = formatDistance;
 
+/**
+ * Format an order's time in the user's local timezone.
+ * Prefers orderTimestamp (ISO string) > order_date/createdAt (Date) > orderTime (pre-formatted fallback).
+ */
+function formatOrderTime(order) {
+  const raw = order.orderTimestamp || order.order_date || order.createdAt;
+  if (raw) {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    }
+  }
+  return order.orderTime || "—";
+}
+window.formatOrderTime = formatOrderTime;
+
 window.MD_LAT_KEY = "md_user_lat";
 window.MD_LNG_KEY = "md_user_lng";
 

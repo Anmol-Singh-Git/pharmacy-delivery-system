@@ -211,7 +211,7 @@ return `
 <div>
 <p class="order-label">Order Date</p>
 <h3>${formatDate(order.order_date)}</h3>
-<p>Order Time: ${order.orderTime || ""}</p>
+<p>Order Time: ${window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "")}</p>
 </div>
 <span class="status-pill ${getStatusClass(getOrderStatusText(order))}">${escapeHtml(getOrderStatusText(order))}</span>
 </div>

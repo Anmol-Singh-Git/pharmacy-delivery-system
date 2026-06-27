@@ -466,7 +466,7 @@ function renderDetailSection(order){
       <div class="detail-row"><span>Buyer Mobile</span><strong>${escapeHtml(buyer.mobile || "-")}</strong></div>
       <div class="detail-row"><span>Buyer Address</span><strong>${escapeHtml([buyer.address, buyer.city, buyer.pincode].filter(Boolean).join(", ") || "-")}</strong></div>
       <div class="detail-row"><span>Order Date</span><strong>${formatDate(order.order_date)}</strong></div>
-      <div class="detail-row"><span>Order Time</span><strong>${escapeHtml(order.orderTime || "-")}</strong></div>
+      <div class="detail-row"><span>Order Time</span><strong>${escapeHtml(window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "-"))}</strong></div>
       <div class="detail-row"><span>Status</span><strong>${escapeHtml(normalizeOrderStatusLabel(order.order_status || order.status || "Pending"))}</strong></div>
       <div class="detail-row"><span>Prescription Status</span><strong>${escapeHtml(prescriptionStatus)}</strong></div>
       <div class="detail-row"><span>Delivery Phone</span><strong>${escapeHtml(order.deliveryBoyPhone || "Not Assigned")}</strong></div>
@@ -517,7 +517,7 @@ function renderPastOrders(){
           <span>Items: ${escapeHtml(items)}</span>
           <span>Total: ${escapeHtml(orderTotal)}</span>
           <span>Date: ${escapeHtml(formatDate(order.order_date))}</span>
-          <span>Time: ${escapeHtml(order.orderTime || "-")}</span>
+          <span>Time: ${escapeHtml(window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "-"))}</span>
         </div>
 
         ${firstItem ? `

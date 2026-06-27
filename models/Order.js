@@ -134,6 +134,9 @@ default: "Waiting for Approval"
 
 orderTime: {
     type: String
+},
+orderTimestamp: {
+    type: String
 }
 });
 
