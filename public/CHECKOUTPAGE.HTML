@@ -790,7 +790,11 @@ const tokenStr = localStorage.getItem('token');
 const isTokenValid = tokenStr && tokenStr !== "null" && tokenStr !== "undefined";
 
 if(window.hydrateBuyerCoordsFromServer && isTokenValid){
-await window.hydrateBuyerCoordsFromServer();
+  try {
+    await window.hydrateBuyerCoordsFromServer();
+  } catch(coordsError) {
+    console.warn("Profile pre-fill skipped or unauthorized:", coordsError);
+  }
 }
 
 const checkoutDataRaw = localStorage.getItem('meddeliver_checkout');
@@ -806,7 +810,7 @@ if (checkoutDataRaw) {
 prefillDeliveryDetails();
 renderPrescriptionPanel();
 } catch(error) {
-    console.warn("Profile pre-fill skipped or unauthorized:", error);
+    console.warn("Checkout init encountered a non-critical error:", error);
 }
 }
 
