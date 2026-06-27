@@ -2175,7 +2175,7 @@ async function handleSellerProfileUpdate(req, res) {
     const previousEmail = currentSeller.email;
 
     currentSeller.set(sellerUpdate);
-    await currentSeller.save();
+    await currentSeller.save({ validateModifiedOnly: true });
 
     const profile = cleanPublicSeller(currentSeller);
     const orderSellerDetails = buildOrderSellerDetails(currentSeller);

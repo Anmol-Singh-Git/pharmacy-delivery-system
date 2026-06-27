@@ -1178,9 +1178,15 @@ async function handleAccountUpdate(event){
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Server error raw output:", errorText);
-      alert("Profile update failed: Server returned an error code. Check developer console.");
+      let errorMsg = "Server returned an error code.";
+      try {
+        const errJson = await response.json();
+        errorMsg = errJson.message || errorMsg;
+      } catch (e) {
+        errorMsg = await response.text();
+      }
+      console.error("Server error raw output:", errorMsg);
+      alert("Profile update failed: " + errorMsg);
       return;
     }
 
