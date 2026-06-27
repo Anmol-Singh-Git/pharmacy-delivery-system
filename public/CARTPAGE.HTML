@@ -253,20 +253,12 @@ localStorage.setItem("cart", JSON.stringify(enrichedCart));
 return enrichedCart;
 }
 
-async function loadCart(){
-const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+function renderCart(cart){
 const container = document.getElementById("cart-container");
-
-if(window.hydrateBuyerCoordsFromServer){
-await window.hydrateBuyerCoordsFromServer();
-}
-
-currentCart = await enrichCartItems(storedCart);
-
 let total = 0;
 container.innerHTML = "";
 
-if(currentCart.length === 0){
+if(cart.length === 0){
 container.innerHTML = `
 <div class="empty-state">
 <h2>Your cart is empty</h2>
@@ -279,7 +271,7 @@ document.getElementById("cartETA").innerText = "Location unavailable";
 return;
 }
 
-currentCart.forEach((item, index) => {
+cart.forEach((item, index) => {
 const price = Number(item.price) || 0;
 const quantity = Number(item.quantity || 1);
 const itemTotal = price * quantity;
@@ -314,8 +306,29 @@ ${prescriptionBadge}
 
   document.getElementById("total-price").innerText = `Total: ${formatCurrency(total)}`;
   document.getElementById("cartETA").innerText = window.computeEtaLabelForCartOrCheckout
-    ? window.computeEtaLabelForCartOrCheckout(currentCart)
+    ? window.computeEtaLabelForCartOrCheckout(cart)
     : "Location unavailable";
+}
+
+async function loadCart(){
+const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// Render immediately from localStorage so the user sees items right away
+currentCart = storedCart;
+renderCart(currentCart);
+
+// Enrich in the background — update images, prices, seller details without blocking UI
+try {
+if(window.hydrateBuyerCoordsFromServer){
+await window.hydrateBuyerCoordsFromServer();
+}
+
+const enriched = await enrichCartItems(storedCart);
+currentCart = enriched;
+renderCart(currentCart);
+} catch(err){
+console.error("Background cart enrichment failed:", err);
+}
 }
 
 async function removeItem(index){
