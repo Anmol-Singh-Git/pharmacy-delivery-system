@@ -1114,6 +1114,41 @@ app.post('/api/add-medicine', async (req, res) => {
 
 /* ================= GET MEDICINES ================= */
 
+function generateMedicineAggregation(matchFilter, sortParam, limitSize = 50) {
+  let pipeline = [];
+  if (Object.keys(matchFilter).length > 0) pipeline.push({ $match: matchFilter });
+
+  if (sortParam) {
+    if (sortParam === "price-asc" || sortParam === "price_asc" || sortParam === "low") pipeline.push({ $sort: { price: 1 } });
+    else if (sortParam === "price-desc" || sortParam === "price_desc" || sortParam === "high") pipeline.push({ $sort: { price: -1 } });
+    else if (sortParam === "stock-asc" || sortParam === "stock_asc") pipeline.push({ $sort: { stock: 1 } });
+    else if (sortParam === "stock-desc" || sortParam === "stock_desc") pipeline.push({ $sort: { stock: -1 } });
+  }
+
+  pipeline.push({ $limit: limitSize });
+  pipeline.push({
+    $lookup: {
+      from: "sellers",
+      localField: "seller_email",
+      foreignField: "email",
+      as: "seller_docs"
+    }
+  });
+
+  return pipeline;
+}
+
+function processAggregatedMedicines(medicines) {
+  return medicines.map(med => {
+    const seller = med.seller_docs && med.seller_docs.length ? med.seller_docs[0] : null;
+    const { seller_docs, ...cleanMed } = med;
+    return {
+      ...cleanMed,
+      seller_details: cleanPublicSeller(seller)
+    };
+  });
+}
+
 app.get("/api/medicines", async (req, res) => {
   try {
     const latParam = req.query.lat || req.query.latitude;
@@ -1131,9 +1166,9 @@ app.get("/api/medicines", async (req, res) => {
 
     // 1. Restore Global Unconditional Data Fetching: If coordinates, category, and search are missing, null, or undefined, completely skip filtering.
     if (!hasCoords && !hasCategory && !hasSearch) {
-      const products = await Medicine.find({}).limit(50).lean();
-      const enriched = await enrichMedicinesWithSellerDetails(products);
-      return res.json(enriched || []);
+      const pipeline = generateMedicineAggregation({}, null, 50);
+      const rawMedicines = await Medicine.aggregate(pipeline);
+      return res.json(processAggregatedMedicines(rawMedicines));
     }
 
     let medicineFilter = {};
@@ -1212,33 +1247,16 @@ app.get("/api/medicines", async (req, res) => {
       }
     }
 
-    let query = Medicine.find(finalMedicineFilter).lean();
-
-    // Sorting rules parsing
-    const sortParam = req.query.sort;
-    if (sortParam) {
-      if (sortParam === "price-asc" || sortParam === "price_asc" || sortParam === "low") {
-        query = query.sort({ price: 1 });
-      } else if (sortParam === "price-desc" || sortParam === "price_desc" || sortParam === "high") {
-        query = query.sort({ price: -1 });
-      } else if (sortParam === "stock-asc" || sortParam === "stock_asc") {
-        query = query.sort({ stock: 1 });
-      } else if (sortParam === "stock-desc" || sortParam === "stock_desc") {
-        query = query.sort({ stock: -1 });
-      }
-    }
-
-    const finalMedicines = await query.limit(50);
-    const enrichedMedicines = await enrichMedicinesWithSellerDetails(finalMedicines);
-
-    res.json(enrichedMedicines || []);
+    const pipeline = generateMedicineAggregation(finalMedicineFilter, req.query.sort, 50);
+    const rawMedicines = await Medicine.aggregate(pipeline);
+    return res.json(processAggregatedMedicines(rawMedicines));
 
   } catch (error) {
     console.error("Primary medicine fetch failed, fallback to global lookup:", error);
     try {
-      const fallbackMedicines = await Medicine.find({}).limit(50).lean();
-      const enriched = await enrichMedicinesWithSellerDetails(fallbackMedicines);
-      res.json(enriched || []);
+      const fallbackPipeline = generateMedicineAggregation({}, null, 50);
+      const rawMedicines = await Medicine.aggregate(fallbackPipeline);
+      res.json(processAggregatedMedicines(rawMedicines));
     } catch (fallbackError) {
       console.error("Fallback lookup failed:", fallbackError);
       res.json([]);
