@@ -78,6 +78,14 @@ window.getApiErrorMessage = function(error, fallbackMessage = "Server error or i
 window.fetchJson = async function(url, options = {}, fallbackMessage = "Server error or invalid response") {
   console.log("Calling API...", url);
 
+  const token = localStorage.getItem('token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      "Authorization": `Bearer ${token}`
+    };
+  }
+
   const response = await fetch(url, options);
   const data = await window.parseJsonResponse(response);
 
