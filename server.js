@@ -1,25 +1,40 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const dns = require("dns");
-
-// Atlas SRV records fail on some Windows DNS setups; public resolvers are reliable.
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
-
-mongoose.set("bufferCommands", true);
+let isConnected = false;
+let dbPromise = null;
 
 const connectDB = async () => {
-  if (mongoose.connection.readyState === 1) {
+  if (isConnected || mongoose.connection.readyState === 1) {
+    isConnected = true;
     return mongoose.connection;
   }
+  if (dbPromise) {
+    await dbPromise;
+    isConnected = true;
+    return mongoose.connection;
+  }
+  
   console.log("Initializing database connection handshake...");
-  return await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 });
+  dbPromise = mongoose.connect(process.env.MONGODB_URI, { 
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 30000 
+  });
+  
+  try {
+    await dbPromise;
+    isConnected = true;
+    console.log("MongoDB connected successfully");
+    return mongoose.connection;
+  } catch (err) {
+    dbPromise = null;
+    console.error("MongoDB connection error:", err);
+    throw err;
+  }
 };
 
 // Eagerly start the connection for non-serverless environments
-connectDB()
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch(err => console.error("MongoDB connection error:", err));
+connectDB().catch(() => {});
 
 const cors = require("cors");
 const multer = require("multer");
