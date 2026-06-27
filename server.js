@@ -2644,6 +2644,11 @@ app.use("/uploads", (req, res, next) => {
 app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 app.use(express.static("public"));
 
+// Track page route – Vercel cleanUrls strips .html so /track.html arrives as /track
+app.get("/track", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "track.html"));
+});
+
 // Root route - serve homepage
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "HOMEPAGE.HTML"));
