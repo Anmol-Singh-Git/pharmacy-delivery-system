@@ -8,11 +8,18 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 mongoose.set("bufferCommands", true);
 
-if (mongoose.connection.readyState === 0) {
-  mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 })
-    .then(() => console.log("MongoDB connected successfully"))
-    .catch(err => console.error("MongoDB connection error:", err));
-}
+const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+  console.log("Initializing database connection handshake...");
+  return await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 });
+};
+
+// Eagerly start the connection for non-serverless environments
+connectDB()
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
 const cors = require("cors");
 const multer = require("multer");
@@ -900,6 +907,8 @@ app.post("/api/buyer-register", async (req, res) => {
 /* ================= LOGIN ================= */
 
 app.post("/api/login", async (req, res) => {
+
+  await connectDB();
 
   const { email, password } = req.body;
 
