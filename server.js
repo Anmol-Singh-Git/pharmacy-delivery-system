@@ -793,6 +793,17 @@ async function restoreRejectedMedicinesStock(oldMedicines, newMedicines) {
   }
 }
 
+// Ensure database is connected for all API routes (critical for serverless environments)
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
+
 /* ================= REGISTRATION ================= */
 /* ================= SELLER REGISTER ================= */
 
@@ -1105,7 +1116,7 @@ app.get("/api/medicines", async (req, res) => {
 
     // 1. Restore Global Unconditional Data Fetching: If coordinates, category, and search are missing, null, or undefined, completely skip filtering.
     if (!hasCoords && !hasCategory && !hasSearch) {
-      const products = await Medicine.find({}).lean();
+      const products = await Medicine.find({}).limit(50).lean();
       const enriched = await enrichMedicinesWithSellerDetails(products);
       return res.json(enriched || []);
     }
@@ -1202,7 +1213,7 @@ app.get("/api/medicines", async (req, res) => {
       }
     }
 
-    const finalMedicines = await query;
+    const finalMedicines = await query.limit(50);
     const enrichedMedicines = await enrichMedicinesWithSellerDetails(finalMedicines);
 
     res.json(enrichedMedicines || []);
@@ -1210,7 +1221,7 @@ app.get("/api/medicines", async (req, res) => {
   } catch (error) {
     console.error("Primary medicine fetch failed, fallback to global lookup:", error);
     try {
-      const fallbackMedicines = await Medicine.find({}).lean();
+      const fallbackMedicines = await Medicine.find({}).limit(50).lean();
       const enriched = await enrichMedicinesWithSellerDetails(fallbackMedicines);
       res.json(enriched || []);
     } catch (fallbackError) {
