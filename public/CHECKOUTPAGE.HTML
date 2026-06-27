@@ -692,7 +692,7 @@ approvalCount && instantCount
 clearOrderState();
 const redirectOrderId = createdOrders[0]?._id || "";
 if(redirectOrderId){
-    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
+    window.location.href = `/track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
 }
 else{
     window.location.href = "ORDERS.HTML";
@@ -745,7 +745,7 @@ approvalCount && instantCount
 clearOrderState();
 const redirectOrderId = createdOrders[0]?._id || "";
 if(redirectOrderId){
-    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
+    window.location.href = `/track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
 }
 else{
     window.location.href = "ORDERS.HTML";
