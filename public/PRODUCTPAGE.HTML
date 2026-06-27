@@ -154,6 +154,10 @@
 <dt>Distance</dt>
 <dd id="detailDistance">-</dd>
 </div>
+<div>
+<dt>ETA</dt>
+<dd id="detailETA">-</dd>
+</div>
 </dl>
 </div>
 
@@ -366,6 +370,21 @@ return "Distance unavailable";
 return `${distance.toFixed(1)} km from your location`;
 }
 
+function getETAText(product){
+const distance = calculateDistanceKm(
+buyerLocation,
+normalizeLocation(product?.seller_details?.location)
+);
+
+if(distance === null){
+return "Location unavailable";
+}
+
+const etaMin = Math.round(distance * 10);
+const etaMax = Math.round(distance * 15);
+return `${etaMin} - ${etaMax} mins`;
+}
+
 function showStatus(message, type){
 const status = document.getElementById("statusMessage");
 status.textContent = message;
@@ -498,6 +517,7 @@ sellerDetails.pincode || ""
 const sellerEmailText = sellerDetails.email || product.seller_email || "Not available";
 const sellerMobileText = sellerDetails.mobile || "Not provided";
 const distanceText = getDistanceText(product);
+const etaText = getETAText(product);
 const descriptionText = String(product.description || "").trim();
 
 document.title = `${product.medicine_name || "Product"} | MedDeliver`;
@@ -530,6 +550,7 @@ document.getElementById("detailSellerEmail").textContent = sellerEmailText;
 document.getElementById("detailSellerMobile").textContent = sellerMobileText;
 document.getElementById("detailSellerAddress").textContent = sellerAddressText;
 document.getElementById("detailDistance").textContent = distanceText;
+document.getElementById("detailETA").textContent = etaText;
 document.getElementById("productDescriptionTitle").textContent = descriptionText ? "Seller Description" : "Product Overview";
 document.getElementById("productDescriptionBody").textContent = descriptionText || "The seller has not added extra product details yet. Once provided, buyers will see what the product is for, how it helps, and its key benefits here.";
 
