@@ -754,7 +754,7 @@ medicines.forEach(medicine => {
 
     <div class="medicine-card-copy">
     <h3 class="ui-line-clamp-2" title="${medicineName}">${medicineName}</h3>
-    <p class="distance distance-text ${isDistanceMuted ? 'muted' : ''}">${distanceText}</p>
+    ${!sellerEmail ? `<p class="distance distance-text ${isDistanceMuted ? 'muted' : ''}">${distanceText}</p>` : ''}
     <button class="view-product-btn" onclick="event.stopPropagation(); storeProduct(decodeProduct('${encodeProduct(medicine)}')); window.location.href='PRODUCTPAGE.HTML';">View</button>
     </div>
 
