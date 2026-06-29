@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Bio | meddeliver</title>
+    <link rel="stylesheet" href="/SELLER_BIO.CSS">
+    <link rel="stylesheet" href="/logo-styles.css">
+    <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+
+<div id="navbar"></div>
+
+<main class="seller-bio-container">
+    <div class="bio-card" id="bioCard">
+        <div class="bio-loading">Loading seller information...</div>
+    </div>
+</main>
+
+<script src="/api.js"></script>
+<script>
+    const BASE_URL = window.API_BASE;
+    const urlParams = new URLSearchParams(window.location.search);
+    const sellerEmail = urlParams.get("seller");
+
+    function loadNavbar(){
+      try {
+        if(window.renderGlobalNavbar) {
+            window.renderGlobalNavbar('browse');
+        }
+      } catch (err) {
+        console.error("Failed to load standard navbar:", err);
+      }
+    }
+
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    async function loadSellerBio() {
+        if(!sellerEmail) {
+            document.getElementById("bioCard").innerHTML = `<div class="bio-error">Seller not specified.</div>`;
+            return;
+        }
+
+        try {
+            const response = await window.fetchJson(`${BASE_URL}/api/seller-profile/${encodeURIComponent(sellerEmail)}`, {}, "Failed to load seller bio");
+            
+            if(!response || !response.success || !response.profile) {
+                document.getElementById("bioCard").innerHTML = `<div class="bio-error">Seller not found.</div>`;
+                return;
+            }
+
+            const profile = response.profile;
+            const shopName = profile.shopName || profile.pharmacy_name || profile.name || "Pharmacy";
+            const ownerName = profile.owner_name || "Owner";
+            const email = profile.email || sellerEmail;
+            const mobile = profile.mobile || "N/A";
+            const address = [profile.address, profile.city, profile.pincode].filter(Boolean).join(", ") || "Address not available";
+            const gstin = profile.gstin || "N/A";
+            const totalProducts = response.totalProducts || 0;
+            const shopImage = profile.shop_image || 'placeholder-banner.png';
+
+            document.getElementById("bioCard").innerHTML = `
+                <div class="bio-banner">
+                    <img src="${escapeHtml(shopImage)}" alt="${escapeHtml(shopName)}" class="bio-banner-img" onerror="this.src='placeholder-banner.png'">
+                </div>
+                <div class="bio-content">
+                    <div class="bio-header">
+                        <span class="bio-label">Verified Seller</span>
+                        <h1 class="bio-title">${escapeHtml(shopName)}</h1>
+                        <p class="bio-owner">Owned by: ${escapeHtml(ownerName)}</p>
+                    </div>
+                    
+                    <div class="bio-details-grid">
+                        <div class="bio-detail-item">
+                            <div class="detail-icon">📍</div>
+                            <div class="detail-text">
+                                <span class="detail-label">Address</span>
+                                <span class="detail-value">${escapeHtml(address)}</span>
+                            </div>
+                        </div>
+                        <div class="bio-detail-item">
+                            <div class="detail-icon">📞</div>
+                            <div class="detail-text">
+                                <span class="detail-label">Contact</span>
+                                <span class="detail-value">${escapeHtml(mobile)}</span>
+                            </div>
+                        </div>
+                        <div class="bio-detail-item">
+                            <div class="detail-icon">✉️</div>
+                            <div class="detail-text">
+                                <span class="detail-label">Email</span>
+                                <span class="detail-value">${escapeHtml(email)}</span>
+                            </div>
+                        </div>
+                        <div class="bio-detail-item">
+                            <div class="detail-icon">📄</div>
+                            <div class="detail-text">
+                                <span class="detail-label">GSTIN</span>
+                                <span class="detail-value">${escapeHtml(gstin)}</span>
+                            </div>
+                        </div>
+                        <div class="bio-detail-item">
+                            <div class="detail-icon">📦</div>
+                            <div class="detail-text">
+                                <span class="detail-label">Inventory</span>
+                                <span class="detail-value">${escapeHtml(String(totalProducts))} Products Available</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bio-actions">
+                        <button class="primary-btn" onclick="window.location.href='LISTINGPAGE.HTML?seller=${encodeURIComponent(email)}'">View Products</button>
+                        <button class="secondary-btn" onclick="window.location.href='LISTINGPAGE.HTML'">Back to Browse</button>
+                    </div>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error("Error loading seller bio:", error);
+            document.getElementById("bioCard").innerHTML = `<div class="bio-error">Error loading seller details. Please try again later.</div>`;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadNavbar();
+        loadSellerBio();
+    });
+</script>
+</body>
+</html>

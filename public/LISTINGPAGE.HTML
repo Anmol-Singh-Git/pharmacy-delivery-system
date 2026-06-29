@@ -809,8 +809,11 @@ const distanceLabel = pharmacy.distance
   ? `${Number(pharmacy.distanceKm).toFixed(3)} km away`
 : "Distance unavailable";
 const actionMarkup = pharmacy.email
-? `<button type="button" data-email="${escapeHtml(pharmacy.email || "")}" onclick="viewSellerMedicines(this.dataset.email)">View Products</button>`
-: `<button type="button" disabled>View Products Unavailable</button>`;
+? `<div class="pharmacy-action-buttons" style="display: flex; gap: 8px; margin-top: 12px; width: 100%;">
+<button type="button" data-email="${escapeHtml(pharmacy.email || "")}" onclick="viewSellerMedicines(this.dataset.email)" style="flex: 1; padding: 10px 8px;">Products</button>
+<button type="button" data-email="${escapeHtml(pharmacy.email || "")}" onclick="viewSellerBio(this.dataset.email)" style="flex: 1; padding: 10px 8px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1 !important; box-shadow: none;">About</button>
+</div>`
+: `<button type="button" disabled>Products Unavailable</button>`;
 
 const shopImageMarkup = pharmacy.shop_image
   ? `<div class="pharmacy-card-banner"><img src="${pharmacy.shop_image ? pharmacy.shop_image : 'placeholder-banner.png'}" alt="${escapeHtml(pharmacy.name || "Pharmacy")} shop" class="pharmacy-banner-img"></div>`
@@ -1082,6 +1085,11 @@ if(!email) return;
 localStorage.setItem("listingSearchMode", "medicines");
 localStorage.removeItem("homepagePharmacySearchTerm");
 window.location.href = `LISTINGPAGE.HTML?seller=${encodeURIComponent(email)}`;
+}
+
+function viewSellerBio(email) {
+if(!email) return;
+window.location.href = `SELLER_BIO.HTML?seller=${encodeURIComponent(email)}`;
 }
 
 function applyInitialSearchState(){
