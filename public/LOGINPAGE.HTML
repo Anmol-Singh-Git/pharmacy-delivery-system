@@ -169,6 +169,17 @@ async function login(){
     return;
   }
 
+  const loginBtn = document.querySelector('#loginForm button[type="submit"]');
+  const originalBtnText = loginBtn ? loginBtn.innerHTML : null;
+  if(loginBtn) {
+    const originalBtnWidth = loginBtn.offsetWidth;
+    if(originalBtnWidth > 0) loginBtn.style.width = originalBtnWidth + 'px';
+    loginBtn.innerHTML = '<span class="btn-spinner"></span> Processing...';
+    loginBtn.disabled = true;
+    loginBtn.style.opacity = '0.85';
+    loginBtn.style.cursor = 'not-allowed';
+  }
+
   try{
     // #region agent log
     fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'LOGINPAGE.HTML:login-submit',message:'client login submit',data:{email,passwordLen:password.length},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
@@ -225,6 +236,15 @@ async function login(){
     fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'LOGINPAGE.HTML:login-catch',message:'client login error',data:{errorMessage:error?.message||String(error)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
     // #endregion
     alert(window.getApiErrorMessage(error));
+  }
+  finally {
+    if(loginBtn && originalBtnText !== null) {
+      loginBtn.innerHTML = originalBtnText;
+      loginBtn.disabled = false;
+      loginBtn.style.width = '';
+      loginBtn.style.opacity = '1';
+      loginBtn.style.cursor = 'pointer';
+    }
   }
 }
 
