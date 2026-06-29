@@ -171,6 +171,17 @@ if (file) {
 const data = Object.fromEntries(formData.entries());
 data.shop_image = base64Image;
 
+const regBtn = sellerForm.querySelector('button[type="submit"]');
+const originalBtnText = regBtn ? regBtn.innerHTML : null;
+if(regBtn) {
+  const originalBtnWidth = regBtn.offsetWidth;
+  if(originalBtnWidth > 0) regBtn.style.width = originalBtnWidth + 'px';
+  regBtn.innerHTML = '<span class="btn-spinner"></span> Processing...';
+  regBtn.disabled = true;
+  regBtn.style.opacity = '0.85';
+  regBtn.style.cursor = 'not-allowed';
+}
+
 try{
   const response = await fetch(`${BASE_URL}/api/register`, {
     method: "POST",
@@ -205,6 +216,15 @@ try{
 catch(error){
   console.log(error);
   alert(error.message || "Registration failed");
+}
+finally {
+  if(regBtn && originalBtnText !== null) {
+    regBtn.innerHTML = originalBtnText;
+    regBtn.disabled = false;
+    regBtn.style.width = '';
+    regBtn.style.opacity = '1';
+    regBtn.style.cursor = 'pointer';
+  }
 }
 });
 
