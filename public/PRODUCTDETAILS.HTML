@@ -24,8 +24,8 @@ h1{font-size:clamp(22px,4vw,30px);margin-bottom:12px;}
 .hidden{display:none;}
 .empty{text-align:center;padding:40px 20px;}
 </style>
-    <link rel="stylesheet" href="./logo-styles.css">
-    <link rel="stylesheet" href="./theme.css">
+    <link rel="stylesheet" href="logo-styles.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div id="navbar"></div>
@@ -45,7 +45,7 @@ h1{font-size:clamp(22px,4vw,30px);margin-bottom:12px;}
 </div>
 </section>
 </main>
-<script src="/api.js"></script>
+<script src="./api.js"></script>
 <script>
 const BASE_URL = window.API_BASE;
 
@@ -54,14 +54,14 @@ const buyer = localStorage.getItem("buyer_email");
 const seller = localStorage.getItem("seller_email");
 const nav = document.getElementById("navbar");
 if(!buyer && !seller){
-nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="LOGINPAGE.HTML">Login</a></nav></header>`;
+nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="LOGINPAGE.HTML">Login</a></nav></header>`;
 return;
 }
 if(buyer){
-nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a><a href="ORDERS.HTML">Orders</a></nav></header>`;
+nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a><a href="ORDERS.HTML">Orders</a></nav></header>`;
 return;
 }
-nav.innerHTML = `<header class="navbar"><a href="/HOMEPAGE.HTML" class="logo-container"><img src="/images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="SELLER-DASHBOARD.HTML">Dashboard</a><a href="LISTINGPAGE.HTML">Products</a></nav></header>`;
+nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="SELLER-DASHBOARD.HTML">Dashboard</a><a href="LISTINGPAGE.HTML">Products</a></nav></header>`;
 }
 
 function escapeHtml(v){

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout | MedDeliver</title>
-<link rel="stylesheet" href="./CHECKOUTPAGE.CSS">
+<link rel="stylesheet" href="CHECKOUTPAGE.CSS">
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
 .order-item{
@@ -188,8 +188,8 @@ height:72px;
 }
 }
 </style>
-    <link rel="stylesheet" href="./logo-styles.css">
-    <link rel="stylesheet" href="./theme.css">
+    <link rel="stylesheet" href="logo-styles.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
@@ -238,7 +238,7 @@ height:72px;
 </section>
 </main>
 
-<script src="/api.js"></script>
+<script src="./api.js"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const MAX_PRESCRIPTION_SIZE = 5 * 1024 * 1024;
@@ -258,7 +258,7 @@ const seller = localStorage.getItem("seller_email");
 if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="LOGINPAGE.HTML">Login</a>
@@ -272,7 +272,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
@@ -286,7 +286,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
 <a href="#" onclick="logout()">Logout</a>

@@ -20,20 +20,8 @@
   };
 })();
 
-// Dynamic base URL - automatically works on localhost, network IP, ngrok, or any domain
-// This ensures the app works on: localhost:5000, 192.168.x.x:5000, ngrok URLs, and production domains
-let baseOrigin = window.location.origin;
-
-// If previewing locally via Live Server (which typically runs on ports like 5500, 5501)
-// and the backend is on 5000, force API_BASE to point to the backend directly.
-if (
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
-  window.location.port && window.location.port !== "5000"
-) {
-  baseOrigin = `${window.location.protocol}//${window.location.hostname}:5000`;
-}
-
-window.API_BASE = baseOrigin;
+// Dynamic base URL for local development and Vercel production
+window.API_BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') ? 'http://localhost:5000' : '';
 
 window.getCartItemKey = function(item = {}) {
   return String(
@@ -89,18 +77,30 @@ window.getApiErrorMessage = function(error, fallbackMessage = "Server error or i
 window.fetchJson = async function(url, options = {}, fallbackMessage = "Server error or invalid response") {
   console.log("Calling API...", url);
 
-  const token = localStorage.getItem('token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      "Authorization": `Bearer ${token}`
-    };
+  try {
+    const token = localStorage.getItem('token');
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        "Authorization": `Bearer ${token}`
+      };
+    }
+  } catch(e) {
+    console.warn("Storage access failed for token", e);
   }
 
-  const response = await fetch(url, options);
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch (networkError) {
+    console.error(`Network Fetch Error for ${url}:`, networkError);
+    throw new Error("Network request failed: " + networkError.message);
+  }
+
   const data = await window.parseJsonResponse(response);
 
   if (!response.ok) {
+    console.error(`Server dropped request to ${url}. Status code: ${response.status}`);
     throw new Error(
       (data && (data.message || data.error)) || fallbackMessage
     );
@@ -347,9 +347,17 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
     const navElement = document.getElementById("navbar") || document.getElementById("main-header");
     if (!navElement) return;
 
-    const buyerEmail = localStorage.getItem("buyer_email");
-    const sellerEmail = localStorage.getItem("seller_email");
-    const cartLabel = window.getCartNavLabel ? window.getCartNavLabel() : "Cart";
+    let buyerEmail = null;
+    let sellerEmail = null;
+    let cartLabel = "Cart";
+
+    try {
+      buyerEmail = localStorage.getItem("buyer_email");
+      sellerEmail = localStorage.getItem("seller_email");
+      cartLabel = window.getCartNavLabel ? window.getCartNavLabel() : "Cart";
+    } catch (storageErr) {
+      console.warn("Storage access failed, falling back to anonymous view", storageErr);
+    }
 
     let linksHtml = "";
     if (!buyerEmail && !sellerEmail) {
@@ -377,7 +385,7 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
     navElement.innerHTML = `
       <header class="navbar">
         <a href="HOMEPAGE.HTML" class="logo-container">
-          <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+          <img src="./images/logo.png" class="site-logo" alt="meddeliver logo">
         </a>
         <nav>
           ${linksHtml}

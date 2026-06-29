@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cart | MedDeliver</title>
-<link rel="stylesheet" href="./CARTPAGE.CSS">
-<link rel="stylesheet" href="./logo-styles.css">
+<link rel="stylesheet" href="CARTPAGE.CSS">
+<link rel="stylesheet" href="logo-styles.css">
 <style>
 .cart-item{
 align-items:center;
@@ -75,7 +75,7 @@ height:84px;
 }
 }
 </style>
-    <link rel="stylesheet" href="./theme.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
@@ -107,7 +107,7 @@ height:84px;
 </section>
 </main>
 
-<script src="/api.js"></script>
+<script src="./api.js"></script>
 <script>
 const BASE_URL = window.API_BASE;
 let currentCart = [];
@@ -121,8 +121,8 @@ const seller = localStorage.getItem("seller_email");
 if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a href="/HOMEPAGE.HTML" class="logo-container">
-  <img src="/images/logo.png" class="site-logo" alt="meddeliver logo">
+<a href="./HOMEPAGE.HTML" class="logo-container">
+  <img src="./images/logo.png" class="site-logo" alt="meddeliver logo">
 </a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
@@ -138,7 +138,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -153,7 +153,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>

@@ -390,8 +390,8 @@ text-align:left;
 }
 }
 </style>
-    <link rel="stylesheet" href="./logo-styles.css">
-    <link rel="stylesheet" href="./theme.css">
+    <link rel="stylesheet" href="logo-styles.css">
+    <link rel="stylesheet" href="theme.css">
 </head>
 
 <body>
@@ -469,7 +469,7 @@ text-align:left;
 </section>
 </main>
 
-<script src="/api.js"></script>
+<script src="./api.js"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const buyerEmail = localStorage.getItem("buyer_email");
@@ -483,7 +483,7 @@ const seller = localStorage.getItem("seller_email");
 if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -498,7 +498,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -513,7 +513,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="/HOMEPAGE.HTML"><img src="/images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
 <nav>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
 <a href="#" onclick="logout()">Logout</a>
@@ -687,7 +687,7 @@ document.getElementById("prescriptionList").innerHTML = prescriptions.length
 <strong>${escapeHtml(entry.medicine_name || "Prescription")}</strong>
 <p>Seller: ${escapeHtml(entry.seller_email || "Not available")}</p>
 </div>
-<a class="prescription-link" href="/uploads/${encodeURIComponent(entry.file)}" target="_blank" rel="noopener noreferrer">View File</a>
+<a class="prescription-link" href="./uploads/${encodeURIComponent(entry.file)}" target="_blank" rel="noopener noreferrer">View File</a>
 </article>
 `).join("")
 : `<div class="empty-state"><p>No prescription files were required for this order.</p></div>`;
