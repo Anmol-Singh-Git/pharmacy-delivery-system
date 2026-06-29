@@ -183,6 +183,17 @@ if (/(.)\1{2}/.test(password)) {
   return;
 }
 
+const regBtn = form.querySelector('button[type="submit"]');
+const originalBtnText = regBtn ? regBtn.innerHTML : null;
+if(regBtn) {
+  const originalBtnWidth = regBtn.offsetWidth;
+  if(originalBtnWidth > 0) regBtn.style.width = originalBtnWidth + 'px';
+  regBtn.innerHTML = '<span class="btn-spinner"></span> Processing...';
+  regBtn.disabled = true;
+  regBtn.style.opacity = '0.85';
+  regBtn.style.cursor = 'not-allowed';
+}
+
 try{
 const result = await window.fetchJson(`${BASE_URL}/api/buyer-register`, {
 method: "POST",
@@ -211,6 +222,15 @@ window.location.href = "LISTINGPAGE.HTML";
 catch(error){
 console.log(error);
 alert(window.getApiErrorMessage(error));
+}
+finally {
+  if(regBtn && originalBtnText !== null) {
+    regBtn.innerHTML = originalBtnText;
+    regBtn.disabled = false;
+    regBtn.style.width = '';
+    regBtn.style.opacity = '1';
+    regBtn.style.cursor = 'pointer';
+  }
 }
 });
 
