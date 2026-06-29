@@ -176,7 +176,7 @@
         };
 
         try {
-            const response = await fetch(`${BASE_URL}/api/seller/profile`, {
+            const response = await fetch(`${BASE_URL}/api/seller-profile/${encodeURIComponent(userEmail)}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
