@@ -22,7 +22,18 @@
 
 // Dynamic base URL - automatically works on localhost, network IP, ngrok, or any domain
 // This ensures the app works on: localhost:5000, 192.168.x.x:5000, ngrok URLs, and production domains
-window.API_BASE = window.location.origin;
+let baseOrigin = window.location.origin;
+
+// If previewing locally via Live Server (which typically runs on ports like 5500, 5501)
+// and the backend is on 5000, force API_BASE to point to the backend directly.
+if (
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") &&
+  window.location.port && window.location.port !== "5000"
+) {
+  baseOrigin = `${window.location.protocol}//${window.location.hostname}:5000`;
+}
+
+window.API_BASE = baseOrigin;
 
 window.getCartItemKey = function(item = {}) {
   return String(
