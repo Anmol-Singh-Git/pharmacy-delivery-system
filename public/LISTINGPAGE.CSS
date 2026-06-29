@@ -51,6 +51,12 @@ height:100%;
 min-height:390px;
 }
 
+.medicine-card.ui-card-equal {
+    min-height: 300px;
+    height: auto;
+    padding-bottom: 13px;
+}
+
 .ui-line-clamp-1,
 .ui-line-clamp-2{
 display:-webkit-box;
@@ -380,6 +386,10 @@ height:100%;
 cursor:default;
 }
 
+.medicine-card{
+gap:8px;
+}
+
 .medicine-card:hover,
 .pharmacy-card:hover{
 transform:translateY(-4px);
@@ -392,7 +402,7 @@ height:148px;
 object-fit:contain;
 background:linear-gradient(180deg, var(--bg-color) 0%, #eef5f8 100%);
 border-radius:16px;
-padding:10px;
+padding:10px 10px 0 10px;
 margin-bottom:0;
 }
 
@@ -462,7 +472,7 @@ color:#0d6574;
 display:flex;
 flex-direction:column;
 flex:1;
-justify-content:flex-end;
+justify-content:flex-start;
 gap:4px;
 min-height:72px;
 }
