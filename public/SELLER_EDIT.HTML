@@ -189,6 +189,13 @@
             
             if (response.ok && result.success) {
                 showMessage("Profile updated successfully!", "success");
+                
+                if (result.profile) {
+                    localStorage.setItem("seller_profile", JSON.stringify(result.profile));
+                }
+                if (result.email) {
+                    localStorage.setItem("seller_email", result.email);
+                }
             } else {
                 showMessage(result.message || "Failed to update profile.", "error");
             }
