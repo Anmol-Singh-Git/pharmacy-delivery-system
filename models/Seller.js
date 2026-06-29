@@ -31,6 +31,7 @@ const sellerSchema = new mongoose.Schema({
   owner_name: String,
   shopName: String,
   pharmacy_name: String,
+  bio: String,
   mobile: String,
   email: String,
   password: {

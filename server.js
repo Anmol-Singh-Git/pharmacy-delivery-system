@@ -713,6 +713,7 @@ function cleanPublicSeller(seller) {
     owner_name: seller.owner_name || "",
     shopName,
     pharmacy_name: shopName,
+    bio: seller.bio || "",
     mobile: seller.mobile || "",
     email: seller.email || "",
     address: seller.address || "",
@@ -2120,6 +2121,7 @@ async function handleSellerProfileUpdate(req, res) {
       owner_name: String(req.body.owner_name || "").trim(),
       shopName: nextShopName,
       pharmacy_name: nextShopName,
+      bio: String(req.body.bio || "").trim(),
       mobile: String(req.body.mobile || "").trim(),
       email: nextEmail,
       address: String(req.body.address || "").trim(),
@@ -2206,6 +2208,7 @@ async function handleSellerProfileUpdate(req, res) {
 
 app.put("/api/seller-profile/:email", authMiddleware, handleSellerProfileUpdate);
 app.post("/api/seller-profile/:email", authMiddleware, handleSellerProfileUpdate);
+app.post("/api/seller/profile", authMiddleware, handleSellerProfileUpdate);
 
 app.put("/api/seller-profile/:email/location", authMiddleware, async (req, res) => {
 
