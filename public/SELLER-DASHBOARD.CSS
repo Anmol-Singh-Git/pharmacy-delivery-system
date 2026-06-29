@@ -169,7 +169,8 @@ gap:10px;
 margin-top:4px;
 }
 
-.hero-location-btn{
+.hero-location-btn,
+.your-btn-class {
 border:none;
 border-radius:14px;
 padding:12px 16px;
@@ -178,9 +179,13 @@ background:rgba(255,255,255,0.12);
 color:#ffffff;
 cursor:pointer;
 transition:transform 0.2s ease, opacity 0.2s ease;
+text-decoration:none;
+text-align:center;
+display:inline-block;
 }
 
-.hero-location-btn:hover{
+.hero-location-btn:hover,
+.your-btn-class:hover {
 transform:translateY(-1px);
 }
 
@@ -998,7 +1003,8 @@ width:100%;
 }
 
 .location-btn,
-.hero-location-btn{
+.hero-location-btn,
+.your-btn-class {
 width:100%;
 }
 
