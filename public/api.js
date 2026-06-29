@@ -1,22 +1,103 @@
 // Intercept all outgoing fetch requests to automatically inject JWT authentication headers
+// and manage global UI button loading states
 (function() {
+  let lastTriggeredButton = null;
+
+  // Track the most recently clicked button
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('button, input[type="submit"], input[type="button"], .btn');
+    if (btn) {
+      lastTriggeredButton = btn;
+      setTimeout(() => {
+        if (lastTriggeredButton === btn) lastTriggeredButton = null;
+      }, 50);
+    }
+  }, true);
+
+  // Track form submissions (e.g. hitting Enter)
+  document.addEventListener('submit', function(e) {
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"])');
+    if (submitBtn) {
+      lastTriggeredButton = submitBtn;
+      setTimeout(() => {
+        if (lastTriggeredButton === submitBtn) lastTriggeredButton = null;
+      }, 50);
+    }
+  }, true);
+
+  // Inject CSS for loading spinner
+  const style = document.createElement('style');
+  style.textContent = `
+    .btn-loading-state {
+      position: relative !important;
+      pointer-events: none !important;
+      opacity: 0.85 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+    }
+    .btn-global-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: btn-spin 0.75s linear infinite;
+      display: inline-block;
+    }
+    @keyframes btn-spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
   const originalFetch = window.fetch;
   window.fetch = async function (url, options = {}) {
+    const btn = lastTriggeredButton;
+    let originalText = null;
+    let originalWidth = null;
+
+    if (btn && !btn.classList.contains('btn-loading-state') && !btn.disabled) {
+      btn.classList.add('btn-loading-state');
+      btn.disabled = true;
+      originalText = btn.innerHTML;
+      
+      // Fix width to prevent UI jitter
+      originalWidth = btn.offsetWidth;
+      if (originalWidth > 0) {
+          btn.style.width = originalWidth + 'px';
+      }
+      
+      btn.innerHTML = '<span class="btn-global-spinner"></span> Processing...';
+    }
+
     const token = localStorage.getItem("token");
     if (token) {
       options.headers = options.headers || {};
       if (options.headers instanceof Headers) {
-        options.headers.set("Authorization", `Bearer ${token}`);
+        options.headers.set("Authorization", \`Bearer \${token}\`);
       } else if (Array.isArray(options.headers)) {
         const hasAuth = options.headers.some(h => h[0].toLowerCase() === 'authorization');
         if (!hasAuth) {
-          options.headers.push(["Authorization", `Bearer ${token}`]);
+          options.headers.push(["Authorization", \`Bearer \${token}\`]);
         }
       } else {
-        options.headers["Authorization"] = `Bearer ${token}`;
+        options.headers["Authorization"] = \`Bearer \${token}\`;
       }
     }
-    return originalFetch(url, options);
+
+    try {
+      return await originalFetch(url, options);
+    } finally {
+      if (btn && originalText !== null) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.width = '';
+        btn.classList.remove('btn-loading-state');
+      }
+    }
   };
 })();
 
