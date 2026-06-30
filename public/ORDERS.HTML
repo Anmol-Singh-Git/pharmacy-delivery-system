@@ -275,8 +275,18 @@ if(!pid && first.name && Array.isArray(order.medicines)){
   const match = order.medicines.find(m => String(m.medicine_name || "").toLowerCase() === String(first.name).toLowerCase());
   pid = match?.medicine_id || "";
 }
+
+const seller = order.seller_details || {};
+const sellerEmails = [...new Set(items.map(item => item.seller_email).filter(Boolean))];
+const hasMultipleSellers = sellerEmails.length > 1;
+const sellerName = hasMultipleSellers
+? "Multiple Sellers"
+: (seller.pharmacy_name || seller.owner_name || order.seller_email || "Seller");
+
 if(pid){
-window.location.href = `PRODUCTDETAILS.HTML?product_id=${encodeURIComponent(String(pid))}`;
+const formattedDate = typeof formatDate === "function" ? formatDate(order.order_date) : (order.order_date || "");
+const formattedTime = typeof window.formatOrderTime === "function" ? window.formatOrderTime(order) : (order.orderTime || "");
+window.location.href = `PRODUCTDETAILS.HTML?product_id=${encodeURIComponent(String(pid))}&order_date=${encodeURIComponent(formattedDate)}&order_time=${encodeURIComponent(formattedTime)}&store_name=${encodeURIComponent(sellerName)}`;
 return;
 }
 localStorage.setItem("selectedOrderDetails", JSON.stringify(order));
