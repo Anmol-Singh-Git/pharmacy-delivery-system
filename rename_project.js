@@ -12,13 +12,13 @@ dirsToScan.forEach(dir => {
             let content = fs.readFileSync(filePath, 'utf8');
             let orig = content;
             
-            // Replace exact cases of MedDeliver
-            content = content.replace(/MedDeliver/g, 'MedDeliver');
+            // Replace exact cases of ADM Pharmacy
+            content = content.replace(/ADM Pharmacy/g, 'ADM Pharmacy');
             
             // Fix lowercase occurrences where applicable, but ignore the MongoDB connection string to prevent data loss
             let temp = content.split('mongodb://127.0.0.1:27017/medideliver');
             for(let i=0; i<temp.length; i++) {
-                temp[i] = temp[i].replace(/MedDeliver/g, 'MedDeliver');
+                temp[i] = temp[i].replace(/ADM Pharmacy/g, 'ADM Pharmacy');
             }
             content = temp.join('mongodb://127.0.0.1:27017/medideliver');
 

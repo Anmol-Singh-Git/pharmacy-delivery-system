@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile | ADM Pharmacy</title>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="logo-styles.css" />
+  <link rel="stylesheet" href="BUYER-PROFILE.CSS" />
+</head>
+<body>
+
+  <!-- Global Navbar Target -->
+  <div id="navbar"></div>
+
+  <main class="profile-container">
+    <div class="profile-card">
+      <div class="profile-header">
+        <h1>My Profile</h1>
+        <p>Manage your account details and delivery information</p>
+      </div>
+
+      <div id="profileMessage" class="message-box"></div>
+
+      <form id="profileForm" class="profile-form">
+        
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" readonly title="Email cannot be changed" />
+        </div>
+
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+
+        <div class="form-group">
+          <label for="mobile">Mobile Number</label>
+          <input type="tel" id="mobile" name="mobile" required />
+        </div>
+
+        <div class="form-group">
+          <label for="address">Street Address</label>
+          <input type="text" id="address" name="address" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" required />
+          </div>
+          <div class="form-group">
+            <label for="pincode">Pincode</label>
+            <input type="text" id="pincode" name="pincode" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">New Password (Optional)</label>
+          <input type="password" id="password" name="password" placeholder="Leave blank to keep current password" />
+        </div>
+
+        <button type="submit" id="saveBtn" class="btn-primary">Save Changes</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="./api.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      window.renderGlobalNavbar('profile');
+
+      const buyerEmail = localStorage.getItem("buyer_email");
+      const token = localStorage.getItem("token");
+
+      if (!buyerEmail || !token) {
+        window.location.href = "LOGINPAGE.HTML";
+        return;
+      }
+
+      // Fetch latest profile data
+      try {
+        const response = await fetch(`${window.API_BASE}/api/buyer/profile`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.profile) {
+          document.getElementById("email").value = data.profile.email || "";
+          document.getElementById("name").value = data.profile.name || "";
+          document.getElementById("mobile").value = data.profile.mobile || "";
+          document.getElementById("address").value = data.profile.address || "";
+          document.getElementById("city").value = data.profile.city || "";
+          document.getElementById("pincode").value = data.profile.pincode || "";
+        } else {
+          showMessage("Failed to load profile data", "error");
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+        showMessage("An error occurred while loading your profile", "error");
+      }
+
+      document.getElementById("profileForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const saveBtn = document.getElementById("saveBtn");
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+
+        const payload = {
+          name: document.getElementById("name").value,
+          mobile: document.getElementById("mobile").value,
+          address: document.getElementById("address").value,
+          city: document.getElementById("city").value,
+          pincode: document.getElementById("pincode").value,
+        };
+
+        const password = document.getElementById("password").value;
+        if (password.trim() !== "") {
+          payload.password = password;
+        }
+
+        try {
+          const response = await fetch(`${window.API_BASE}/api/buyer/profile`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            showMessage("Profile updated successfully!", "success");
+            localStorage.setItem("buyer_profile", JSON.stringify(data.profile));
+            document.getElementById("password").value = "";
+          } else {
+            showMessage(data.message || "Failed to update profile", "error");
+          }
+        } catch (err) {
+          console.error("Error updating profile:", err);
+          showMessage("An error occurred while saving your profile", "error");
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save Changes";
+        }
+      });
+    });
+
+    function showMessage(text, type) {
+      const msgBox = document.getElementById("profileMessage");
+      msgBox.textContent = text;
+      msgBox.className = `message-box ${type}`;
+      setTimeout(() => {
+        msgBox.className = "message-box";
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

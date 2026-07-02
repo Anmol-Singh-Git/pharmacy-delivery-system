@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Details | MedDeliver</title>
+    <title>Product Details | ADM Pharmacy</title>
     <style>
         * {
             margin: 0;
@@ -158,14 +158,14 @@
             const seller = localStorage.getItem("seller_email");
             const nav = document.getElementById("navbar");
             if (!buyer && !seller) {
-                nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="LOGINPAGE.HTML">Login</a></nav></header>`;
+                nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="LOGINPAGE.HTML">Login</a></nav></header>`;
                 return;
             }
             if (buyer) {
-                nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a><a href="ORDERS.HTML">Orders</a></nav></header>`;
+                nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo"></a><nav><a href="HOMEPAGE.HTML">Home</a><a href="LISTINGPAGE.HTML">Products</a><a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a><a href="ORDERS.HTML">Orders</a></nav></header>`;
                 return;
             }
-            nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="meddeliver logo"></a><nav><a href="SELLER-DASHBOARD.HTML">Dashboard</a><a href="LISTINGPAGE.HTML">Products</a></nav></header>`;
+            nav.innerHTML = `<header class="navbar"><a href="./HOMEPAGE.HTML" class="logo-container"><img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo"></a><nav><a href="SELLER-DASHBOARD.HTML">Dashboard</a><a href="LISTINGPAGE.HTML">Products</a></nav></header>`;
         }
 
         function escapeHtml(v) {
@@ -210,7 +210,7 @@
                     document.getElementById("pDesc").textContent = (med.description && String(med.description).trim()) ? med.description : "No description provided.";
                 }
 
-                document.title = `${med.medicine_name} | MedDeliver`;
+                document.title = `${med.medicine_name} | ADM Pharmacy`;
             }
             catch (e) {
                 console.error(e);

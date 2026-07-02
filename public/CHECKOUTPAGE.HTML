@@ -4,7 +4,7 @@
 <script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checkout | MedDeliver</title>
+<title>Checkout | ADM Pharmacy</title>
 <link rel="stylesheet" href="CHECKOUTPAGE.CSS">
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <style>
@@ -259,7 +259,7 @@ const seller = localStorage.getItem("seller_email");
 if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="LOGINPAGE.HTML">Login</a>
@@ -273,7 +273,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
@@ -287,7 +287,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
 <a href="#" onclick="logout()">Logout</a>
@@ -766,7 +766,7 @@ const options = {
 key: keyResponse.key,
 amount: order.amount,
 currency: "INR",
-name: "MedDeliver",
+name: "ADM Pharmacy",
 description: "Order Payment",
 order_id: order.id,
 
@@ -841,7 +841,7 @@ if(window.hydrateBuyerCoordsFromServer && isTokenValid){
   }
 }
 
-const checkoutDataRaw = localStorage.getItem('meddeliver_checkout');
+const checkoutDataRaw = localStorage.getItem('adm pharmacy_checkout');
 if (checkoutDataRaw) {
     const checkoutData = JSON.parse(checkoutDataRaw);
     renderCheckoutSummary(checkoutData.items, checkoutData.total);

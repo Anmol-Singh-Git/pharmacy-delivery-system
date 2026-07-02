@@ -4,7 +4,7 @@
 <script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Delivery Tracker | MedDeliver</title>
+<title>Delivery Tracker | ADM Pharmacy</title>
 <style>
 *{
 margin:0;
@@ -589,7 +589,7 @@ const seller = localStorage.getItem("seller_email");
 if(!seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LOGINPAGE.HTML">Login</a>
@@ -601,7 +601,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
 <a href="TRACKORDER.HTML${currentOrderId ? `?order_id=${encodeURIComponent(currentOrderId)}` : ""}">Track Order</a>
@@ -838,7 +838,7 @@ const medicines = Array.isArray(order.medicines) ? order.medicines : [];
 const buyerDetails = order.buyer_details || {};
 
 // Update the page title
-document.title = `Delivery: ${buyerDetails.name || "Order"} | MedDeliver`;
+document.title = `Delivery: ${buyerDetails.name || "Order"} | ADM Pharmacy`;
 
 // Hide seller-specific sections and show delivery details
 document.querySelector(".tracker-layout").innerHTML = `

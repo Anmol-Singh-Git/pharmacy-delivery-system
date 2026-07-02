@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MedDeliver</title>
+<title>ADM Pharmacy</title>
 <link rel="stylesheet" href="HOMEPAGE.CSS">
 <link rel="stylesheet" href="logo-styles.css">
 <style>
@@ -331,10 +331,6 @@ onkeydown="handleSearchKeydown(event)"
 
 <div id="heroSearchStatus" class="hero-search-status hidden"></div>
 
-<div class="hero-buttons">
-<a href="LISTINGPAGE.HTML" class="btn buyer-btn">Shop Now</a>
-<a href="SELLER.HTML" class="btn seller-btn">Sell on MedDeliver</a>
-</div>
 </section>
 
 <section class="categories">
@@ -377,7 +373,7 @@ onkeydown="handleSearchKeydown(event)"
 </section>
 
 <section class="trust">
-<h2>Why Choose MedDeliver?</h2>
+<h2>Why Choose ADM Pharmacy?</h2>
 <p>
 We bridge the gap between local pharmacies and customers by providing a seamless digital platform.
 Affordable pricing, fast delivery, and reliable service all in one place.
@@ -385,7 +381,7 @@ Affordable pricing, fast delivery, and reliable service all in one place.
 </section>
 
 <footer>
-<p>&copy; 2026 MedDeliver | All Rights Reserved</p>
+<p>&copy; 2026 ADM Pharmacy | All Rights Reserved</p>
 <p>Healthcare made simple, fast, and reliable.</p>
 </footer>
 
@@ -844,8 +840,8 @@ loadNavbar();
 updateSearchUi();
 loadHomeProducts();
 
-if(localStorage.getItem("buyer_email") || localStorage.getItem("seller_email")){
-window.syncMedDeliverDeviceLocation();
+if(localStorage.getItem("buyer_email") || localStorage.getItem("seller_email") || localStorage.getItem("token")){
+  window.syncMedDeliverDeviceLocation();
 }
 </script>
 

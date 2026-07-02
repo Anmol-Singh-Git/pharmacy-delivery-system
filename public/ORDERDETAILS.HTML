@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Order Details | MedDeliver</title>
+<title>Order Details | ADM Pharmacy</title>
 <style>
 *{
 margin:0;
@@ -483,7 +483,7 @@ const seller = localStorage.getItem("seller_email");
 if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -498,7 +498,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -513,7 +513,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
 <a href="#" onclick="logout()">Logout</a>
@@ -625,7 +625,7 @@ seller.mobile || "",
 [seller.address || "", seller.city || "", seller.pincode || ""].filter(Boolean).join(", ")
 ].filter(Boolean).join("\n");
 
-document.title = `Order Details | MedDeliver`;
+document.title = `Order Details | ADM Pharmacy`;
 document.getElementById("orderDate").textContent = formatDate(order.order_date);
 document.getElementById("orderTotal").textContent = formatCurrency(order.total_price);
 document.getElementById("prescriptionStatusValue").textContent = getPrescriptionStatusText(order);

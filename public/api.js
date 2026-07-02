@@ -373,6 +373,7 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
         <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Browse</a>
         <a href="CARTPAGE.HTML" class="${activePage === 'cart' ? 'active' : ''}">${cartLabel}</a>
         <a href="ORDERS.HTML" class="${activePage === 'orders' ? 'active' : ''}">Orders</a>
+        <a href="BUYER-PROFILE.HTML" class="${activePage === 'profile' ? 'active' : ''}">Profile</a>
         <a href="#" onclick="window.logout(); return false;">Logout</a>
       `;
     } else {
@@ -385,7 +386,7 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
     navElement.innerHTML = `
       <header class="navbar">
         <a href="HOMEPAGE.HTML" class="logo-container">
-          <img src="./images/logo.png" class="site-logo" alt="meddeliver logo">
+          <img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo">
         </a>
         <div id="navbar-search-container"></div>
         <nav>

@@ -104,6 +104,23 @@ app.use(nosqlSanitizer);
 function authMiddleware(req, res, next) {
   console.log("Received Auth Header:", req.headers.authorization);
 
+  const authHeader = req.headers.authorization;
+  let token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+  if (!token && req.query && req.query.token) {
+    token = req.query.token;
+  }
+  const hasValidTokenStr = token && token !== "null" && token !== "undefined" && token !== "";
+
+  if (hasValidTokenStr) {
+    try {
+      const secret = process.env.JWT_SECRET || "supersecretkey";
+      req.user = jwt.verify(token, secret);
+      return next();
+    } catch (e) {
+      console.warn("Token verification failed, falling back to bypass logic if applicable");
+    }
+  }
+
   // If we bypass auth for demo validation or serverless container swaps
   if (process.env.BYPASS_AUTH_FOR_DEMO === "true" || process.env.NODE_ENV !== "production") {
     const fallbackEmail = req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
@@ -112,49 +129,7 @@ function authMiddleware(req, res, next) {
     return next();
   }
 
-  const authHeader = req.headers.authorization;
-  let token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
-  if (!token && req.query && req.query.token) {
-    token = req.query.token;
-  }
-  const hasValidTokenStr = token && token !== "null" && token !== "undefined" && token !== "";
-
-  if (!hasValidTokenStr) {
-    // Try to fallback to session if present
-    const sessionEmail = req.session?.user?.email || req.session?.email;
-    const sessionRole = req.session?.user?.role || req.session?.role;
-    if (sessionEmail) {
-      req.user = { email: sessionEmail, role: sessionRole || (req.path.includes("seller") ? "seller" : "buyer") };
-      return next();
-    }
-    return res.status(401).json({ success: false, message: "Unauthorized access" });
-  }
-
-  try {
-    if (!process.env.JWT_SECRET) {
-      console.warn("WARNING: process.env.JWT_SECRET is unreadable or undefined in this environment. Defaulting to fallback security key.");
-    }
-    const secret = process.env.JWT_SECRET || "supersecretkey";
-    const decoded = jwt.verify(token, secret);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    // Try session fallback
-    const sessionEmail = req.session?.user?.email || req.session?.email;
-    const sessionRole = req.session?.user?.role || req.session?.role;
-    if (sessionEmail) {
-      req.user = { email: sessionEmail, role: sessionRole || (req.path.includes("seller") ? "seller" : "buyer") };
-      return next();
-    }
-    // If bypass is enabled, skip error
-    if (process.env.BYPASS_AUTH_FOR_DEMO === "true" || process.env.NODE_ENV !== "production") {
-      const fallbackEmail = req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
-      const fallbackRole = req.body?.role || (req.path.includes("seller") ? "seller" : "buyer");
-      req.user = { email: fallbackEmail, role: fallbackRole };
-      return next();
-    }
-    return res.status(401).json({ success: false, message: "Invalid or expired token" });
-  }
+  return res.status(401).json({ success: false, message: "Invalid or expired token" });
 }
 
 /* ================= MULTER CONFIG ================= */
@@ -1020,6 +995,62 @@ app.post("/api/login", async (req, res) => {
 
 });
 
+/* ================= BUYER PROFILE ================= */
+
+app.get("/api/buyer/profile", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== "buyer") {
+      return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+    }
+    const buyer = await Buyer.findOne({ email: req.user.email });
+    if (!buyer) {
+      return res.status(404).json({ success: false, message: "Buyer not found" });
+    }
+    res.json({ success: true, profile: cleanPrivateBuyer(buyer) });
+  } catch (error) {
+    console.error("Error fetching buyer profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.put("/api/buyer/profile", authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== "buyer") {
+      return res.status(403).json({ success: false, message: "Forbidden: Access denied" });
+    }
+    
+    const { name, mobile, address, city, pincode, password } = req.body;
+    const buyer = await Buyer.findOne({ email: req.user.email });
+    if (!buyer) {
+      return res.status(404).json({ success: false, message: "Buyer not found" });
+    }
+    
+    if (name) buyer.name = name;
+    if (mobile) buyer.mobile = mobile;
+    if (address) buyer.address = address;
+    if (city) buyer.city = city;
+    if (pincode) buyer.pincode = pincode;
+    if (password) buyer.password = password; // Passwords are saved directly based on existing auth patterns
+    
+    if (req.body.lat && req.body.lng) {
+        buyer.location = parseLocation(req.body);
+        buyer.latitude = Number(req.body.lat);
+        buyer.longitude = Number(req.body.lng);
+    }
+    
+    await buyer.save();
+    
+    res.json({ 
+      success: true, 
+      message: "Profile updated successfully", 
+      profile: cleanPrivateBuyer(buyer) 
+    });
+  } catch (error) {
+    console.error("Error updating buyer profile:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 app.get("/api/buyer-coords/:email", authMiddleware, async (req, res) => {
   try {
     const email = String(req.params.email || "").trim();
@@ -1205,9 +1236,6 @@ app.get("/api/medicines", async (req, res) => {
         medicineFilter = Object.keys(medicineFilter).length
           ? { $and: [medicineFilter, searchFilter] }
           : searchFilter;
-      } catch (searchErr) {
-        console.error("Subquery search mapping failed:", searchErr);
-      }
     }
 
     let finalMedicineFilter = { ...medicineFilter };

@@ -4,7 +4,7 @@
 <script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cart | MedDeliver</title>
+<title>Cart | ADM Pharmacy</title>
 <link rel="stylesheet" href="CARTPAGE.CSS">
 <link rel="stylesheet" href="logo-styles.css">
 <style>
@@ -123,7 +123,7 @@ if(!buyer && !seller){
 navbar.innerHTML = `
 <header class="navbar">
 <a href="./HOMEPAGE.HTML" class="logo-container">
-  <img src="./images/logo.png" class="site-logo" alt="meddeliver logo">
+  <img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo">
 </a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
@@ -139,7 +139,7 @@ return;
 if(buyer){
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
@@ -154,7 +154,7 @@ return;
 
 navbar.innerHTML = `
 <header class="navbar">
-<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="meddeliver logo" class="site-logo"></a>
+<a class="logo-container" href="./HOMEPAGE.HTML"><img src="./images/logo.png" alt="adm pharmacy logo" class="site-logo"></a>
 <nav>
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="SELLER-DASHBOARD.HTML">Dashboard</a>
@@ -355,7 +355,7 @@ const checkoutData = {
     items: cartItems.map(item => ({ id: item.medicine_id || item._id, name: item.medicine_name || item.name, price: item.price, quantity: item.quantity, image: item.image || item.imageUrl, prescription_required: item.prescription_required || "No" })),
     total: totalAmount
 };
-localStorage.setItem('meddeliver_checkout', JSON.stringify(checkoutData));
+localStorage.setItem('adm pharmacy_checkout', JSON.stringify(checkoutData));
 
 const orderData = currentCart.map(item => ({
 medicine_id: item.medicine_id || "",
