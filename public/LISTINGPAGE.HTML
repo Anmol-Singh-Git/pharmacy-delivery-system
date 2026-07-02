@@ -187,9 +187,8 @@ queryValue: "Home Essentials"
 
 function getNavbarSearchMarkup(){
 return `
-<div style="flex:1; max-width: 600px; margin: 0 auto;">
+<div style="width: 100%; max-width: 800px; margin: 0 auto;">
 <div class="unified-search-group">
-<div class="search-mode-label">Search Products</div>
 <input type="hidden" id="searchMode" value="medicines">
 <input
 type="text"
@@ -1187,6 +1186,14 @@ try {
 
 try {
   applyInitialSearchState();
+  if (initialUrlParams.get("focusSearch") === "true") {
+    setTimeout(() => {
+      const si = document.getElementById("searchInput");
+      if (si) {
+        si.focus();
+      }
+    }, 100);
+  }
 } catch (err) {
   console.error("Failed to apply initial search state:", err);
 }

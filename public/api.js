@@ -388,7 +388,7 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
         <a href="HOMEPAGE.HTML" class="logo-container">
           <img src="./images/logo.png" class="site-logo" alt="adm pharmacy logo">
         </a>
-        <div id="navbar-search-container"></div>
+        <div id="navbar-search-container" style="flex: 1; display: flex; justify-content: center; padding: 0 40px;"></div>
         <nav>
           ${linksHtml}
         </nav>

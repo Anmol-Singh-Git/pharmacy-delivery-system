@@ -290,6 +290,29 @@ grid-template-columns:56px 1fr;
 grid-column:2;
 }
 }
+
+.hero-main-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--secondary, #DFAF34);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 16px 48px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.hero-main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  background: var(--secondary-hover, #c4992b);
+}
 </style>
     <link rel="stylesheet" href="theme.css">
 </head>
@@ -302,34 +325,9 @@ grid-column:2;
 <h1>Your Online Healthcare Store</h1>
 <p>Order medicines, wellness products and essentials from ADM Pharmacy directly to your door.</p>
 
-<div class="hero-search" id="heroSearch">
-
-
-<div class="search-box">
-<input
-type="text"
-id="searchInput"
-placeholder="Search medicines, devices, supplements..."
-autocomplete="off"
-onfocus="openSearchCard()"
-oninput="handleSearchInput()"
-onkeydown="handleSearchKeydown(event)"
->
-
-<div id="searchSuggestions" class="search-suggestions hidden">
-<div class="suggestions-head">
-<h3 id="suggestionsTitle">Popular products</h3>
-<span id="suggestionsMeta">Click a product to open it</span>
+<div style="margin-top: 40px; text-align: center;">
+<a href="LISTINGPAGE.HTML?focusSearch=true" class="hero-main-btn">Search Products</a>
 </div>
-<div id="suggestionsList" class="suggestions-list"></div>
-<div id="searchHelperLinks" class="search-helper-links"></div>
-</div>
-</div>
-
-<button class="search-btn" id="searchActionBtn" type="button" onclick="runSearch()">Search</button>
-</div>
-
-<div id="heroSearchStatus" class="hero-search-status hidden"></div>
 
 </section>
 
@@ -767,13 +765,7 @@ return;
 goToListing();
 }
 
-document.addEventListener("click", function(event){
-const searchArea = document.getElementById("heroSearch");
-
-if(searchArea && !searchArea.contains(event.target)){
-closeSearchCard();
-}
-});
+// Removed click listener for search
 
 async function loadHomeProducts(){
 const container = document.getElementById("home-products");
@@ -827,8 +819,7 @@ data-first="${firstImg}">
 `;
 });
 
-renderSearchSuggestions(document.getElementById("searchInput").value);
-closeSearchCard();
+// Search UI removed
 }
 catch(err){
 console.log(err);
@@ -837,7 +828,6 @@ setSearchStatus(window.getApiErrorMessage(err), "error", false);
 }
 
 loadNavbar();
-updateSearchUi();
 loadHomeProducts();
 
 if(localStorage.getItem("buyer_email") || localStorage.getItem("seller_email") || localStorage.getItem("token")){
