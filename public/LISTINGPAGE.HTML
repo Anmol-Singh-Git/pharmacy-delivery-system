@@ -24,7 +24,6 @@
 <body>
 
 <div id="navbar"></div>
-<div class="sub-header-search-container" id="subHeaderSearch"></div>
 
 <section class="page-header">
 <h1 id="pageTitle">Browse Products</h1>
@@ -190,11 +189,10 @@ queryValue: "Home Essentials"
 
 function getNavbarSearchMarkup(){
 return `
+<div style="flex:1; max-width: 600px; margin: 0 auto;">
 <div class="unified-search-group">
-<select id="searchMode" onchange="handleSearchModeChange()">
-<option value="medicines">Search Products</option>
-<option value="pharmacies">Search Nearby Pharmacies</option>
-</select>
+<div class="search-mode-label">Search Products</div>
+<input type="hidden" id="searchMode" value="medicines">
 <input
 type="text"
 id="searchInput"
@@ -205,16 +203,19 @@ onkeydown="handleSearchKeydown(event)"
 >
 <button type="button" class="nav-search-btn" onclick="runSearch()">Search</button>
 </div>
+</div>
 `;
 }
 
 function loadNavbar(){
   try {
     window.renderGlobalNavbar('browse');
-    const subHeader = document.getElementById("subHeaderSearch");
-    if (subHeader) {
-      subHeader.innerHTML = typeof getNavbarSearchMarkup === "function" ? getNavbarSearchMarkup() : "";
+    const navSearch = document.getElementById("navbar-search-container");
+    if (navSearch) {
+      navSearch.innerHTML = typeof getNavbarSearchMarkup === "function" ? getNavbarSearchMarkup() : "";
     }
+    const subHeader = document.getElementById("subHeaderSearch");
+    if (subHeader) subHeader.remove();
   } catch (err) {
     console.error("Failed to load standard navbar:", err);
   }

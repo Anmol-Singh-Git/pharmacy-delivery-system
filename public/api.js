@@ -387,6 +387,7 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
         <a href="HOMEPAGE.HTML" class="logo-container">
           <img src="./images/logo.png" class="site-logo" alt="meddeliver logo">
         </a>
+        <div id="navbar-search-container"></div>
         <nav>
           ${linksHtml}
         </nav>
