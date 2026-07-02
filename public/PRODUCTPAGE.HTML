@@ -237,6 +237,25 @@
     </div>
   </div>
 
+  <div id="cartModal" class="modal" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 440px; text-align: center; padding: 40px 24px;">
+      <div style="background: rgba(57,198,132,0.15); border-radius: 50%; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#39c684" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+      <h3 style="margin-bottom: 12px; font-size: 24px; color: var(--text-main);">Item Added to Cart!</h3>
+      <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 16px;">
+        <strong id="cartModalItemName" style="color: var(--text-main);"></strong> has been added to your cart successfully.
+      </p>
+      
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button type="button" class="secondary-btn" onclick="closeCartModal()">Continue Shopping</button>
+        <a href="CARTPAGE.HTML" class="primary-btn" style="text-decoration: none;">View Cart</a>
+      </div>
+    </div>
+  </div>
+
   <script src="./core.js"></script>
   <script>
     const BASE_URL = window.API_BASE;
@@ -607,8 +626,18 @@
 
         localStorage.setItem("cart", JSON.stringify(cart));
         window.refreshCartNavLabel();
-        showStatus("Added to cart.", "success");
+        
+        document.getElementById("cartModalItemName").textContent = currentProduct.medicine_name;
+        const cartModal = document.getElementById("cartModal");
+        cartModal.classList.add("open");
+        cartModal.setAttribute("aria-hidden", "false");
       });
+    }
+
+    function closeCartModal() {
+      const cartModal = document.getElementById("cartModal");
+      cartModal.classList.remove("open");
+      cartModal.setAttribute("aria-hidden", "true");
     }
 
     function openEditModal() {
@@ -712,9 +741,15 @@
         closeEditModal();
       }
     });
+    document.getElementById("cartModal").addEventListener("click", (event) => {
+      if (event.target.id === "cartModal") {
+        closeCartModal();
+      }
+    });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         closeEditModal();
+        closeCartModal();
       }
     });
 

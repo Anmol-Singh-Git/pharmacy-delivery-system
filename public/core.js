@@ -297,6 +297,12 @@ window.syncMedDeliverDeviceLocation = function syncMedDeliverDeviceLocation() {
   const sellerEmail = localStorage.getItem("seller_email");
   const email = buyerEmail || sellerEmail;
   const role = buyerEmail ? "buyer" : "seller";
+  
+  if (role === "seller") {
+    // Sellers have a fixed physical location in the database; do not prompt for dynamic geolocation
+    return Promise.resolve();
+  }
+  
   if (!email || !navigator.geolocation) {
     return Promise.resolve();
   }
@@ -363,14 +369,14 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
     if (!buyerEmail && !sellerEmail) {
       linksHtml = `
         <a href="HOMEPAGE.HTML" class="${activePage === 'home' ? 'active' : ''}">Home</a>
-        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Browse</a>
+        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Products</a>
         <a href="LOGINPAGE.HTML">Login</a>
         <a href="REGISTERPAGE.HTML">Register</a>
       `;
     } else if (buyerEmail) {
       linksHtml = `
         <a href="HOMEPAGE.HTML" class="${activePage === 'home' ? 'active' : ''}">Home</a>
-        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Browse</a>
+        <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Products</a>
         <a href="CARTPAGE.HTML" class="${activePage === 'cart' ? 'active' : ''}">${cartLabel}</a>
         <a href="ORDERS.HTML" class="${activePage === 'orders' ? 'active' : ''}">Orders</a>
         <a href="BUYER-PROFILE.HTML" class="${activePage === 'profile' ? 'active' : ''}">Profile</a>
@@ -441,3 +447,58 @@ window.requireAuth = function(callback) {
     }
   }, 10);
 };
+
+// Developer Read-Only Override
+document.addEventListener("DOMContentLoaded", () => {
+  const sellerEmail = localStorage.getItem("seller_email");
+  if (sellerEmail === "anmol@admpharmacy.com" && window.location.pathname.toUpperCase().includes("SELLER")) {
+    const devCard = document.createElement("section");
+    devCard.className = "panel";
+    devCard.style.border = "2px solid #ff9800";
+    devCard.style.backgroundColor = "#fff8e1";
+    devCard.innerHTML = `
+      <div class="section-head" style="margin-bottom: 0;">
+        <div>
+          <p class="section-kicker" style="color: #f57c00;">Developer Notice</p>
+          <h2 style="color: #e65100; margin-top: 4px;">Read-Only Mode Active</h2>
+          <p style="color: #616161; margin-top: 8px;">
+            You are currently viewing the live dashboard as a developer. All editing functionality has been safely disabled to prevent unintended changes to the production catalog and orders.
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const shell = document.querySelector(".dashboard-shell");
+    const hero = document.querySelector(".dashboard-hero");
+    if (hero && shell) {
+      shell.insertBefore(devCard, hero.nextSibling);
+    } else if (shell) {
+      shell.prepend(devCard);
+    }
+
+    const style = document.createElement("style");
+    style.innerHTML = `
+      #medicineForm,
+      .panel:has(#medicineForm),
+      #accountForm,
+      #editMedicineForm,
+      .product-actions button:not(.view-btn),
+      .update-status-form,
+      [onclick^="editMedicine"],
+      [onclick^="deleteMedicine"],
+      [onclick="openAccountModal()"],
+      [onclick="openEditModal()"],
+      .hero-actions a,
+      button[type="submit"] {
+        display: none !important;
+      }
+      .panel .section-head button:not(.ghost-btn) {
+        display: none !important;
+      }
+      .dashboard-actions button {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+});

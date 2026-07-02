@@ -33,9 +33,6 @@ const connectDB = async () => {
   }
 };
 
-// Eagerly start the connection for non-serverless environments
-connectDB().catch(() => {});
-
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
@@ -44,6 +41,60 @@ const Seller = require("./models/Seller");
 const Buyer = require("./models/Buyer");
 const Medicine = require("./models/Medicine");
 const Order = require("./models/Order");
+
+const seedDatabase = async () => {
+  try {
+    const ownerEmail = "mohit@gmail.com";
+    const devEmail = "anmol@admpharmacy.com";
+    
+    const existingOwner = await Seller.findOne({ email: ownerEmail });
+    if (!existingOwner) {
+      const owner = new Seller({
+        owner_name: "Mohit",
+        shopName: "ADM Pharmacy",
+        pharmacy_name: "ADM Pharmacy",
+        bio: "Your Online Healthcare Store",
+        mobile: "9723918822",
+        email: ownerEmail,
+        password: "AdmAdmin2026!",
+        address: "Kashipur",
+        city: "Kashipur",
+        pincode: "244713",
+        latitude: 29.2104,
+        longitude: 78.9613
+      });
+      await owner.save();
+      console.log("Seeded Master Owner Account:", ownerEmail);
+    }
+    
+    const existingDev = await Seller.findOne({ email: devEmail });
+    if (!existingDev) {
+      const dev = new Seller({
+        owner_name: "Developer",
+        shopName: "ADM Pharmacy",
+        pharmacy_name: "ADM Pharmacy",
+        bio: "Admin Access",
+        mobile: "0000000000",
+        email: devEmail,
+        password: "DevAccess2026!",
+        address: "Admin",
+        city: "Admin",
+        pincode: "000000",
+        latitude: 29.2104,
+        longitude: 78.9613
+      });
+      await dev.save();
+      console.log("Seeded Master Developer Account:", devEmail);
+    }
+  } catch (err) {
+    console.error("Failed to seed database:", err);
+  }
+};
+
+// Eagerly start the connection for non-serverless environments
+connectDB().then(() => {
+  seedDatabase();
+}).catch(() => {});
 
 const Razorpay = require("razorpay");
 
@@ -101,6 +152,41 @@ function nosqlSanitizer(req, res, next) {
 
 app.use(nosqlSanitizer);
 
+// Developer Read-Only Interceptor
+app.use((req, res, next) => {
+  const DEV_EMAIL = "anmol@admpharmacy.com";
+  const OWNER_EMAIL = "mohit@gmail.com";
+  const ENCODED_DEV_EMAIL = encodeURIComponent(DEV_EMAIL);
+  const ENCODED_OWNER_EMAIL = encodeURIComponent(OWNER_EMAIL);
+  
+  const isDevUrl = req.url.includes(DEV_EMAIL) || req.url.includes(ENCODED_DEV_EMAIL);
+  const isDevBody = req.body && req.body.seller_email === DEV_EMAIL;
+  
+  let isDevToken = false;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const decoded = jwt.verify(authHeader.split(" ")[1], process.env.JWT_SECRET || "supersecretkey");
+      if (decoded.email === DEV_EMAIL) isDevToken = true;
+    } catch(e) {}
+  }
+
+  if (isDevUrl || isDevBody || isDevToken || (req.session?.user?.email === DEV_EMAIL) || (req.session?.email === DEV_EMAIL)) {
+    if (["POST", "PUT", "DELETE", "PATCH"].includes(req.method) && !req.url.includes("/api/login")) {
+      return res.status(403).json({ success: false, message: "Developer access is read-only. Modifications are not allowed from the front-end." });
+    }
+    
+    if (isDevUrl) {
+      req.url = req.url.replace(DEV_EMAIL, OWNER_EMAIL).replace(ENCODED_DEV_EMAIL, ENCODED_OWNER_EMAIL);
+    }
+    if (isDevBody) {
+      req.body.seller_email = OWNER_EMAIL;
+    }
+    req.isDeveloper = true;
+  }
+  next();
+});
+
 function authMiddleware(req, res, next) {
   console.log("Received Auth Header:", req.headers.authorization);
 
@@ -115,6 +201,9 @@ function authMiddleware(req, res, next) {
     try {
       const secret = process.env.JWT_SECRET || "supersecretkey";
       req.user = jwt.verify(token, secret);
+      if (req.isDeveloper && req.user.email === "anmol@admpharmacy.com") {
+        req.user.email = "mohit@gmail.com";
+      }
       return next();
     } catch (e) {
       console.warn("Token verification failed, falling back to bypass logic if applicable");
@@ -124,8 +213,10 @@ function authMiddleware(req, res, next) {
   // If we bypass auth for demo validation or serverless container swaps
   if (process.env.BYPASS_AUTH_FOR_DEMO === "true" || process.env.NODE_ENV !== "production") {
     const fallbackEmail = req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
+    let finalEmail = fallbackEmail;
+    if (req.isDeveloper && finalEmail === "anmol@admpharmacy.com") finalEmail = "mohit@gmail.com";
     const fallbackRole = req.body?.role || (req.path.includes("seller") ? "seller" : "buyer");
-    req.user = { email: fallbackEmail, role: fallbackRole };
+    req.user = { email: finalEmail, role: fallbackRole };
     return next();
   }
 
@@ -1763,7 +1854,9 @@ function getActiveUserEmail(req) {
     try {
       const token = authHeader.split(" ")[1];
       const decoded = require("jsonwebtoken").verify(token, process.env.JWT_SECRET || "supersecretkey");
-      return decoded?.email;
+      let dEmail = decoded?.email;
+      if (req.isDeveloper && dEmail === "anmol@admpharmacy.com") dEmail = "mohit@gmail.com";
+      return dEmail;
     } catch (err) {
       // ignore token validation errors to fall through
     }

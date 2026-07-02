@@ -684,11 +684,14 @@ activeCategoryFilter !== "all" ? `Showing: ${getCategoryLabel(activeCategoryFilt
 "No products match the current search and filters."
 );
 container.innerHTML = `
-  <div class="empty-state-card">
-    <div class="empty-icon">🔍</div>
-    <h3>No Products Found</h3>
-    <p>We couldn't find any products matching your search or selected filters. Try adjusting them or resetting them below.</p>
-    <button class="reset-filters-btn" type="button" onclick="resetFilters()">Reset Filters</button>
+  <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 20px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; max-width: 600px; margin: 40px auto; width: 100%;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 24px;">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <h3 style="font-size: 20px; color: #334155; margin-bottom: 8px; font-weight: 600;">No products are listed yet.</h3>
+    <p style="color: #64748b; font-size: 15px; margin-bottom: 24px; max-width: 400px;">Please check back later or modify your search criteria to explore other available items.</p>
   </div>
 `;
 return;
