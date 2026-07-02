@@ -65,7 +65,7 @@
           <div class="chip-row">
             <span id="categoryChip" class="info-chip">Category</span>
             <span id="prescriptionChip" class="info-chip">Prescription</span>
-            <span id="sellerChip" class="info-chip">Seller</span>
+
             <span id="distanceChip" class="info-chip">Distance</span>
           </div>
 
@@ -82,18 +82,7 @@
               <span>Manufacturer</span>
               <strong id="manufacturerValue">Not provided</strong>
             </article>
-            <article class="info-box">
-              <span>Medical Store</span>
-              <strong id="sellerValue">Not available</strong>
-            </article>
-            <article class="info-box">
-              <span>Store Address</span>
-              <strong id="sellerAddressValue">Not available</strong>
-            </article>
-            <article class="info-box">
-              <span>Distance</span>
-              <strong id="distanceValue">Distance unavailable</strong>
-            </article>
+
           </div>
 
           <div class="details-panel">
@@ -134,41 +123,16 @@
             </dl>
           </div>
 
-          <div class="details-panel">
-            <h3>Seller Information</h3>
-            <dl class="detail-list">
-              <div>
-                <dt>Pharmacy</dt>
-                <dd id="detailSellerStore">-</dd>
-              </div>
-              <div>
-                <dt>Seller Email</dt>
-                <dd id="detailSellerEmail">-</dd>
-              </div>
-              <div>
-                <dt>Seller Mobile</dt>
-                <dd id="detailSellerMobile">-</dd>
-              </div>
-              <div>
-                <dt>Seller Address</dt>
-                <dd id="detailSellerAddress">-</dd>
-              </div>
-              <div>
-                <dt>Distance</dt>
-                <dd id="detailDistance">-</dd>
-              </div>
-              <div>
-                <dt>ETA</dt>
-                <dd id="detailETA">-</dd>
-              </div>
-            </dl>
-          </div>
+
 
           <div id="distanceActions" class="action-row hidden">
           </div>
 
-          <div id="buyerActions" class="action-row hidden" style="justify-content: flex-end;">
-            <button type="button" id="addToCartBtn" class="primary-btn" onclick="addToCart()">Add to Cart</button>
+          <div id="buyerActions" class="action-row hidden">
+            <button type="button" id="addToCartBtn" class="primary-btn add-to-cart-btn" onclick="addToCart()">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              Add to Cart
+            </button>
           </div>
 
           <div id="sellerActions" class="action-row hidden">
@@ -522,20 +486,17 @@
       document.title = `${product.medicine_name || "Product"} | MedDeliver`;
 
       document.getElementById("productTitle").textContent = product.medicine_name || "Product Details";
-      document.getElementById("productSubtitle").textContent = `${formatCategory(product.category)} by ${product.brand || "Unknown Brand"} - ${sellerText}`;
+      document.getElementById("productSubtitle").textContent = `${formatCategory(product.category)} by ${product.brand || "Unknown Brand"}`;
       document.getElementById("productBrand").textContent = product.brand || "Unknown Brand";
       document.getElementById("productName").textContent = product.medicine_name || "Unnamed Product";
       document.getElementById("productPrice").textContent = formatCurrency(product.price);
       document.getElementById("categoryChip").textContent = formatCategory(product.category);
       document.getElementById("prescriptionChip").textContent = prescriptionText;
-      document.getElementById("sellerChip").textContent = sellerText;
       document.getElementById("distanceChip").textContent = distanceText;
       document.getElementById("stockValue").textContent = stockText;
       document.getElementById("expiryValue").textContent = formatDate(product.expiry_date);
       document.getElementById("manufacturerValue").textContent = product.manufacturer || "Not provided";
-      document.getElementById("sellerValue").textContent = sellerText;
-      document.getElementById("sellerAddressValue").textContent = sellerAddressText;
-      document.getElementById("distanceValue").textContent = distanceText;
+
       document.getElementById("detailName").textContent = product.medicine_name || "Not provided";
       document.getElementById("detailBrand").textContent = product.brand || "Not provided";
       document.getElementById("detailCategory").textContent = formatCategory(product.category);
@@ -544,12 +505,6 @@
       document.getElementById("detailExpiry").textContent = formatDate(product.expiry_date);
       document.getElementById("detailManufacturer").textContent = product.manufacturer || "Not provided";
       document.getElementById("detailPrescription").textContent = prescriptionText;
-      document.getElementById("detailSellerStore").textContent = sellerText;
-      document.getElementById("detailSellerEmail").textContent = sellerEmailText;
-      document.getElementById("detailSellerMobile").textContent = sellerMobileText;
-      document.getElementById("detailSellerAddress").textContent = sellerAddressText;
-      document.getElementById("detailDistance").textContent = distanceText;
-      document.getElementById("detailETA").textContent = etaText;
       document.getElementById("productDescriptionTitle").textContent = descriptionText ? "Seller Description" : "Product Overview";
       document.getElementById("productDescriptionBody").textContent = descriptionText || "The seller has not added extra product details yet. Once provided, buyers will see what the product is for, how it helps, and its key benefits here.";
 

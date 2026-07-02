@@ -187,19 +187,6 @@ return;
 
 container.innerHTML = userOrders.map((order, index) => {
 const items = Array.isArray(order.medicines) ? order.medicines : [];
-const seller = order.seller_details || {};
-const sellerEmails = [...new Set(items.map(item => item.seller_email).filter(Boolean))];
-const hasMultipleSellers = sellerEmails.length > 1;
-const sellerName = hasMultipleSellers
-? "Multiple Sellers"
-: (seller.pharmacy_name || seller.owner_name || order.seller_email || "Seller");
-const sellerAddress = hasMultipleSellers
-? "This order contains medicines from more than one seller."
-: ([seller.address || "", seller.city || "", seller.pincode || ""].filter(Boolean).join(", ") || "Address not available");
-const sellerMobile = hasMultipleSellers
-? "Open order details to review item-wise seller information."
-: (seller.mobile || "Mobile not available");
-
 const medicineList = items.map(item => `
 <li class="order-item">
 <img src="${item.image && item.image !== 'default.png' ? escapeHtml(item.image) : 'placeholder-med.png'}" alt="${escapeHtml(item.medicine_name || "Product")}">
@@ -234,8 +221,8 @@ if (orderStatus === "Out for Delivery" && order.deliveryDetails && order.deliver
 } else if (orderStatus === "Pending" || orderStatus === "Accepted") {
     contactMarkup = `
     <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin: 12px 0;">
-        <p style="font-size: 14px; font-weight: 600; color: #1e3a8a; margin: 0 0 4px 0;">Contact Pharmacy</p>
-        <p style="font-size: 14px; color: #1d4ed8; margin: 0 0 2px 0;">Phone: <strong>${escapeHtml(sellerMobile)}</strong></p>
+        <p style="font-size: 14px; font-weight: 600; color: #1e3a8a; margin: 0 0 4px 0;">Contact ADM Pharmacy</p>
+        <p style="font-size: 14px; color: #1d4ed8; margin: 0 0 2px 0;">Phone: <strong>1-800-ADM-PHARMACY</strong></p>
         <p style="font-size: 12px; color: #1e40af; margin: 0;">Your delivery partner will be assigned once the order is ready.</p>
     </div>
     `;
@@ -262,12 +249,7 @@ return `
 ${contactMarkup}
 ${pinMarkup}
 
-<div class="seller-block">
-<p class="seller-label">Seller</p>
-<h4>${escapeHtml(sellerName)}</h4>
-<p>${escapeHtml(sellerAddress)}</p>
-<p>${escapeHtml(sellerMobile)}</p>
-</div>
+
 
 <div class="products-block">
 <h4>Products</h4>

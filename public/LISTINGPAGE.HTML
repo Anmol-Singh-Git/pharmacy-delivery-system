@@ -27,7 +27,7 @@
 
 <section class="page-header">
 <h1 id="pageTitle">Browse Products</h1>
-<p id="pageCopy">Find products or locate the nearest pharmacies using your current location.</p>
+<p id="pageCopy">Find products seamlessly directly from ADM Pharmacy.</p>
 </section>
 
 <section class="filters-panel">
@@ -65,8 +65,6 @@
 </div>
 
 <div id="sellerFilterBanner" class="seller-filter-banner hidden">
-<span id="sellerFilterText"></span>
-<button type="button" onclick="clearSellerFilter()">Clear Filter</button>
 </div>
 
 <p id="locationStatus" class="location-status"></p>
@@ -75,7 +73,7 @@
 <section class="results-head">
 <div>
 <h2 id="resultsTitle">Product Results</h2>
-<p id="resultsMeta">Browse products from verified pharmacies.</p>
+<p id="resultsMeta">Browse all available products from ADM Pharmacy.</p>
 </div>
 </section>
 
@@ -856,7 +854,7 @@ function addToCart(medicine){
       cart.push({
         medicine_id: medicine._id,
         medicine_name: medicine.medicine_name,
-        seller_email: medicine.seller_email,
+        seller_email: "admin@admpharmacy.com",
         price: medicine.price,
         image: medicine.images?.[0] || "default.png",
         prescription_required: medicine.prescription_required || "No",

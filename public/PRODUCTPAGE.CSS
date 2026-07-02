@@ -441,6 +441,23 @@ background:linear-gradient(135deg, var(--secondary), var(--secondary-hover));
 color:#ffffff;
 }
 
+.add-to-cart-btn {
+  width: 100%;
+  padding: 18px 24px;
+  font-size: 18px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3); /* Golden shadow to match secondary/primary */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+.add-to-cart-btn:hover {
+  box-shadow: 0 12px 32px rgba(212, 175, 55, 0.4);
+}
+
 .secondary-btn{
 background:#e9eef4;
 color:#1f3247;

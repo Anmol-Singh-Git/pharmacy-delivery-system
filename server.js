@@ -1194,23 +1194,11 @@ app.get("/api/medicines", async (req, res) => {
     // Search query parsing
     if (hasSearch) {
       const searchRegex = new RegExp(escapeRegex(searchTerm), "i");
-      try {
-        const matchingSellers = await Seller.find({
-          $or: [
-            { shopName: searchRegex },
-            { pharmacy_name: searchRegex },
-            { owner_name: searchRegex },
-            { city: searchRegex },
-            { pincode: searchRegex }
-          ]
-        }).select("email").lean();
-        const matchingSellerEmails = matchingSellers.map(seller => seller.email).filter(Boolean);
         const searchFilter = {
           $or: [
             { medicine_name: searchRegex },
             { brand: searchRegex },
-            { category: searchRegex },
-            ...(matchingSellerEmails.length ? [{ seller_email: { $in: matchingSellerEmails } }] : [])
+            { category: searchRegex }
           ]
         };
 
@@ -1224,36 +1212,7 @@ app.get("/api/medicines", async (req, res) => {
 
     let finalMedicineFilter = { ...medicineFilter };
 
-    // Geospatial filtering: Only performed if coordinates are present, not missing/null/undefined
-    if (hasCoords) {
-      try {
-        const userLocation = parseCoordinatePair(latParam, lngParam);
-        if (userLocation) {
-          const nearbySellers = await Seller.find({
-            location: {
-              $near: {
-                $geometry: {
-                  type: "Point",
-                  coordinates: [userLocation.longitude, userLocation.latitude]
-                },
-                $maxDistance: 25 * 1000 // 25 km
-              }
-            }
-          }).select("email").lean();
 
-          const nearbySellerEmails = nearbySellers.map(s => s.email).filter(Boolean);
-
-          if (nearbySellerEmails.length > 0) {
-            const geoFilter = { seller_email: { $in: nearbySellerEmails } };
-            finalMedicineFilter = Object.keys(medicineFilter).length
-              ? { $and: [medicineFilter, geoFilter] }
-              : geoFilter;
-          }
-        }
-      } catch (geoError) {
-        console.error("Geospatial seller lookup failed, bypassing geolocation filter restriction:", geoError);
-      }
-    }
 
     const pipeline = generateMedicineAggregation(finalMedicineFilter, req.query.sort, 50);
     const rawMedicines = await Medicine.aggregate(pipeline);
@@ -1531,7 +1490,7 @@ app.post("/api/place-order", authMiddleware, privateUpload.any(), async (req, re
       }
 
       const requiresPrescription = String(dbMedicine.prescription_required || "No").toLowerCase() === "yes";
-      const groupSellerEmail = String(dbMedicine.seller_email || "").trim();
+      const groupSellerEmail = "admin@admpharmacy.com";
       const groupKey = groupSellerEmail;
 
       if (!groupedOrders.has(groupKey)) {
