@@ -178,6 +178,28 @@ placeholder="Describe what this product is for, how it helps, and the key benefi
 <section class="panel">
 <div class="section-head">
 <div>
+<p class="section-kicker">Delivery</p>
+<h2>Incoming Orders Queue</h2>
+</div>
+<button type="button" class="ghost-btn" onclick="loadSellerOrders()">Refresh Queue</button>
+</div>
+<div id="delivery-queue-container" class="orders-grid" style="margin-bottom: 24px;"></div>
+</section>
+
+<section class="panel" id="active-deliveries-section">
+<div class="section-head">
+<div>
+<p class="section-kicker">Delivery Tracking</p>
+<h2>Active Deliveries</h2>
+</div>
+<button type="button" class="ghost-btn" onclick="loadSellerOrders()">Refresh</button>
+</div>
+<div id="active-deliveries-container" class="orders-grid" style="margin-bottom: 24px;"></div>
+</section>
+
+<section class="panel">
+<div class="section-head">
+<div>
 <p class="section-kicker">Orders</p>
 <h2>Latest Orders</h2>
 </div>
@@ -901,7 +923,7 @@ const pendingSellerItems = getSellerPendingApprovalItems(order, sellerItems);
 const prescriptionLinks = sellerPrescriptions.length
 ? `<div class="prescription-links">${sellerPrescriptions.map(entry => `
 <a
-href="./uploads/${encodeURIComponent(entry.file)}"
+href="${BASE_URL}/api/prescriptions/${encodeURIComponent(entry.file)}?token=${localStorage.getItem('token')}"
 target="_blank"
 rel="noopener noreferrer"
 class="ghost-btn ui-btn-sm"
@@ -1042,14 +1064,6 @@ ${buildOrderActions(order, sellerItems)}
 <ul class="order-items">
 ${itemMarkup || `<li class="order-item"><div><strong>No order items found</strong></div></li>`}
 </ul>
-
-<div class="delivery-assign-block" onclick="event.stopPropagation()">
-<p class="ui-assign-label" style="font-size:13px;font-weight:700;margin:12px 0 8px;color:#102033;">Assign delivery contact</p>
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="tel" class="ghost-btn" style="flex:1;min-width:160px;padding:10px 14px;border:1px solid #d6e0ea;border-radius:12px;background:#fff" id="deliveryPhone-${escapeHtml(String(order._id))}" placeholder="Delivery boy phone" value="${escapeHtml(order.deliveryBoyPhone || "")}">
-<button type="button" class="primary-btn ui-btn-sm" onclick="event.stopPropagation();assignSellerDelivery('${escapeHtml(String(order._id))}')">Assign Delivery Contact</button>
-</div>
-</div>
 </article>
 `;
 }).filter(Boolean).join("");
@@ -1404,22 +1418,32 @@ renderStats();
 }
 }
 
-async function loadSellerOrders(){
+let lastSellerOrdersHash = "";
+
+async function loadSellerOrders(silent = false){
 const container = document.getElementById("orders-container");
-container.innerHTML = `<div class="empty-state"><h3>Loading orders...</h3><p>Please wait while recent orders are fetched.</p></div>`;
+if(!silent) container.innerHTML = `<div class="empty-state"><h3>Loading orders...</h3><p>Please wait while recent orders are fetched.</p></div>`;
 
 try{
-sellerOrders = await window.fetchJson(
+const newOrders = await window.fetchJson(
 `${BASE_URL}/api/seller-orders/${encodeURIComponent(sellerEmail)}`,
 {},
 "Server error or invalid response"
 );
+const newHash = JSON.stringify(newOrders);
+if (newHash !== lastSellerOrdersHash) {
+sellerOrders = newOrders;
+lastSellerOrdersHash = newHash;
 renderOrders();
+renderDeliveryQueue();
+renderActiveDeliveries();
 renderStats();
+}
 }
 catch(error){
 console.error("Error loading orders:", error);
 sellerOrders = [];
+lastSellerOrdersHash = "";
 container.innerHTML = `<div class="empty-state"><h3>Unable to load orders</h3><p>${escapeHtml(window.getApiErrorMessage(error))}</p></div>`;
 renderStats();
 }
@@ -1525,6 +1549,207 @@ async function initDashboard(){
     console.error("Error loading dashboard medicines or orders:", e);
   }
 }
+function renderDeliveryQueue() {
+    const container = document.getElementById("delivery-queue-container");
+    if (!container) return;
+
+    const queueOrders = sellerOrders.filter(order => {
+        const status = order.order_status || order.status || "Pending";
+        return (status === "Pending" || status === "Accepted") && status !== "Delivered" && status !== "Out for Delivery";
+    }).sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
+
+    if (!queueOrders.length) {
+        container.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>No pending orders</h3>
+        <p>You have no orders waiting for delivery assignment.</p>
+        </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = queueOrders.map(order => {
+        const buyerName = escapeHtml(order.buyer_name || order.buyer_details?.name || "Customer");
+        const address = escapeHtml(order.address || [order.buyer_details?.address, order.buyer_details?.city, order.buyer_details?.pincode].filter(Boolean).join(", ") || "No Address Provided");
+        const total = formatCurrency(order.total || order.total_price || 0);
+        const status = order.order_status || order.status || "Pending";
+
+        const sellerItems = getSellerOrderItems(order);
+        const itemsMarkup = sellerItems.length ? `
+        <ul style="list-style: none; padding: 0; margin: 12px 0;">
+            ${sellerItems.map(item => `
+            <li class="order-item" style="display: flex; gap: 12px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                <img src="${item.image && item.image !== 'default.png' ? escapeHtml(item.image) : 'placeholder-med.png'}" alt="${escapeHtml(item.medicine_name || "Product")}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div>
+                    <strong class="ui-line-clamp-1" title="${escapeHtml(item.medicine_name || "Unnamed Product")}" style="font-size: 14px; margin-bottom: 2px; color: #0f172a;">${escapeHtml(item.medicine_name || "Unnamed Product")}</strong>
+                    <p style="font-size: 13px; color: #475569; margin: 0;">Qty: ${escapeHtml(item.quantity || 1)}</p>
+                </div>
+            </li>
+            `).join("")}
+        </ul>
+        ` : `<p style="font-size: 14px; color: #475569; margin: 12px 0;">No items found.</p>`;
+        
+        let actionMarkup = "";
+        if (status === "Pending") {
+            actionMarkup = `
+            <div style="background: #fffbeb; padding: 12px; border-radius: 8px; border: 1px solid #fde68a;">
+                <p style="margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #92400e;">New Order Request</p>
+                <button type="button" class="primary-btn ui-btn-sm" style="background: #f59e0b; border-color: #f59e0b; color: white;" onclick="acceptHyperlocalOrder('${order._id}')">Accept Order</button>
+            </div>
+            `;
+        } else {
+            actionMarkup = `
+            <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
+                <p style="margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #334155;">Assign Delivery Driver</p>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="driverName-${order._id}" placeholder="Driver Name" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+                    <input type="text" id="driverPhone-${order._id}" placeholder="Driver Phone" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+                    <button type="button" class="primary-btn ui-btn-sm" onclick="assignHyperlocalDriver('${order._id}')">Assign</button>
+                </div>
+            </div>
+            `;
+        }
+
+        return `
+        <article class="order-card" style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <strong>Order ID: ${order._id}</strong>
+                    <p style="margin: 4px 0; color: #475569; font-size: 14px;">${buyerName} - ${address}</p>
+                </div>
+                <div style="text-align: right;">
+                    <strong style="color: #0f172a;">${total}</strong>
+                    <p style="margin: 4px 0; font-size: 12px;"><span class="status-pill ${getStatusClass(status)}">${escapeHtml(status)}</span></p>
+                </div>
+            </div>
+            
+            ${itemsMarkup}
+            
+            ${actionMarkup}
+        </article>
+        `;
+    }).join("");
+}
+
+async function acceptHyperlocalOrder(orderId) {
+    if(!sellerEmail) return;
+
+    try {
+        await window.fetchJson(`${window.API_BASE}/api/orders/${orderId}/accept`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" }
+        }, "Server error or invalid response");
+
+        showStatus("Order accepted successfully", "success");
+        await loadSellerOrders();
+    } catch(error){
+        console.error("Error accepting order:", error);
+        showStatus(window.getApiErrorMessage(error), "error");
+    }
+}
+
+async function assignHyperlocalDriver(orderId) {
+    if(!sellerEmail) return;
+    const nameInput = document.getElementById(`driverName-${orderId}`);
+    const phoneInput = document.getElementById(`driverPhone-${orderId}`);
+    
+    const driverName = nameInput ? nameInput.value.trim() : "";
+    const driverPhone = phoneInput ? phoneInput.value.trim() : "";
+
+    if(!driverName || !driverPhone){
+        showStatus("Please enter driver name and phone number", "error");
+        return;
+    }
+
+    try {
+        await window.fetchJson(`${window.API_BASE}/api/orders/${orderId}/assign`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ driverName, driverPhone })
+        }, "Server error or invalid response");
+
+        showStatus("Driver assigned successfully", "success");
+        await loadSellerOrders();
+    } catch(error){
+        console.error("Error assigning driver:", error);
+        showStatus(window.getApiErrorMessage(error), "error");
+    }
+}
+
+function renderActiveDeliveries() {
+    const container = document.getElementById("active-deliveries-container");
+    if (!container) return;
+
+    const activeOrders = sellerOrders.filter(order => {
+        const status = order.order_status || order.status;
+        return status === "Out for Delivery";
+    }).sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
+
+    if (!activeOrders.length) {
+        container.innerHTML = `
+        <div class="empty-state" style="grid-column: 1 / -1;">
+        <h3>No active deliveries</h3>
+        <p>You have no orders currently out for delivery.</p>
+        </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = activeOrders.map(order => {
+        const buyerName = escapeHtml(order.buyer_name || order.buyer_details?.name || "Customer");
+        const address = escapeHtml(order.address || [order.buyer_details?.address, order.buyer_details?.city, order.buyer_details?.pincode].filter(Boolean).join(", ") || "No Address Provided");
+        const total = formatCurrency(order.total || order.total_price || 0);
+        const driverName = escapeHtml(order.deliveryDetails?.assignedDriverName || "Delivery Partner");
+        const driverPhone = escapeHtml(order.deliveryDetails?.assignedDriverPhone || "N/A");
+        
+        const sellerItems = getSellerOrderItems(order);
+        const itemsMarkup = sellerItems.length ? `
+        <ul style="list-style: none; padding: 0; margin: 12px 0;">
+            ${sellerItems.map(item => `
+            <li class="order-item" style="display: flex; gap: 12px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+                <img src="${item.image && item.image !== 'default.png' ? escapeHtml(item.image) : 'placeholder-med.png'}" alt="${escapeHtml(item.medicine_name || "Product")}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <div>
+                    <strong class="ui-line-clamp-1" title="${escapeHtml(item.medicine_name || "Unnamed Product")}" style="font-size: 14px; margin-bottom: 2px; color: #0f172a;">${escapeHtml(item.medicine_name || "Unnamed Product")}</strong>
+                    <p style="font-size: 13px; color: #475569; margin: 0;">Qty: ${escapeHtml(item.quantity || 1)}</p>
+                </div>
+            </li>
+            `).join("")}
+        </ul>
+        ` : `<p style="font-size: 14px; color: #475569; margin: 12px 0;">No items found.</p>`;
+
+        return `
+        <article class="order-card" style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <strong>Order ID: ${order._id}</strong>
+                    <p style="margin: 4px 0; color: #475569; font-size: 14px;">${buyerName} - ${address}</p>
+                </div>
+                <div style="text-align: right;">
+                    <strong style="color: #0f172a;">${total}</strong>
+                </div>
+            </div>
+            
+            ${itemsMarkup}
+            
+            <div style="background: #eff6ff; padding: 12px; border-radius: 8px;">
+                <p style="margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #1e3a8a;">Out for Delivery</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <p style="font-size: 13px; color: #1e40af; margin-bottom: 2px;"><strong>Driver:</strong> ${driverName}</p>
+                        <p style="font-size: 13px; color: #1e40af; margin-bottom: 0;"><strong>Contact:</strong> ${driverPhone}</p>
+                    </div>
+                    <p style="font-size: 11px; color: #15803d; font-style: italic; max-width: 150px; text-align: right; margin: 0;">Awaiting PIN confirmation from delivery portal</p>
+                </div>
+            </div>
+            <div style="margin-top: 12px; text-align: right;">
+                <button type="button" class="primary-btn" onclick="window.open('DELIVERY_VERIFY.HTML?orderId=${order._id}', '_blank')">Verify Delivery</button>
+            </div>
+        </article>
+        `;
+    }).join("");
+}
+
+// Delivery complete logic moved to PIN portal
 
 async function assignSellerDelivery(orderId){
 if(!sellerEmail) return;
@@ -1553,7 +1778,11 @@ showStatus(window.getApiErrorMessage(error), "error");
 }
 
 if(sellerEmail){
+// Initialize dashboard on load
 initDashboard();
+
+// Set up short polling every 10 seconds for real-time updates silently
+setInterval(() => loadSellerOrders(true), 3000);
 }
 </script>
 

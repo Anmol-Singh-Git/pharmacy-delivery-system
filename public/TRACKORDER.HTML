@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Track Delivery | MedDeliver</title>
@@ -288,6 +289,19 @@ border-radius:22px;
   color: #075985;
 }
 
+.info-card.green {
+  background: #f0fdf4;
+  border-left-color: #22c55e;
+}
+
+.info-card.green h4 {
+  color: #166534;
+}
+
+.info-card.green p, .info-card.green .order-item-details strong, .info-card.green .order-item-details span {
+  color: #15803d;
+}
+
 .pending {
   background: #fefce8;
   border-left: 4px solid #eab308;
@@ -336,7 +350,7 @@ border-radius:22px;
     <p id="buyerName">Loading...</p>
   </div>
 
-  <div id="productsCard" class="info-card">
+  <div id="productsCard" class="info-card green">
     <h4>Products</h4>
     <div id="productsList">Loading...</div>
   </div>
@@ -346,7 +360,7 @@ border-radius:22px;
     <p id="distance">Loading...</p>
   </div>
 
-  <div id="etaCard" class="info-card">
+  <div id="etaCard" class="info-card green">
     <h4>Estimated Delivery Time</h4>
     <p id="eta">Loading...</p>
   </div>
@@ -356,8 +370,8 @@ border-radius:22px;
     <p id="orderTime">Loading...</p>
   </div>
 
-  <div id="contactCard" class="info-card">
-    <h4>Delivery Boy Phone</h4>
+  <div id="contactCard" class="info-card green">
+    <h4>Pharmacy Contact Number</h4>
     <p id="contact">Loading...</p>
   </div>
 </div>
@@ -476,6 +490,13 @@ contentEl.classList.add("hidden");
 return;
 }
 
+const newHash = JSON.stringify(order);
+if (newHash === window.lastTrackOrderHash) return;
+window.lastTrackOrderHash = newHash;
+
+// Remove any previously added dynamic cards to prevent duplicates on polling
+document.querySelectorAll('.dynamic-card').forEach(el => el.remove());
+
 emptyEl.classList.add("hidden");
 contentEl.classList.remove("hidden");
 
@@ -485,13 +506,36 @@ order.buyer_name ||
 "—";
     document.getElementById("buyerName").textContent = buyerName;
 
+    // Check prescription status
+    if (order.prescription_status === "Waiting for Approval") {
+      const pCard = document.createElement('div');
+      pCard.className = 'info-card';
+      pCard.style.background = '#fffbeb';
+      pCard.style.borderLeft = '4px solid #f59e0b';
+      pCard.innerHTML = `
+        <h4 style="color: #b45309;">Waiting for Approval</h4>
+        <p style="font-size:14px; color:#b45309; margin-top:4px;">Your prescription is currently under review by the pharmacy.</p>
+      `;
+      document.querySelector('.panel').insertBefore(pCard, document.getElementById('buyerCard'));
+    } else if (order.prescription_status === "Approved") {
+      const pCard = document.createElement('div');
+      pCard.className = 'info-card dynamic-card';
+      pCard.style.background = '#f0fdf4';
+      pCard.style.borderLeft = '4px solid #22c55e';
+      pCard.innerHTML = `
+        <h4 style="color: #166534;">Prescription Approved</h4>
+        <p style="font-size:14px; color:#15803d; margin-top:4px;">Your prescription has been successfully verified.</p>
+      `;
+      document.querySelector('.panel').insertBefore(pCard, document.getElementById('buyerCard'));
+    }
+
     // Check if order is marked as delivered
-    const isDelivered = localStorage.getItem("delivered_" + order._id) === "true";
+    const isDelivered = (order.order_status === "Delivered" || order.status === "Delivered") || (localStorage.getItem("delivered_" + order._id) === "true");
 
     if (isDelivered) {
       // Add delivered status card
       const deliveredCard = document.createElement('div');
-      deliveredCard.className = 'info-card';
+      deliveredCard.className = 'info-card dynamic-card';
       deliveredCard.style.background = '#ecfdf3';
       deliveredCard.style.borderLeft = '4px solid #22c55e';
       deliveredCard.innerHTML = `
@@ -507,6 +551,41 @@ order.buyer_name ||
       document.getElementById("etaCard").style.borderLeft = "4px solid #22c55e";
       document.querySelector('#etaCard h4').style.color = "#166534";
       document.querySelector('#etaCard p').style.color = "#166534";
+    }
+
+    if (order.order_status === "Out for Delivery" || order.status === "Out for Delivery") {
+      const outForDeliveryCard = document.createElement('div');
+      outForDeliveryCard.className = 'info-card dynamic-card';
+      outForDeliveryCard.style.background = '#f0fdf4';
+      outForDeliveryCard.style.borderLeft = '4px solid #22c55e';
+      
+      const driverName = escapeHtml(order.deliveryDetails?.assignedDriverName || "Delivery Partner");
+      const driverPhone = escapeHtml(order.deliveryDetails?.assignedDriverPhone || "Not provided");
+      
+      outForDeliveryCard.innerHTML = `
+        <h4 style="color: #166534;">Contact Info</h4>
+        <p style="color: #15803d; font-weight:700;">🚴 Your medicines are on the way!</p>
+        <p style="font-size:14px; color:#15803d; margin-top:8px;"><strong>Driver:</strong> ${driverName}</p>
+        <p style="font-size:14px; color:#15803d; margin-top:4px;"><strong>Contact:</strong> ${driverPhone}</p>
+      `;
+      document.querySelector('.panel').insertBefore(outForDeliveryCard, document.getElementById('buyerCard'));
+      
+      document.getElementById("eta").textContent = "Arriving Soon";
+    }
+
+    const orderStatus = order.order_status || order.status;
+    const isActive = ["Pending", "Accepted", "Out for Delivery"].includes(orderStatus);
+    
+    if (isActive && order.deliveryPin && !isDelivered) {
+      const pinCard = document.createElement('div');
+      pinCard.className = 'info-card dynamic-card';
+      pinCard.style.background = '#fff1f2';
+      pinCard.style.borderLeft = '4px solid #fecdd3';
+      pinCard.innerHTML = `
+        <h4 style="color: #be123c;">Delivery PIN: <span style="font-size: 18px; letter-spacing: 2px;">${escapeHtml(order.deliveryPin)}</span></h4>
+        <p style="font-size: 12px; color: #be123c; margin-top:4px; font-weight: 500;">Security Notice: DO NOT share this PIN over the phone or any external source. Disclose only to the delivery executive at your doorstep.</p>
+      `;
+      document.querySelector('.panel').insertBefore(pinCard, document.getElementById('buyerCard'));
     }
 
     const lines = orderLineItems(order);
@@ -535,8 +614,8 @@ etaText = window.formatETA(order.eta);
 document.getElementById("eta").textContent = etaText;
 document.getElementById("orderTime").textContent = window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "—");
 document.getElementById("contact").textContent =
-order.deliveryBoyPhone && String(order.deliveryBoyPhone).trim()
-? order.deliveryBoyPhone
+order.seller_details?.mobile && String(order.seller_details.mobile).trim()
+? order.seller_details.mobile
 : "Not Assigned";
 }
 catch(err){
@@ -547,6 +626,8 @@ document.getElementById("trackContent").classList.add("hidden");
 }
 
 loadOrder();
+// Set up short polling every 10 seconds for real-time updates
+setInterval(loadOrder, 3000);
 </script>
 
 </body>

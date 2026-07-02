@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cart | MedDeliver</title>
@@ -195,7 +196,9 @@ function getCartItemImage(item){
 }
 
 function isPrescriptionRequired(item){
-return String(item?.prescription_required || "No").toLowerCase() === "yes";
+  const val = item?.prescription_required;
+  if (val === true || String(val).toLowerCase() === "true") return true;
+  return String(val || "No").toLowerCase() === "yes";
 }
 
 async function enrichCartItems(cart){
@@ -349,7 +352,7 @@ const cartItems = currentCart;
 const totalAmount = currentCart.reduce((sum, item) => sum + (Number(item.price) || 0) * Number(item.quantity || 1), 0);
 
 const checkoutData = {
-    items: cartItems.map(item => ({ id: item.medicine_id || item._id, name: item.medicine_name || item.name, price: item.price, quantity: item.quantity, image: item.image || item.imageUrl })),
+    items: cartItems.map(item => ({ id: item.medicine_id || item._id, name: item.medicine_name || item.name, price: item.price, quantity: item.quantity, image: item.image || item.imageUrl, prescription_required: item.prescription_required || "No" })),
     total: totalAmount
 };
 localStorage.setItem('meddeliver_checkout', JSON.stringify(checkoutData));

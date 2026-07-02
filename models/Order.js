@@ -124,13 +124,21 @@ default: Date.now
 
 status: {
 type: String,
-default: "Waiting for Approval"
+enum: ['Pending', 'Accepted', 'Out for Delivery', 'Delivered', 'Cancelled', 'Waiting for Approval', 'Partially Ordered', 'Rejected'],
+default: "Pending"
 },
 
 order_status: {
 type: String,
-default: "Waiting for Approval"
+default: "Pending"
 },
+
+deliveryDetails: {
+  assignedDriverName: String,
+  assignedDriverPhone: String,
+  dispatchedAt: Date
+},
+deliveryPin: String,
 
 orderTime: {
     type: String
@@ -141,7 +149,7 @@ orderTimestamp: {
 });
 
 orderSchema.pre("validate", function() {
-const nextStatus = String(this.order_status || this.status || "Waiting for Approval");
+const nextStatus = String(this.order_status || this.status || "Pending");
 this.order_status = nextStatus;
 this.status = nextStatus;
 

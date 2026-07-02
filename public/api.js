@@ -401,3 +401,41 @@ window.logout = function logout() {
   localStorage.clear();
   window.location.href = "LOGINPAGE.HTML";
 };
+
+window.isAuthenticated = function() {
+  return !!(localStorage.getItem("token") && localStorage.getItem("buyer_email"));
+};
+
+window.requireAuth = function(callback) {
+  if (window.isAuthenticated()) {
+    return callback();
+  }
+  
+  // Build and show auth modal if not authenticated
+  const modalHtml = `
+    <div id="authGuardModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15, 23, 42, 0.75);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px);opacity:0;transition:opacity 0.2s ease;">
+      <div style="background:#fff;padding:32px;border-radius:24px;max-width:400px;width:90%;box-shadow:0 24px 48px rgba(0,0,0,0.2);text-align:center;transform:translateY(20px);transition:transform 0.3s ease;">
+        <div style="background:#fef3c7;color:#b45309;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;">🔒</div>
+        <h3 style="margin:0 0 12px;font-size:22px;color:#0f172a;">Login Required</h3>
+        <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">Sign up or log in as a buyer first to manage your cart and place orders.</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button onclick="document.getElementById('authGuardModal').remove()" style="padding:12px 20px;border:none;background:#f1f5f9;color:#475569;border-radius:12px;font-weight:600;cursor:pointer;flex:1;">Cancel</button>
+          <button onclick="window.location.href='LOGINPAGE.HTML'" style="padding:12px 20px;border:none;background:#0f6c78;color:#fff;border-radius:12px;font-weight:600;cursor:pointer;flex:1;">Login Now</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const div = document.createElement("div");
+  div.innerHTML = modalHtml;
+  document.body.appendChild(div.firstElementChild);
+  
+  // Trigger animation
+  setTimeout(() => {
+    const modal = document.getElementById('authGuardModal');
+    if (modal) {
+      modal.style.opacity = "1";
+      modal.children[0].style.transform = "translateY(0)";
+    }
+  }, 10);
+};

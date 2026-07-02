@@ -126,6 +126,7 @@ color:var(--text-main);
 .seller-form{
 display:grid;
 gap:14px;
+margin-bottom:23px;
 }
 
 .location-box{

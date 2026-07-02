@@ -841,36 +841,32 @@ ${actionMarkup}
 }
 
 function addToCart(medicine){
-if(!localStorage.getItem("buyer_email")){
-alert("Login as buyer first");
-window.location.href = "LOGINPAGE.HTML";
-return;
-}
+  window.requireAuth(() => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    const existing = cart.find(item =>
+      (medicine._id && item.medicine_id === medicine._id) ||
+      (!medicine._id && item.medicine_name === medicine.medicine_name)
+    );
 
-const cart = JSON.parse(localStorage.getItem("cart")) || [];
-const existing = cart.find(item =>
-(medicine._id && item.medicine_id === medicine._id) ||
-(!medicine._id && item.medicine_name === medicine.medicine_name)
-);
+    if(existing){
+      existing.quantity += 1;
+    }
+    else{
+      cart.push({
+        medicine_id: medicine._id,
+        medicine_name: medicine.medicine_name,
+        seller_email: medicine.seller_email,
+        price: medicine.price,
+        image: medicine.images?.[0] || "default.png",
+        prescription_required: medicine.prescription_required || "No",
+        quantity: 1
+      });
+    }
 
-if(existing){
-existing.quantity += 1;
-}
-else{
-cart.push({
-medicine_id: medicine._id,
-medicine_name: medicine.medicine_name,
-seller_email: medicine.seller_email,
-price: medicine.price,
-image: medicine.images?.[0] || "default.png",
-prescription_required: medicine.prescription_required || "No",
-quantity: 1
-});
-}
-
-localStorage.setItem("cart", JSON.stringify(cart));
-window.refreshCartNavLabel();
-alert("Added to cart");
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.refreshCartNavLabel();
+    alert("Added to cart");
+  });
 }
 
 function handlePriceSortChange(){

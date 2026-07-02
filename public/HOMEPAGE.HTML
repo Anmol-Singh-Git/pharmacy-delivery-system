@@ -9,10 +9,19 @@
 <style>
 .hero-search{
 position:relative;
-max-width:960px;
+max-width:800px;
 margin:0 auto 18px;
-gap:12px;
-align-items:flex-start;
+align-items:center;
+background: #ffffff;
+border-radius: 999px;
+padding: 6px;
+box-shadow: 0 24px 50px rgba(0,0,0,0.18);
+display: flex;
+transition: box-shadow 0.3s ease;
+}
+
+.hero-search:focus-within {
+box-shadow: 0 24px 60px rgba(0,0,0,0.25);
 }
 
 .search-mode{
@@ -20,20 +29,19 @@ display:flex;
 align-items:center;
 justify-content:center;
 min-height:56px;
-padding:0 18px;
-border-radius:999px;
-background:#ffffff;
-box-shadow:0 16px 36px rgba(8,16,24,0.18);
+padding:0 24px;
+background:transparent;
+border-right: 2px solid #f1f5f9;
 }
 
 .search-mode select{
 border:none;
 outline:none;
 background:transparent;
-font-size:14px;
-font-weight:700;
-color:#14213d;
-min-width:200px;
+font-size:15px;
+font-weight:600;
+color:#334155;
+min-width:180px;
 cursor:pointer;
 appearance:none;
 -webkit-appearance:none;
@@ -43,18 +51,41 @@ appearance:none;
 .search-box{
 position:relative;
 flex:1;
+display: flex;
+align-items: center;
 }
 
 .hero-search input{
 width:100%;
-padding:16px 20px;
+padding:0 24px;
+height: 56px;
+border: none;
+background: transparent;
+font-size: 16px;
+color: #1e293b;
+outline: none;
+}
+
+.hero-search input::placeholder {
+color: #94a3b8;
 }
 
 .search-btn{
 border:none;
 cursor:pointer;
-min-height:56px;
-min-width:150px;
+height:56px;
+min-width:140px;
+border-radius: 999px;
+background: var(--secondary);
+color: #ffffff;
+font-weight: 700;
+font-size: 16px;
+transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.search-btn:hover {
+background: var(--secondary-hover);
+transform: scale(1.02);
 }
 
 .hero-search-status{
@@ -272,12 +303,7 @@ grid-column:2;
 <p>Order medicines, wellness products and essentials from trusted pharmacies near you.</p>
 
 <div class="hero-search" id="heroSearch">
-<label class="search-mode">
-<select id="searchMode" onchange="handleSearchModeChange()">
-<option value="medicines">Search Products</option>
-<option value="pharmacies">Search Nearby Pharmacies</option>
-</select>
-</label>
+
 
 <div class="search-box">
 <input
@@ -445,7 +471,7 @@ ${loading ? '<span class="search-spinner"></span>' : ""}
 }
 
 function handleSearchModeChange(){
-currentSearchMode = document.getElementById("searchMode").value;
+currentSearchMode = "medicines";
 updateSearchUi();
 
 if(currentSearchMode !== "medicines"){

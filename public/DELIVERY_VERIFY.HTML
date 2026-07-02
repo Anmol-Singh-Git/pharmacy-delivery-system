@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Verification Portal | MedDeliver</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #4b5563;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            margin: 16px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: var(--primary-color);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 4px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background-color: var(--primary-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            margin-top: 16px;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success-hover);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            min-height: 20px;
+        }
+
+        .error { color: #dc2626; }
+        .success { color: #059669; }
+
+        .order-summary {
+            display: none;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .order-summary.active {
+            display: block;
+        }
+
+        .summary-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .detail-row {
+            margin-bottom: 12px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .items-list {
+            margin-top: 16px;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name { font-weight: 500; }
+        .item-qty { color: var(--text-muted); font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Delivery Verification</h1>
+    
+    <div class="input-group">
+        <label for="pinInput">Enter 4-Digit Delivery PIN</label>
+        <input type="text" id="pinInput" maxlength="4" placeholder="----" autocomplete="off" onkeypress="return event.charCode >= 48 && event.charCode <= 57">
+    </div>
+    
+    <button id="lookupBtn" onclick="lookupOrder()">Lookup Order</button>
+    <div id="statusMsg" class="status"></div>
+
+    <div class="order-summary" id="orderSummary">
+        <div class="summary-header">Order Summary</div>
+        
+        <div class="detail-row">
+            <div class="detail-label">Customer Name</div>
+            <div class="detail-value" id="customerName"></div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Delivery Address</div>
+            <div class="detail-value" id="customerAddress"></div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Items</div>
+            <ul class="items-list" id="itemsList"></ul>
+        </div>
+
+        <button class="btn-success" id="confirmBtn" onclick="confirmDelivery()">Confirm Drop-off</button>
+    </div>
+</div>
+
+<script src="./api.js"></script>
+<script>
+    const API_BASE_URL = window.API_BASE;
+    let currentPin = "";
+    let deepLinkOrderId = null;
+
+    function showStatus(msg, type = "error") {
+        const el = document.getElementById("statusMsg");
+        el.textContent = msg;
+        el.className = `status ${type}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(window.location.search);
+        const orderId = params.get('orderId');
+        if (orderId) {
+            deepLinkOrderId = orderId;
+            document.getElementById("lookupBtn").style.display = "none";
+            showStatus("Loading order details...", "success");
+            try {
+                const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/order/${orderId}`, {
+                    method: "GET"
+                });
+                if (data.success && data.order) {
+                    renderOrder(data.order);
+                    showStatus("Order loaded. Enter PIN to confirm delivery.", "success");
+                } else {
+                    showStatus("Order not found or invalid deep link.");
+                }
+            } catch (error) {
+                showStatus(window.getApiErrorMessage(error));
+            }
+        }
+    });
+
+    async function lookupOrder() {
+        const pin = document.getElementById("pinInput").value.trim();
+        if (pin.length !== 4) {
+            showStatus("Please enter a valid 4-digit PIN.");
+            return;
+        }
+
+        const btn = document.getElementById("lookupBtn");
+        btn.disabled = true;
+        btn.textContent = "Looking up...";
+        document.getElementById("orderSummary").classList.remove("active");
+        showStatus("");
+
+        try {
+            const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/lookup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pin })
+            });
+
+            if (data.success && data.order) {
+                currentPin = pin;
+                renderOrder(data.order);
+            } else {
+                showStatus(data.message || "Order not found.");
+            }
+        } catch (error) {
+            showStatus(window.getApiErrorMessage(error));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Lookup Order";
+        }
+    }
+
+    function renderOrder(order) {
+        document.getElementById("customerName").textContent = order.buyer_name || "N/A";
+        document.getElementById("customerAddress").textContent = order.address || "N/A";
+        
+        const list = document.getElementById("itemsList");
+        list.innerHTML = "";
+        
+        if (order.items && order.items.length) {
+            order.items.forEach(item => {
+                const li = document.createElement("li");
+                li.className = "item";
+                li.innerHTML = `
+                    <span class="item-name">${item.name}</span>
+                    <span class="item-qty">Qty: ${item.quantity}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+        
+        document.getElementById("orderSummary").classList.add("active");
+        showStatus("");
+    }
+
+    async function confirmDelivery() {
+        const pin = document.getElementById("pinInput").value.trim();
+        if (pin.length !== 4) {
+            showStatus("Please enter the 4-digit PIN to confirm.");
+            return;
+        }
+
+        const btn = document.getElementById("confirmBtn");
+        btn.disabled = true;
+        btn.textContent = "Confirming...";
+
+        try {
+            const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/confirm`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pin: pin })
+            });
+
+            if (data.success) {
+                showStatus("Delivery successfully confirmed! Marking as Delivered.", "success");
+                document.getElementById("orderSummary").classList.remove("active");
+                document.getElementById("pinInput").value = "";
+                currentPin = "";
+                
+                if (deepLinkOrderId) {
+                    window.location.href = "SELLER-DASHBOARD.HTML#orders-container";
+                }
+            } else {
+                showStatus(data.message || "Confirmation failed.");
+            }
+        } catch (error) {
+            showStatus(window.getApiErrorMessage(error));
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Confirm Drop-off";
+        }
+    }
+
+    // Set up short polling every 10 seconds for real-time updates silently
+    setInterval(async () => {
+        if (deepLinkOrderId) {
+            try {
+                const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/order/${deepLinkOrderId}`, { method: "GET" });
+                if (data.success && data.order) renderOrder(data.order);
+            } catch (e) {}
+        } else if (currentPin) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/delivery/lookup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pin: currentPin })
+                });
+                const data = await window.parseJsonResponse(response);
+                if (response.ok && data.success && data.order) renderOrder(data.order);
+            } catch (e) {}
+        }
+    }, 3000);
+</script>
+</body>
+</html>

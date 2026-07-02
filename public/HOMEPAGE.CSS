@@ -85,25 +85,21 @@ color:rgba(255,255,255,0.84);
 .hero-search{
 display:flex;
 justify-content:center;
-gap:12px;
 }
 
 .hero-search input{
 border:none;
 outline:none;
-border-radius:999px;
-font-size:15px;
-box-shadow:0 16px 36px rgba(8,16,24,0.18);
+font-size:16px;
 }
 
 .search-btn{
 padding:0 24px;
-border-radius:999px;
-background:linear-gradient(135deg, var(--secondary), var(--secondary-hover));
+background:var(--secondary);
 color:#ffffff;
+border-radius:999px;
 font-weight:700;
-box-shadow:0 14px 24px rgba(223, 175, 52, 0.24);
-transition:transform 0.2s ease, opacity 0.2s ease;
+transition: all 0.2s ease;
 }
 
 .search-btn:hover{

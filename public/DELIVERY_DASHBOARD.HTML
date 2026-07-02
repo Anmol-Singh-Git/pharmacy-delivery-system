@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Route Dashboard | MedDeliver</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 16px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .order-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .customer-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+
+        .address {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .total {
+            font-weight: 700;
+            color: #059669;
+            font-size: 16px;
+        }
+
+        .items-section {
+            margin-bottom: 16px;
+        }
+
+        .items-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        .item-list li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .verify-btn {
+            display: block;
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .verify-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Active Delivery Routes</h1>
+</header>
+
+<div class="container" id="ordersContainer">
+    <div style="text-align: center; padding: 40px; color: #64748b;">Loading routes...</div>
+</div>
+
+<script src="./api.js"></script>
+<script>
+    const API_BASE_URL = window.API_BASE;
+    const currencyFormatter = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 0
+    });
+
+    async function loadActiveDeliveries() {
+        const container = document.getElementById("ordersContainer");
+        try {
+            const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/active-orders`);
+            
+            if (!data.success || !data.orders || data.orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg style="width: 48px; height: 48px; margin-bottom: 16px; color: #cbd5e1;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        <h3 style="margin: 0 0 8px 0; color: #334155;">No Active Deliveries</h3>
+                        <p style="margin: 0;">There are currently no orders out for delivery.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.orders.map(order => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <p class="customer-name">${escapeHtml(order.buyer_name || "Customer")}</p>
+                            <p class="address">${escapeHtml(order.address || "Address not provided")}</p>
+                        </div>
+                        <div class="total">${currencyFormatter.format(order.total || 0)}</div>
+                    </div>
+                    
+                    <div class="items-section">
+                        <div class="items-title">Order Items</div>
+                        <ul class="item-list">
+                            ${(order.items || []).map(item => `
+                                <li>
+                                    <span>${escapeHtml(item.name || "Product")}</span>
+                                    <span style="color: #64748b;">x${item.quantity}</span>
+                                </li>
+                            `).join("")}
+                        </ul>
+                    </div>
+
+                    <a href="DELIVERY_VERIFY.HTML" class="verify-btn">Verify Delivery</a>
+                </div>
+            `).join("");
+
+        } catch (error) {
+            console.error("Error loading deliveries:", error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p style="color: #dc2626;">Error loading active deliveries. Please refresh to try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    function escapeHtml(unsafe) {
+        if(!unsafe) return "";
+        return String(unsafe)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    document.addEventListener("DOMContentLoaded", loadActiveDeliveries);
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>if(!localStorage.getItem('token') || !localStorage.getItem('buyer_email')) window.location.href = 'LOGINPAGE.HTML';</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout | MedDeliver</title>
@@ -333,7 +334,9 @@ return `${Math.max(1, Math.round(size / 1024))} KB`;
 }
 
 function isPrescriptionRequired(item){
-return String(item?.prescription_required || "No").toLowerCase() === "yes";
+  const val = item?.prescription_required;
+  if (val === true || String(val).toLowerCase() === "true") return true;
+  return String(val || "No").toLowerCase() === "yes";
 }
 
 function getOrderItemImage(item){
@@ -655,15 +658,55 @@ localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
     payload.buyerLng = buyerLng;
   }
 
-  console.log("Sending token:", localStorage.getItem('token'));
-  return window.fetchJson(`${BASE_URL}/api/place-order`, {
-    method: "POST",
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  }, "Server error or invalid response");
+  if (requiredPrescriptionItems.length > 0) {
+    const formData = new FormData();
+    formData.append("buyer_email", payload.buyer_email);
+    formData.append("medicines", JSON.stringify(payload.medicines));
+    formData.append("total_price", payload.total_price);
+    formData.append("delivery_details", JSON.stringify(payload.delivery_details));
+    formData.append("payment_method", payload.payment_method);
+    
+    const prescriptions = [];
+    requiredPrescriptionItems.forEach(item => {
+      const file = getPrescriptionFile(item.upload_key);
+      if (file) {
+        formData.append(item.upload_key, file);
+        prescriptions.push({
+          medicine_name: item.medicine_name,
+          medicine_id: item.medicine_id || "",
+          seller_email: item.seller_email || "",
+          field_name: item.upload_key
+        });
+      }
+    });
+    formData.append("prescriptions", JSON.stringify(prescriptions));
+
+    console.log("Sending order via FormData with token:", token);
+    const response = await fetch(`${BASE_URL}/api/place-order`, {
+      method: "POST",
+      headers: {
+        'Authorization': 'Bearer ' + token
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+        let errorData = {};
+        try { errorData = await response.json(); } catch(e) {}
+        throw new Error(errorData.message || "Failed to place order");
+    }
+    return response.json();
+  } else {
+    console.log("Sending token:", localStorage.getItem('token'));
+    return window.fetchJson(`${BASE_URL}/api/place-order`, {
+      method: "POST",
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }, "Server error or invalid response");
+  }
 }
 
 function clearOrderState(){
@@ -777,8 +820,9 @@ function renderCheckoutSummary(items, checkoutTotal) {
         price: Number(item.price) || 0,
         quantity: Number(item.quantity) || 1,
         image: item.image || "default.png",
-        prescription_required: "No"
+        prescription_required: item.prescription_required || "No"
     }));
+    buildRequiredPrescriptionItems();
     renderOrderSummary();
 }
 

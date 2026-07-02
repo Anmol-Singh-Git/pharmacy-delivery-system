@@ -305,6 +305,13 @@ button{
   display:flex;
   flex-direction:column;
   gap:14px;
+  transition: transform 0.24s ease, box-shadow 0.24s ease;
+  cursor: default;
+}
+
+.past-order-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 42px rgba(20,32,49,0.14);
 }
 
 .card-top{
