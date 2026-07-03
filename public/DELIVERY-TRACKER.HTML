@@ -567,7 +567,8 @@ text-align: center;
 </section>
 </main>
 
-<script src="./core.js"></script>
+
+<script src="./core.js?v=1783098382706"></script>
 <script>
 const BASE_URL = window.API_BASE;
 let acceptedOrders = [];
@@ -1128,12 +1129,20 @@ document.getElementById("shareCopy").textContent = window.getApiErrorMessage(err
 
 function startPolling(){
 clearInterval(pollTimer);
-pollTimer = setInterval(async () => {
-await loadAcceptedOrders();
-if(currentOrderId){
-await loadActiveOrder();
-}
-}, 3000);
+const socketScript = document.createElement('script');
+socketScript.src = BASE_URL + '/socket.io/socket.io.js';
+socketScript.onload = () => {
+  const socket = io(BASE_URL);
+  socket.on("new_order", async () => {
+    await loadAcceptedOrders();
+    if(currentOrderId) await loadActiveOrder();
+  });
+  socket.on("order_updated", async () => {
+    await loadAcceptedOrders();
+    if(currentOrderId) await loadActiveOrder();
+  });
+};
+document.head.appendChild(socketScript);
 }
 
 window.addEventListener("beforeunload", () => {

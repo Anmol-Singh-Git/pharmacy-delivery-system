@@ -130,10 +130,6 @@ Keep your catalog accurate, update stock fast, and review new orders from one cl
 </select>
 </label>
 
-<label class="field">
-<span>Delivery Boy Phone</span>
-<input type="text" id="delivery_phone" name="delivery_phone" placeholder="Enter delivery contact number" />
-</label>
 
 <label class="field field-full">
 <span>Product Details</span>
@@ -208,7 +204,7 @@ placeholder="Describe what this product is for, how it helps, and the key benefi
 
 <div id="orders-container" class="orders-grid"></div>
 <div class="panel-footer">
-<a href="SELLER-PAST-ORDERS.HTML" class="secondary-btn">View past orders</a>
+<a href="SELLER-PAST-ORDERS.HTML" class="secondary-btn">View all Orders</a>
 </div>
 </section>
 
@@ -382,7 +378,8 @@ placeholder="Describe what this product is for, how it helps, and the key benefi
 </div>
 </div>
 
-<script src="./core.js"></script>
+
+<script src="./core.js?v=1783098382732"></script>
 <script>
 const BASE_URL = window.API_BASE;
 let sellerEmail = localStorage.getItem("seller_email");
@@ -867,7 +864,7 @@ title="View prescription for ${escapeHtml(entry.medicine_name || "medicine")}"
 View ${escapeHtml(getCompactPrescriptionLabel(entry.medicine_name))}
 </a>
 `).join("")}</div>`
-: `<span class="status-note status-success">No Prescription Required</span>`;
+: ``;
 
 const orderStatus = normalizeOrderStatusLabel(order.order_status || order.status);
     const trackingButtons = "";
@@ -905,15 +902,16 @@ ${prescriptionLinks}
     `;
   }
   
-  const displayStatus = isDelivered ? "Delivered" : orderStatus;
+  if (prescriptionLinks || trackingButtons) {
+    return `
+    <div class="order-actions">
+    ${prescriptionLinks}
+    ${trackingButtons}
+    </div>
+    `;
+  }
   
-  return `
-  <div class="order-actions">
-  ${prescriptionLinks}
-  ${trackingButtons}
-  <span class="status-note order-status-chip ${getStatusClass(displayStatus)}">${escapeHtml(displayStatus)}</span>
-  </div>
-  `;
+  return "";
 }
 
 function renderOrders(){
@@ -991,7 +989,6 @@ order.buyer_details?.pincode || ""
     <span>Pending Prescription Items: ${pendingSellerItems.length}</span>
     <p>Distance: ${formatDistance(order.distanceKm)}</p>
     <p>ETA: ${formatETA(order.eta)}</p>
-    <p>Delivery Phone: ${order.deliveryBoyPhone || "Not Assigned"}</p>
 </div>
 
 ${buildOrderActions(order, sellerItems)}
@@ -1537,8 +1534,8 @@ function renderDeliveryQueue() {
             <div style="background: #f1f5f9; padding: 12px; border-radius: 8px;">
                 <p style="margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #334155;">Assign Delivery Driver</p>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="driverName-${order._id}" placeholder="Driver Name" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
-                    <input type="text" id="driverPhone-${order._id}" placeholder="Driver Phone" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+                    <input type="text" id="driverName-${order._id}" placeholder="Driver Name" oninput="this.value=this.value.replace(/[^a-zA-Z\\s]/g,'')" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
+                    <input type="text" id="driverPhone-${order._id}" placeholder="Driver Phone" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                     <button type="button" class="primary-btn ui-btn-sm" onclick="assignHyperlocalDriver('${order._id}')">Assign</button>
                 </div>
             </div>
@@ -1716,8 +1713,15 @@ if(sellerEmail){
 // Initialize dashboard on load
 initDashboard();
 
-// Set up short polling every 10 seconds for real-time updates silently
-setInterval(() => loadSellerOrders(true), 3000);
+// Listen for real-time Socket.io events
+const socketScript = document.createElement('script');
+socketScript.src = BASE_URL + '/socket.io/socket.io.js';
+socketScript.onload = () => {
+  const socket = io(BASE_URL);
+  socket.on("new_order", () => loadSellerOrders(true));
+  socket.on("order_updated", () => loadSellerOrders(true));
+};
+document.head.appendChild(socketScript);
 }
 </script>
 

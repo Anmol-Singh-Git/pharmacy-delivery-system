@@ -197,8 +197,46 @@ white-space:pre-line;
 word-break:break-word;
 }
 
-.hidden{
-display:none !important;
+.hidden { display: none !important; }
+.delivery-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.delivery-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalPopIn 0.3s ease-out;
+}
+.delivery-modal-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.delivery-modal h2 {
+  color: #166534;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+.delivery-modal p {
+  color: #475569;
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+@keyframes modalPopIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .empty-state{
@@ -379,7 +417,16 @@ border-radius:22px;
 </section>
 </main>
 
-<script src="./core.js"></script>
+<div id="deliveryPopupModal" class="delivery-modal-overlay hidden">
+  <div class="delivery-modal">
+    <div class="delivery-modal-icon">✅</div>
+    <h2>Order Delivered!</h2>
+    <p>Your parcel has been successfully delivered to you. Thank you for choosing ADM Pharmacy.</p>
+    <button style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 10px 32px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(34, 197, 94, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(34, 197, 94, 0.3)'" onclick="document.getElementById('deliveryPopupModal').classList.add('hidden')">OK</button>
+  </div>
+</div>
+
+<script src="./core.js?v=1783098382741"></script>
 <script>
 const BASE_URL = window.API_BASE;
 
@@ -412,8 +459,7 @@ navbar.innerHTML = `
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
-<a href="ORDERS.HTML">Orders</a>
-<a href="#" onclick="logout()">Logout</a>
+<a href="ORDERS.HTML">Orders</a>\n<a href="BUYER-PROFILE.HTML">Profile</a>
 </nav>
 </header>
 `;
@@ -545,6 +591,12 @@ order.buyer_name ||
       `;
       document.querySelector('.panel').insertBefore(deliveredCard, document.getElementById('buyerCard'));
 
+      if (!localStorage.getItem("delivery_modal_shown_" + order._id)) {
+        localStorage.setItem("delivery_modal_shown_" + order._id, "true");
+        const modal = document.getElementById("deliveryPopupModal");
+        if (modal) modal.classList.remove("hidden");
+      }
+
       // Update ETA to show Completed
       document.getElementById("eta").textContent = "Completed";
       document.getElementById("etaCard").style.background = "#ecfdf3";
@@ -564,7 +616,7 @@ order.buyer_name ||
       
       outForDeliveryCard.innerHTML = `
         <h4 style="color: #166534;">Contact Info</h4>
-        <p style="color: #15803d; font-weight:700;">🚴 Your medicines are on the way!</p>
+        <p style="color: #15803d; font-weight:700;">🚴 Your parcel is on the way!</p>
         <p style="font-size:14px; color:#15803d; margin-top:8px;"><strong>Driver:</strong> ${driverName}</p>
         <p style="font-size:14px; color:#15803d; margin-top:4px;"><strong>Contact:</strong> ${driverPhone}</p>
       `;
@@ -607,7 +659,7 @@ listEl.innerHTML = lines.map((line) => `
 document.getElementById("distance").textContent = window.formatDistance(order.distanceKm);
 let etaText = "Location unavailable";
 if(Number.isFinite(Number(order.etaMin)) && Number.isFinite(Number(order.etaMax))){
-etaText = `${order.etaMin} - ${order.etaMax} mins`;
+etaText = `${window.formatTimeValue(order.etaMin)} - ${window.formatTimeValue(order.etaMax)}`;
 } else if(order.eta && String(order.eta).trim() && !/^calculating/i.test(String(order.eta))){
 etaText = window.formatETA(order.eta);
 }
@@ -626,8 +678,14 @@ document.getElementById("trackContent").classList.add("hidden");
 }
 
 loadOrder();
-// Set up short polling every 10 seconds for real-time updates
-setInterval(loadOrder, 3000);
+const socketScript = document.createElement('script');
+socketScript.src = BASE_URL + '/socket.io/socket.io.js';
+socketScript.onload = () => {
+  const socket = io(BASE_URL);
+  socket.on("order_updated", loadOrder);
+  socket.on("location_updated", loadOrder);
+};
+document.head.appendChild(socketScript);
 </script>
 
 </body>

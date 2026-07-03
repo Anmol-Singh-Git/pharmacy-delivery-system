@@ -103,7 +103,13 @@ const jwt = require("jsonwebtoken");
 const session = require("express-session");
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
+const http = require("http");
+const { Server } = require("socket.io");
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
+app.set("io", io);
+
 app.set("trust proxy", 1);
 
 /* ================= MIDDLEWARE ================= */
@@ -1609,7 +1615,7 @@ app.post("/api/place-order", authMiddleware, privateUpload.any(), async (req, re
       }
 
       const requiresPrescription = String(dbMedicine.prescription_required || "No").toLowerCase() === "yes";
-      const groupSellerEmail = "admin@admpharmacy.com";
+      const groupSellerEmail = dbMedicine.seller_email;
       const groupKey = groupSellerEmail;
 
       if (!groupedOrders.has(groupKey)) {
@@ -1808,6 +1814,7 @@ app.post("/api/place-order", authMiddleware, privateUpload.any(), async (req, re
       await entry.medicine.save();
     }
 
+    req.app.get("io")?.emit("new_order");
     res.json({
       success: true,
       message: "Order placed successfully",
@@ -2036,6 +2043,8 @@ app.post("/api/update-order-status", authMiddleware, async (req, res) => {
     await restoreRejectedMedicinesStock(currentSnapshot.medicines, order.medicines);
     await order.save();
 
+    req.app.get("io")?.emit("order_updated");
+
     res.json({
       success: true,
       message: `Order ${status.toLowerCase()} successfully`,
@@ -2110,6 +2119,8 @@ app.post("/api/update-prescription-status", authMiddleware, async (req, res) => 
 
     await restoreRejectedMedicinesStock(currentSnapshot.medicines, order.medicines);
     await order.save();
+
+    req.app.get("io")?.emit("order_updated");
 
     res.json({
       success: true,
@@ -2465,15 +2476,25 @@ async function handleAssignDeliveryPhone(req, res) {
       });
     }
 
+    const driverName = String(req.body.driverName || req.body.assignedDriverName || "Delivery Partner").trim();
+    
     order.deliveryBoyPhone = phone;
+    order.status = "Out for Delivery";
+    order.order_status = "Out for Delivery";
+    order.deliveryDetails = {
+      assignedDriverName: driverName,
+      assignedDriverPhone: phone,
+      dispatchedAt: new Date()
+    };
     await order.save();
-
     if (!order) {
       return res.status(404).json({
         success: false,
         message: "Order not found"
       });
     }
+
+    req.app.get("io")?.emit("order_updated");
 
     res.json({
       success: true,
@@ -2540,6 +2561,8 @@ app.put("/api/orders/:id", async (req, res) => {
       { new: true }
     );
 
+    req.app.get("io")?.emit("location_updated");
+
     res.json({ success: true, order });
 
   } catch (err) {
@@ -2562,6 +2585,7 @@ app.put("/api/orders/:id/accept", async (req, res) => {
         return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    req.app.get("io")?.emit("order_updated");
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -2595,6 +2619,7 @@ app.put("/api/orders/:id/assign", async (req, res) => {
         return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    req.app.get("io")?.emit("order_updated");
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -2616,6 +2641,7 @@ app.put("/api/orders/:id/complete", async (req, res) => {
         return res.status(404).json({ success: false, message: "Order not found" });
     }
 
+    req.app.get("io")?.emit("order_updated");
     res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -2987,6 +3013,21 @@ app.put("/api/delivery/confirm", async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found or invalid PIN" });
     }
 
+    let hasChanges = false;
+    if (order.medicines && Array.isArray(order.medicines)) {
+      order.medicines.forEach(m => {
+        if (m.status !== "Rejected" && m.status !== "Delivered") {
+          m.status = "Delivered";
+          hasChanges = true;
+        }
+      });
+      if (hasChanges) {
+        order.markModified("medicines");
+        await order.save();
+      }
+    }
+
+    req.app.get("io")?.emit("order_updated");
     res.json({ success: true, message: "Order delivered successfully", order });
   } catch (error) {
     console.error("Delivery confirm error:", error);
@@ -3002,7 +3043,7 @@ app.use("/api", (req, res) => {
 });
 
 if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, "0.0.0.0", () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Access via: http://<your-network-ip>:${PORT} or via ngrok`);
     console.log(`Environment: ${process.env.NODE_ENV || "development"}`);

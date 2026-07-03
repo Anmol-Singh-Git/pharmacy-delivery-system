@@ -16,8 +16,8 @@
 <section class="page-head">
 <div>
 <p class="eyebrow">Past Orders</p>
-<h1>Older Seller Orders</h1>
-<p>Browse every order beyond your latest six. Filter by order type, price, or date and inspect full buyer and item details from the same page.</p>
+<h1>All Seller Orders</h1>
+<p>Browse all your orders. Filter by order type, price, or date and inspect full buyer and item details from the same page.</p>
 </div>
 <a href="SELLER-DASHBOARD.HTML" class="secondary-link">Back to Dashboard</a>
 </section>
@@ -75,7 +75,7 @@
 </section>
 </main>
 
-<script src="./core.js"></script>
+<script src="./core.js?v=1783098382734"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const sellerEmail = localStorage.getItem("seller_email");
@@ -232,7 +232,10 @@ function formatDateInput(value){
   if(!value) return "";
   const date = new Date(value);
   if(Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0,10);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function updateDateRangeButton(){
@@ -424,7 +427,7 @@ function initializeDateRangePicker(){
 }
 
 function getPastOrders(){
-  const filtered = allSellerOrders.slice(6).filter(orderMatchesFilters);
+  const filtered = allSellerOrders.filter(orderMatchesFilters);
   filtered.sort(compareOrders);
   filtered.sort(sortByPrice);
   return filtered;
@@ -482,7 +485,7 @@ function renderPastOrders(){
 
   if(!orders.length){
     summary.textContent = "No older orders found for the selected filters.";
-    container.innerHTML = `<div class="empty-state"><h3>No past orders yet</h3><p>Older orders will appear here once you have more than six orders.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><h3>No orders found</h3><p>You do not have any orders matching the selected filters.</p></div>`;
     return;
   }
 

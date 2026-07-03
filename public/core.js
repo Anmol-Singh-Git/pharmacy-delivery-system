@@ -89,9 +89,15 @@ window.fetchJson = async function(url, options = {}, fallbackMessage = "Server e
     console.warn("Storage access failed for token", e);
   }
 
+  let finalUrl = url;
+  if (!options.method || options.method.toUpperCase() === 'GET') {
+    const separator = finalUrl.includes('?') ? '&' : '?';
+    finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
+  }
+
   let response;
   try {
-    response = await fetch(url, options);
+    response = await fetch(finalUrl, options);
   } catch (networkError) {
     console.error(`Network Fetch Error for ${url}:`, networkError);
     throw new Error("Network request failed: " + networkError.message);
@@ -115,6 +121,28 @@ function formatETA(eta) {
   if (!s || /^calculating/i.test(s)) {
     return "Location unavailable";
   }
+
+  const formatMins = (mins) => {
+    const m = parseInt(mins, 10);
+    if (isNaN(m)) return mins;
+    if (m < 60) return `${m} mins`;
+    const hrs = Math.floor(m / 60);
+    const rem = m % 60;
+    let res = `${hrs} hr${hrs > 1 ? 's' : ''}`;
+    if (rem > 0) res += ` ${rem} mins`;
+    return res;
+  };
+
+  const matchRange = s.match(/^(\d+)\s*-\s*(\d+)\s*mins?$/i);
+  if (matchRange) {
+    return `${formatMins(matchRange[1])} - ${formatMins(matchRange[2])}`;
+  }
+
+  const matchSingle = s.match(/^(\d+)\s*mins?$/i);
+  if (matchSingle) {
+    return formatMins(matchSingle[1]);
+  }
+
   return s;
 }
 
@@ -289,7 +317,7 @@ window.computeEtaLabelForCartOrCheckout = function computeEtaLabelForCartOrCheck
   }
   const etaMin = Math.round(maxKm * 10);
   const etaMax = Math.round(maxKm * 15);
-  return `${etaMin} - ${etaMax} mins`;
+  return `${window.formatTimeValue(etaMin)} - ${window.formatTimeValue(etaMax)}`;
 };
 
 window.syncMedDeliverDeviceLocation = function syncMedDeliverDeviceLocation() {
@@ -348,6 +376,16 @@ window.syncMedDeliverDeviceLocation = function syncMedDeliverDeviceLocation() {
   });
 };
 
+window.formatTimeValue = function(val) {
+  const num = Number(val);
+  if (!Number.isFinite(num) || num < 0) return "0 mins";
+  const mins = Math.round(num);
+  if (mins < 60) return `${mins} mins`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `${h} hrs ${m} mins` : `${h} hrs`;
+};
+
 window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
   try {
     const navElement = document.getElementById("navbar") || document.getElementById("main-header");
@@ -379,8 +417,8 @@ window.renderGlobalNavbar = function renderGlobalNavbar(activePage = "") {
         <a href="LISTINGPAGE.HTML" class="${activePage === 'browse' ? 'active' : ''}">Products</a>
         <a href="CARTPAGE.HTML" class="${activePage === 'cart' ? 'active' : ''}">${cartLabel}</a>
         <a href="ORDERS.HTML" class="${activePage === 'orders' ? 'active' : ''}">Orders</a>
-        <a href="BUYER-PROFILE.HTML" class="${activePage === 'profile' ? 'active' : ''}">Profile</a>
-        <a href="#" onclick="window.logout(); return false;">Logout</a>
+        ${activePage !== 'profile' ? '<a href="BUYER-PROFILE.HTML">Profile</a>' : ''}
+        ${activePage === 'profile' ? '<a href="#" onclick="window.logout(); return false;">Logout</a>' : ''}
       `;
     } else {
       linksHtml = `

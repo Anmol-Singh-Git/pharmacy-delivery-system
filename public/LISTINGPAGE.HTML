@@ -81,7 +81,7 @@
 <div id="medicine-container" class="medicine-grid"></div>
 </section>
 
-<script src="./core.js"></script>
+<script src="./core.js?v=1783098382713"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const buyerEmail = localStorage.getItem("buyer_email");
@@ -851,12 +851,13 @@ function addToCart(medicine){
 
     if(existing){
       existing.quantity += 1;
+      existing.seller_email = medicine.seller_email || "admin@admpharmacy.com";
     }
     else{
       cart.push({
         medicine_id: medicine._id,
         medicine_name: medicine.medicine_name,
-        seller_email: "admin@admpharmacy.com",
+        seller_email: medicine.seller_email || "admin@admpharmacy.com",
         price: medicine.price,
         image: medicine.images?.[0] || "default.png",
         prescription_required: medicine.prescription_required || "No",
@@ -866,7 +867,8 @@ function addToCart(medicine){
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.refreshCartNavLabel();
-    alert("Added to cart");
+    document.getElementById('cartModalItemName').textContent = medicine.medicine_name;
+    document.getElementById('cartModal').style.display = 'flex';
   });
 }
 
@@ -1255,6 +1257,25 @@ try {
   }
 })();
 </script>
+
+<!-- Cart Modal -->
+<div id="cartModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15, 23, 42, 0.75);align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(4px);">
+  <div style="background:#fff;border-radius:24px;width:90%;max-width:440px;text-align:center;padding:40px 24px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+    <div style="background: rgba(57,198,132,0.15); border-radius: 50%; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#39c684" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <h3 style="margin-bottom: 12px; font-size: 24px; color: #0f172a;">Item Added to Cart!</h3>
+    <p style="color: #475569; margin-bottom: 32px; font-size: 16px;">
+      <strong id="cartModalItemName" style="color: #0f172a;"></strong> has been added to your cart successfully.
+    </p>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+      <button type="button" onclick="document.getElementById('cartModal').style.display='none'" style="padding:12px 20px;border:none;background:#f1f5f9;color:#475569;border-radius:12px;font-weight:600;cursor:pointer;flex:1;">Continue Shopping</button>
+      <button type="button" onclick="window.location.href='CARTPAGE.HTML'" style="padding:12px 20px;border:none;background:#0f6c78;color:#fff;border-radius:12px;font-weight:600;cursor:pointer;flex:1;">View Cart</button>
+    </div>
+  </div>
+</div>
 
 <!-- Location Modal -->
 <div id="locationModal" class="modal hidden">

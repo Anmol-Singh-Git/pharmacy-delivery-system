@@ -188,6 +188,47 @@ width:72px;
 height:72px;
 }
 }
+.hidden { display: none !important; }
+.order-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.order-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalPopIn 0.3s ease-out;
+}
+.order-modal-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.order-modal h2 {
+  color: #166534;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+.order-modal p {
+  color: #475569;
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+@keyframes modalPopIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
 </style>
     <link rel="stylesheet" href="logo-styles.css">
     <link rel="stylesheet" href="theme.css">
@@ -236,10 +277,20 @@ height:72px;
 <button onclick="cashOnDelivery()" class="cod-btn">Cash on Delivery</button>
 </div>
 </div>
+</div>
 </section>
 </main>
 
-<script src="./core.js"></script>
+<div id="orderPlacedModal" class="order-modal-overlay hidden">
+  <div class="order-modal">
+    <div class="order-modal-icon">✅</div>
+    <h2>Order Placed!</h2>
+    <p id="orderPlacedMessage"></p>
+    <button style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 10px 32px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(34, 197, 94, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(34, 197, 94, 0.3)'" id="orderPlacedBtn">OK</button>
+  </div>
+</div>
+
+<script src="./core.js?v=1783098382704"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const MAX_PRESCRIPTION_SIZE = 5 * 1024 * 1024;
@@ -277,8 +328,7 @@ navbar.innerHTML = `
 <nav>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
-<a href="ORDERS.HTML">Orders</a>
-<a href="#" onclick="logout()">Logout</a>
+<a href="ORDERS.HTML">Orders</a>\n<a href="BUYER-PROFILE.HTML">Profile</a>
 </nav>
 </header>
 `;
@@ -714,6 +764,20 @@ localStorage.removeItem("cart");
 localStorage.removeItem("order_medicines");
 }
 
+function showOrderPlacedModal(message, redirectUrl) {
+  clearOrderState();
+  const modal = document.getElementById("orderPlacedModal");
+  const msgEl = document.getElementById("orderPlacedMessage");
+  const btn = document.getElementById("orderPlacedBtn");
+  
+  msgEl.textContent = message;
+  modal.classList.remove("hidden");
+  
+  btn.onclick = () => {
+    window.location.href = redirectUrl;
+  };
+}
+
 async function cashOnDelivery(){
 if(!validateDeliveryDetails()) return;
 if(!validatePrescriptionFiles()) return;
@@ -724,22 +788,16 @@ const createdOrders = Array.isArray(result.orders) ? result.orders : [];
 const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
 const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
 
-alert(
-approvalCount && instantCount
+const msg = approvalCount && instantCount
 ? `${instantCount} medicine(s) were confirmed immediately, and ${approvalCount} prescription medicine(s) are waiting for seller approval.`
 : approvalCount
 ? `${approvalCount} prescription medicine(s) are waiting for seller approval.`
-: "Order placed successfully"
-);
+: "Order placed successfully";
 
-clearOrderState();
 const redirectOrderId = createdOrders[0]?._id || "";
-if(redirectOrderId){
-    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
-}
-else{
-    window.location.href = "ORDERS.HTML";
-}
+const redirectUrl = redirectOrderId ? `TRACKORDER.HTML?order_id=${encodeURIComponent(redirectOrderId)}` : "ORDERS.HTML";
+
+showOrderPlacedModal(msg, redirectUrl);
 }
 catch(error){
 alert(window.getApiErrorMessage(error));
@@ -777,22 +835,16 @@ const createdOrders = Array.isArray(result.orders) ? result.orders : [];
 const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
 const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
 
-alert(
-approvalCount && instantCount
+const msg = approvalCount && instantCount
 ? `Payment successful. ${instantCount} medicine(s) were confirmed immediately, and ${approvalCount} prescription medicine(s) are waiting for seller approval.`
 : approvalCount
 ? `Payment successful. ${approvalCount} prescription medicine(s) are waiting for seller approval.`
-: "Payment successful and order placed"
-);
+: "Payment successful and order placed";
 
-clearOrderState();
 const redirectOrderId = createdOrders[0]?._id || "";
-if(redirectOrderId){
-    window.location.href = `track.html?orderId=${encodeURIComponent(redirectOrderId)}`;
-}
-else{
-    window.location.href = "ORDERS.HTML";
-}
+const redirectUrl = redirectOrderId ? `TRACKORDER.HTML?order_id=${encodeURIComponent(redirectOrderId)}` : "ORDERS.HTML";
+
+showOrderPlacedModal(msg, redirectUrl);
 }
 catch(error){
 alert(window.getApiErrorMessage(error));

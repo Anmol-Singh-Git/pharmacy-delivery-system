@@ -210,7 +210,7 @@
     </div>
 </div>
 
-<script src="./core.js"></script>
+<script src="./core.js?v=1783098382710"></script>
 <script>
     const API_BASE_URL = window.API_BASE;
     let currentPin = "";
@@ -340,25 +340,30 @@
         }
     }
 
-    // Set up short polling every 10 seconds for real-time updates silently
-    setInterval(async () => {
-        if (deepLinkOrderId) {
-            try {
-                const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/order/${deepLinkOrderId}`, { method: "GET" });
-                if (data.success && data.order) renderOrder(data.order);
-            } catch (e) {}
-        } else if (currentPin) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/delivery/lookup`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ pin: currentPin })
-                });
-                const data = await window.parseJsonResponse(response);
-                if (response.ok && data.success && data.order) renderOrder(data.order);
-            } catch (e) {}
-        }
-    }, 3000);
+    const socketScript = document.createElement('script');
+    socketScript.src = API_BASE_URL + '/socket.io/socket.io.js';
+    socketScript.onload = () => {
+        const socket = io(API_BASE_URL);
+        socket.on("order_updated", async () => {
+            if (deepLinkOrderId) {
+                try {
+                    const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/order/${deepLinkOrderId}`, { method: "GET" });
+                    if (data.success && data.order) renderOrder(data.order);
+                } catch (e) {}
+            } else if (currentPin) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/delivery/lookup`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ pin: currentPin })
+                    });
+                    const data = await window.parseJsonResponse(response);
+                    if (response.ok && data.success && data.order) renderOrder(data.order);
+                } catch (e) {}
+            }
+        });
+    };
+    document.head.appendChild(socketScript);
 </script>
 </body>
 </html>

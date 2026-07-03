@@ -469,7 +469,7 @@ text-align:left;
 </section>
 </main>
 
-<script src="./core.js"></script>
+<script src="./core.js?v=1783098382719"></script>
 <script>
 const BASE_URL = window.API_BASE;
 const buyerEmail = localStorage.getItem("buyer_email");
@@ -503,8 +503,7 @@ navbar.innerHTML = `
 <a href="HOMEPAGE.HTML">Home</a>
 <a href="LISTINGPAGE.HTML">Products</a>
 <a href="CARTPAGE.HTML">${window.getCartNavLabel()}</a>
-<a href="ORDERS.HTML">Orders</a>
-<a href="#" onclick="logout()">Logout</a>
+<a href="ORDERS.HTML">Orders</a>\n<a href="BUYER-PROFILE.HTML">Profile</a>
 </nav>
 </header>
 `;
@@ -634,7 +633,7 @@ document.getElementById("orderDistanceMeta").textContent = window.formatDistance
 : "—";
 let etaLine = "Location unavailable";
 if(Number.isFinite(Number(order.etaMin)) && Number.isFinite(Number(order.etaMax))){
-etaLine = `${order.etaMin} - ${order.etaMax} mins`;
+etaLine = `${window.formatTimeValue(order.etaMin)} - ${window.formatTimeValue(order.etaMax)}`;
 } else if(order.eta && String(order.eta).trim() && !/^calculating/i.test(String(order.eta))){
 etaLine = String(order.eta).trim();
 }
