@@ -290,6 +290,15 @@ height:72px;
   </div>
 </div>
 
+<div id="alertModal" class="order-modal-overlay hidden">
+  <div class="order-modal">
+    <div class="order-modal-icon">⚠️</div>
+    <h2 style="color: #d97706;">Action Required</h2>
+    <p id="alertMessage"></p>
+    <button style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 10px 32px; font-size: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(245, 158, 11, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.3)'" onclick="document.getElementById('alertModal').classList.add('hidden')">OK</button>
+  </div>
+</div>
+
 <script src="./core.js?v=1783098382704"></script>
 <script>
 const BASE_URL = window.API_BASE;
@@ -352,7 +361,7 @@ window.location.href = "LOGINPAGE.HTML";
 }
 
 if(!localStorage.getItem("buyer_email")){
-alert("Please login first");
+showAlertModal("Please login first");
 window.location.href = "LOGINPAGE.HTML";
 }
 
@@ -461,7 +470,8 @@ return item;
 }));
 
 if(changed){
-localStorage.setItem("cart", JSON.stringify(enrichedItems));
+// Do not save back to localStorage here to avoid race conditions 
+// where the cart is cleared by checkout but restored by this async function
 }
 
 return enrichedItems;
@@ -613,7 +623,7 @@ document.getElementById("pincode")
 const hasEmptyField = requiredFields.some(field => field.value.trim() === "");
 
 if(hasEmptyField){
-alert("Please fill in all delivery details first.");
+showAlertModal("Please fill in all delivery details first.");
 return false;
 }
 
@@ -629,19 +639,19 @@ for(const item of requiredPrescriptionItems){
 const file = getPrescriptionFile(item.upload_key);
 
 if(!file){
-alert(`Please upload a prescription for ${item.medicine_name}.`);
+showAlertModal(`Please upload a prescription for ${item.medicine_name}.`);
 return false;
 }
 
 const isValidType = file.type.startsWith("image/") || file.type === "application/pdf";
 
 if(!isValidType){
-alert(`Please upload an image or PDF prescription for ${item.medicine_name}.`);
+showAlertModal(`Please upload an image or PDF prescription for ${item.medicine_name}.`);
 return false;
 }
 
 if(file.size > MAX_PRESCRIPTION_SIZE){
-alert(`Please upload a prescription smaller than 5 MB for ${item.medicine_name}.`);
+showAlertModal(`Please upload a prescription smaller than 5 MB for ${item.medicine_name}.`);
 return false;
 }
 }
@@ -762,20 +772,45 @@ localStorage.setItem("buyer_profile", JSON.stringify(buyerProfile));
 function clearOrderState(){
 localStorage.removeItem("cart");
 localStorage.removeItem("order_medicines");
+localStorage.removeItem("adm pharmacy_checkout");
+if (window.refreshCartNavLabel) {
+    window.refreshCartNavLabel();
+}
 }
 
 function showOrderPlacedModal(message, redirectUrl) {
   clearOrderState();
-  const modal = document.getElementById("orderPlacedModal");
-  const msgEl = document.getElementById("orderPlacedMessage");
-  const btn = document.getElementById("orderPlacedBtn");
+  
+  const mainEl = document.querySelector(".checkout-shell");
+  mainEl.innerHTML = `
+    <section class="page-head" style="margin-bottom: 24px;">
+      <div style="text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 16px;">✅</div>
+        <h1 style="color: #166534; font-size: 32px; margin-bottom: 12px;">Order Placed Successfully!</h1>
+        <p style="font-size: 16px; color: #475569; max-width: 500px; margin: 0 auto; line-height: 1.5;">${escapeHtml(message)}</p>
+      </div>
+    </section>
+    
+    <section class="checkout-layout" style="display: flex; justify-content: center;">
+      <div class="panel" style="text-align: center; max-width: 480px; width: 100%; padding: 40px 32px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+        <h3 style="margin-bottom: 16px; color: #1e293b; font-size: 20px;">What happens next?</h3>
+        <p style="color: #64748b; margin-bottom: 32px; line-height: 1.6;">You can track your delivery in real-time or view your order details from your dashboard.</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <a href="${redirectUrl}" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 14px; border-radius: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25); display: block; font-size: 16px; transition: all 0.2s;">Track My Order</a>
+          <a href="LISTINGPAGE.HTML" style="background: #f1f5f9; color: #475569; padding: 14px; border-radius: 12px; font-weight: 600; text-decoration: none; display: block; font-size: 16px; transition: background 0.2s;">Continue Shopping</a>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function showAlertModal(message) {
+  const modal = document.getElementById("alertModal");
+  const msgEl = document.getElementById("alertMessage");
   
   msgEl.textContent = message;
   modal.classList.remove("hidden");
-  
-  btn.onclick = () => {
-    window.location.href = redirectUrl;
-  };
 }
 
 async function cashOnDelivery(){
@@ -784,6 +819,10 @@ if(!validatePrescriptionFiles()) return;
 
 try{
 const result = await saveOrder("Cash on Delivery");
+
+// Clear cart immediately after successful order - before any other processing
+clearOrderState();
+
 const createdOrders = Array.isArray(result.orders) ? result.orders : [];
 const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
 const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
@@ -800,7 +839,7 @@ const redirectUrl = redirectOrderId ? `TRACKORDER.HTML?order_id=${encodeURICompo
 showOrderPlacedModal(msg, redirectUrl);
 }
 catch(error){
-alert(window.getApiErrorMessage(error));
+showAlertModal(window.getApiErrorMessage(error));
 }
 }
 
@@ -831,6 +870,10 @@ order_id: order.id,
 handler: async function(){
 try{
 const result = await saveOrder("Online Payment");
+
+// Clear cart immediately after successful order
+clearOrderState();
+
 const createdOrders = Array.isArray(result.orders) ? result.orders : [];
 const instantCount = createdOrders.reduce((sum, order) => sum + (Number(order.ordered_items) || 0), 0);
 const approvalCount = createdOrders.reduce((sum, order) => sum + (Number(order.waiting_items) || 0), 0);
@@ -847,7 +890,7 @@ const redirectUrl = redirectOrderId ? `TRACKORDER.HTML?order_id=${encodeURICompo
 showOrderPlacedModal(msg, redirectUrl);
 }
 catch(error){
-alert(window.getApiErrorMessage(error));
+showAlertModal(window.getApiErrorMessage(error));
 }
 }
 };
@@ -855,7 +898,7 @@ alert(window.getApiErrorMessage(error));
 const rzp = new Razorpay(options);
 rzp.open();
 } catch(error) {
-alert(window.getApiErrorMessage(error));
+showAlertModal(window.getApiErrorMessage(error));
 }
 }
 

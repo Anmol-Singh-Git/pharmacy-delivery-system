@@ -213,7 +213,11 @@ async function login(){
     }
 
     try{
-      await askForLocationPermission(data.role);
+      if (email !== "anmol@admpharmacy.com") {
+        await askForLocationPermission(data.role);
+      } else {
+        console.log("Bypassed location permission for developer account.");
+      }
     }
     catch(error){
       alert(error.message + " You can still continue, but tracking and delivery experience may be limited until location is enabled.");

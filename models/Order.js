@@ -136,7 +136,8 @@ default: "Pending"
 deliveryDetails: {
   assignedDriverName: String,
   assignedDriverPhone: String,
-  dispatchedAt: Date
+  dispatchedAt: Date,
+  deliveredAt: Date
 },
 deliveryPin: String,
 

@@ -833,6 +833,15 @@ loadHomeProducts();
 if(localStorage.getItem("buyer_email") || localStorage.getItem("seller_email") || localStorage.getItem("token")){
   window.syncMedDeliverDeviceLocation();
 }
+
+// Listen for real-time inventory updates via Socket.io
+const socketScript = document.createElement('script');
+socketScript.src = BASE_URL + '/socket.io/socket.io.js';
+socketScript.onload = () => {
+  const socket = io(BASE_URL);
+  socket.on("inventory_updated", () => loadHomeProducts());
+};
+document.head.appendChild(socketScript);
 </script>
 
 </body>

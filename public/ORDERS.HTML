@@ -439,7 +439,7 @@ function renderOrders(){
     `).join("");
 
     const orderStatus = getOrderStatusText(order);
-    const isActive = ["Pending", "Accepted", "Out for Delivery"].includes(orderStatus);
+    const isActive = ["Pending", "Accepted", "Out for Delivery", "Partially Ordered", "PARTIALLY ORDERED"].includes(orderStatus);
     let pinMarkup = "";
     if (isActive && order.deliveryPin) {
         pinMarkup = `
@@ -459,11 +459,11 @@ function renderOrders(){
             <p style="font-size: 14px; color: #15803d; margin: 0;">Phone: <strong>${escapeHtml(order.deliveryDetails.assignedDriverPhone)}</strong></p>
         </div>
         `;
-    } else if (orderStatus === "Pending" || orderStatus === "Accepted") {
+    } else if (orderStatus === "Pending" || orderStatus === "Accepted" || orderStatus === "Partially Ordered" || orderStatus === "PARTIALLY ORDERED") {
         contactMarkup = `
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin: 12px 0;">
-            <p style="font-size: 14px; font-weight: 600; color: #1e3a8a; margin: 0 0 4px 0;">Contact ADM Pharmacy</p>
-            <p style="font-size: 14px; color: #1d4ed8; margin: 0 0 2px 0;">Phone: <strong>1-800-ADM-PHARMACY</strong></p>
+            <p style="font-size: 14px; font-weight: 600; color: #1e3a8a; margin: 0 0 4px 0;">Contact ${escapeHtml(order.seller_details?.pharmacy_name || "ADM Pharmacy")}</p>
+            <p style="font-size: 14px; color: #1d4ed8; margin: 0 0 2px 0;">Phone: <strong>${escapeHtml(order.seller_details?.mobile || "1-800-ADM-PHARMACY")}</strong></p>
             <p style="font-size: 12px; color: #1e40af; margin: 0;">Your delivery partner will be assigned once the order is ready.</p>
         </div>
         `;

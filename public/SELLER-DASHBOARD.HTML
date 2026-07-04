@@ -892,12 +892,18 @@ ${prescriptionLinks}
 
   const isDelivered = localStorage.getItem("delivered_" + order._id) === "true";
   
-  if (orderStatus === "Accepted" && !isDelivered) {
+  if ((orderStatus === "Accepted" || orderStatus === "PARTIALLY ORDERED" || orderStatus === "Partially Ordered") && !isDelivered) {
     return `
-    <div class="order-actions">
-    ${prescriptionLinks}
-    ${trackingButtons}
-    <button class="deliver-btn ui-btn-sm" onclick="markAsDelivered('${escapeHtml(order._id)}')">Mark as Delivered</button>
+    <div class="order-actions" style="display: flex; flex-direction: column; gap: 8px;">
+        ${prescriptionLinks}
+        <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            <p style="margin: 0 0 8px 0; font-weight: 500; font-size: 13px; color: #334155;">Assign Delivery Driver</p>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="driverName-${order._id}-main" placeholder="Driver Name" oninput="this.value=this.value.replace(/[^a-zA-Z\\s]/g,'')" style="flex: 1; min-width: 100px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                <input type="text" id="driverPhone-${order._id}-main" placeholder="Phone" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="flex: 1; min-width: 100px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                <button type="button" class="primary-btn ui-btn-sm" onclick="assignHyperlocalDriverMain('${order._id}')" style="padding: 6px 12px;">Assign</button>
+            </div>
+        </div>
     </div>
     `;
   }
@@ -927,9 +933,23 @@ container.innerHTML = `
 return;
 }
 
-const sortedOrders = [...sellerOrders].sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+const queueStatuses = ["pending", "accepted", "waiting for approval", "partially ordered"];
+const sortedOrders = [...sellerOrders].filter(order => {
+    const status = String(order.order_status || order.status || "").toLowerCase();
+    return !queueStatuses.includes(status);
+}).sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
 const visibleOrders = sortedOrders.slice(0, 6);
 const hasOlderOrders = sortedOrders.length > 6;
+
+if(!visibleOrders.length){
+container.innerHTML = `
+<div class="empty-state">
+<h3>No completed orders yet</h3>
+<p>Orders that are out for delivery, delivered, or rejected will appear here. Active orders are in the Incoming Orders Queue above.</p>
+</div>
+`;
+return;
+}
 
 container.innerHTML = visibleOrders.map(order => {
 const sellerItems = getSellerOrderItems(order);
@@ -989,6 +1009,9 @@ order.buyer_details?.pincode || ""
     <span>Pending Prescription Items: ${pendingSellerItems.length}</span>
     <p>Distance: ${formatDistance(order.distanceKm)}</p>
     <p>ETA: ${formatETA(order.eta)}</p>
+    ${(order.order_status === "Delivered" || order.status === "Delivered") && order.deliveryDetails && order.deliveryDetails.deliveredAt 
+        ? `<p style="color: #00a7c0; font-weight: 600;">Delivered At: ${new Date(order.deliveryDetails.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>` 
+        : ""}
 </div>
 
 ${buildOrderActions(order, sellerItems)}
@@ -1486,8 +1509,8 @@ function renderDeliveryQueue() {
     if (!container) return;
 
     const queueOrders = sellerOrders.filter(order => {
-        const status = order.order_status || order.status || "Pending";
-        return (status === "Pending" || status === "Accepted") && status !== "Delivered" && status !== "Out for Delivery";
+        const status = String(order.order_status || order.status || "Pending").toLowerCase();
+        return (status === "pending" || status === "accepted" || status === "waiting for approval" || status === "partially ordered") && status !== "delivered" && status !== "out for delivery";
     }).sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
 
     if (!queueOrders.length) {
@@ -1522,7 +1545,11 @@ function renderDeliveryQueue() {
         ` : `<p style="font-size: 14px; color: #475569; margin: 12px 0;">No items found.</p>`;
         
         let actionMarkup = "";
-        if (status === "Pending") {
+        const pendingSellerItems = getSellerPendingApprovalItems(order, sellerItems);
+        
+        if (pendingSellerItems.length > 0 || status === "Waiting for Approval" || status === "PARTIALLY ORDERED") {
+            actionMarkup = buildOrderActions(order, sellerItems);
+        } else if (status === "Pending") {
             actionMarkup = `
             <div style="background: #fffbeb; padding: 12px; border-radius: 8px; border: 1px solid #fde68a;">
                 <p style="margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #92400e;">New Order Request</p>
@@ -1584,6 +1611,34 @@ async function assignHyperlocalDriver(orderId) {
     if(!sellerEmail) return;
     const nameInput = document.getElementById(`driverName-${orderId}`);
     const phoneInput = document.getElementById(`driverPhone-${orderId}`);
+    
+    const driverName = nameInput ? nameInput.value.trim() : "";
+    const driverPhone = phoneInput ? phoneInput.value.trim() : "";
+
+    if(!driverName || !driverPhone){
+        showStatus("Please enter driver name and phone number", "error");
+        return;
+    }
+
+    try {
+        await window.fetchJson(`${window.API_BASE}/api/orders/${orderId}/assign`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ driverName, driverPhone })
+        }, "Server error or invalid response");
+
+        showStatus("Driver assigned successfully", "success");
+        await loadSellerOrders();
+    } catch(error){
+        console.error("Error assigning driver:", error);
+        showStatus(window.getApiErrorMessage(error), "error");
+    }
+}
+
+async function assignHyperlocalDriverMain(orderId) {
+    if(!sellerEmail) return;
+    const nameInput = document.getElementById(`driverName-${orderId}-main`);
+    const phoneInput = document.getElementById(`driverPhone-${orderId}-main`);
     
     const driverName = nameInput ? nameInput.value.trim() : "";
     const driverPhone = phoneInput ? phoneInput.value.trim() : "";
@@ -1720,6 +1775,7 @@ socketScript.onload = () => {
   const socket = io(BASE_URL);
   socket.on("new_order", () => loadSellerOrders(true));
   socket.on("order_updated", () => loadSellerOrders(true));
+  socket.on("inventory_updated", () => loadSellerMedicines());
 };
 document.head.appendChild(socketScript);
 }

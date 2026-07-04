@@ -20,9 +20,6 @@ radial-gradient(circle at top right, rgba(255,77,109,0.14), transparent 22%),
 linear-gradient(180deg, #f4f7fb 0%, #eef4f8 100%);
 color:#18212f;
 min-height:100vh;
-max-width: 1100px;
-margin: 0 auto;
-padding: 20px;
 }
 
 a{
@@ -41,8 +38,6 @@ position:sticky;
 top:0;
 z-index:20;
 box-shadow:0 12px 30px rgba(0,0,0,0.12);
-border-radius: 16px;
-margin-bottom: 24px;
 }
 
 .logo{
@@ -408,10 +403,6 @@ border-radius:22px;
     <p id="orderTime">Loading...</p>
   </div>
 
-  <div id="contactCard" class="info-card green">
-    <h4>Pharmacy Contact Number</h4>
-    <p id="contact">Loading...</p>
-  </div>
 </div>
 
 </section>
@@ -605,7 +596,10 @@ order.buyer_name ||
       document.querySelector('#etaCard p').style.color = "#166534";
     }
 
-    if (order.order_status === "Out for Delivery" || order.status === "Out for Delivery") {
+    const orderStatus = order.order_status || order.status;
+    const isActive = ["Pending", "Accepted", "Out for Delivery", "Partially Ordered", "PARTIALLY ORDERED"].includes(orderStatus);
+
+    if (orderStatus === "Out for Delivery") {
       const outForDeliveryCard = document.createElement('div');
       outForDeliveryCard.className = 'info-card dynamic-card';
       outForDeliveryCard.style.background = '#f0fdf4';
@@ -623,10 +617,22 @@ order.buyer_name ||
       document.querySelector('.panel').insertBefore(outForDeliveryCard, document.getElementById('buyerCard'));
       
       document.getElementById("eta").textContent = "Arriving Soon";
+    } else if (isActive && !isDelivered) {
+      const pharmacyCard = document.createElement('div');
+      pharmacyCard.className = 'info-card dynamic-card';
+      pharmacyCard.style.background = '#eff6ff';
+      pharmacyCard.style.borderLeft = '4px solid #bfdbfe';
+      
+      const pharmacyName = escapeHtml(order.seller_details?.pharmacy_name || "ADM Pharmacy");
+      const pharmacyPhone = escapeHtml(order.seller_details?.mobile || "1-800-ADM-PHARMACY");
+      
+      pharmacyCard.innerHTML = `
+        <h4 style="color: #1e3a8a; margin-bottom: 4px;">Contact ${pharmacyName}</h4>
+        <p style="font-size:14px; color:#1d4ed8; margin: 0 0 2px 0;">Phone: <strong>${pharmacyPhone}</strong></p>
+        <p style="font-size:12px; color:#1e40af; margin: 0;">Your delivery partner will be assigned once the order is ready.</p>
+      `;
+      document.querySelector('.panel').insertBefore(pharmacyCard, document.getElementById('buyerCard'));
     }
-
-    const orderStatus = order.order_status || order.status;
-    const isActive = ["Pending", "Accepted", "Out for Delivery"].includes(orderStatus);
     
     if (isActive && order.deliveryPin && !isDelivered) {
       const pinCard = document.createElement('div');
@@ -665,10 +671,6 @@ etaText = window.formatETA(order.eta);
 }
 document.getElementById("eta").textContent = etaText;
 document.getElementById("orderTime").textContent = window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "—");
-document.getElementById("contact").textContent =
-order.seller_details?.mobile && String(order.seller_details.mobile).trim()
-? order.seller_details.mobile
-: "Not Assigned";
 }
 catch(err){
 console.error(err);

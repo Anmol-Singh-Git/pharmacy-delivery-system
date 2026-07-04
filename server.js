@@ -207,21 +207,26 @@ function authMiddleware(req, res, next) {
     try {
       const secret = process.env.JWT_SECRET || "supersecretkey";
       req.user = jwt.verify(token, secret);
-      if (req.isDeveloper && req.user.email === "anmol@admpharmacy.com") {
+      if (req.isDeveloper && req.user.email === "anmol@admpharmacy.com" && req.user.role === "seller") {
         req.user.email = "mohit@gmail.com";
       }
       return next();
     } catch (e) {
       console.warn("Token verification failed, falling back to bypass logic if applicable");
+      // Decode the token without verification to extract email/role for the fallback
+      try {
+        req._expiredTokenPayload = jwt.decode(token);
+      } catch (_) { /* ignore decode errors */ }
     }
   }
 
   // If we bypass auth for demo validation or serverless container swaps
   if (process.env.BYPASS_AUTH_FOR_DEMO === "true" || process.env.NODE_ENV !== "production") {
-    const fallbackEmail = req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
+    const expiredPayload = req._expiredTokenPayload;
+    const fallbackEmail = expiredPayload?.email || req.body?.seller_email || req.body?.buyer_email || req.query?.seller_email || req.query?.buyer_email || req.body?.email || req.params?.email || "demo@example.com";
+    const fallbackRole = expiredPayload?.role || req.body?.role || (req.path.includes("seller") ? "seller" : "buyer");
     let finalEmail = fallbackEmail;
-    if (req.isDeveloper && finalEmail === "anmol@admpharmacy.com") finalEmail = "mohit@gmail.com";
-    const fallbackRole = req.body?.role || (req.path.includes("seller") ? "seller" : "buyer");
+    if (req.isDeveloper && finalEmail === "anmol@admpharmacy.com" && fallbackRole === "seller") finalEmail = "mohit@gmail.com";
     req.user = { email: finalEmail, role: fallbackRole };
     return next();
   }
@@ -1241,6 +1246,7 @@ app.post('/api/add-medicine', async (req, res) => {
     });
 
     await newMedicine.save();
+    req.app.get("io")?.emit("inventory_updated");
     return res.status(200).json({ success: true, message: "Medicine saved successfully" });
   } catch (dbError) {
     console.error("CRITICAL BACKEND ERROR CAUGHT:", dbError);
@@ -1862,7 +1868,7 @@ function getActiveUserEmail(req) {
       const token = authHeader.split(" ")[1];
       const decoded = require("jsonwebtoken").verify(token, process.env.JWT_SECRET || "supersecretkey");
       let dEmail = decoded?.email;
-      if (req.isDeveloper && dEmail === "anmol@admpharmacy.com") dEmail = "mohit@gmail.com";
+      if (req.isDeveloper && dEmail === "anmol@admpharmacy.com" && decoded?.role === "seller") dEmail = "mohit@gmail.com";
       return dEmail;
     } catch (err) {
       // ignore token validation errors to fall through
@@ -2632,7 +2638,8 @@ app.put("/api/orders/:id/complete", async (req, res) => {
       req.params.id,
       {
         status: "Delivered",
-        order_status: "Delivered"
+        order_status: "Delivered",
+        "deliveryDetails.deliveredAt": new Date()
       },
       { new: true }
     );
@@ -2776,6 +2783,7 @@ app.delete("/api/delete-medicine/:id", authMiddleware, async (req, res) => {
     }
 
     await Medicine.findByIdAndDelete(id);
+    req.app.get("io")?.emit("inventory_updated");
 
     res.json({ message: "Medicine deleted successfully" });
 
@@ -2882,6 +2890,7 @@ app.put("/api/update-medicine/:id", authMiddleware, publicUpload.array("images",
     }
 
     await Medicine.findByIdAndUpdate(req.params.id, updateData);
+    req.app.get("io")?.emit("inventory_updated");
 
     res.json({ message: "Medicine updated successfully" });
 
@@ -3005,7 +3014,11 @@ app.put("/api/delivery/confirm", async (req, res) => {
 
     const order = await Order.findOneAndUpdate(
       { deliveryPin: String(pin), status: "Out for Delivery" },
-      { status: "Delivered", order_status: "Delivered" },
+      { 
+        status: "Delivered", 
+        order_status: "Delivered",
+        "deliveryDetails.deliveredAt": new Date()
+      },
       { new: true }
     );
 

@@ -1256,6 +1256,15 @@ try {
     );
   }
 })();
+
+// Listen for real-time inventory updates via Socket.io
+const _socketScript = document.createElement('script');
+_socketScript.src = BASE_URL + '/socket.io/socket.io.js';
+_socketScript.onload = () => {
+  const socket = io(BASE_URL);
+  socket.on("inventory_updated", () => fetchMedicines(null, null));
+};
+document.head.appendChild(_socketScript);
 </script>
 
 <!-- Cart Modal -->

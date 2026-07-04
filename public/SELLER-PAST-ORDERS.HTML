@@ -521,6 +521,9 @@ function renderPastOrders(){
           <span>Total: ${escapeHtml(orderTotal)}</span>
           <span>Date: ${escapeHtml(formatDate(order.order_date))}</span>
           <span>Time: ${escapeHtml(window.formatOrderTime ? window.formatOrderTime(order) : (order.orderTime || "-"))}</span>
+          ${(order.order_status === "Delivered" || order.status === "Delivered") && order.deliveryDetails && order.deliveryDetails.deliveredAt 
+            ? `<span style="color: #00a7c0; font-weight: 600;">Delivered: ${new Date(order.deliveryDetails.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>` 
+            : ""}
         </div>
 
         ${firstItem ? `
