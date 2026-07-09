@@ -204,15 +204,29 @@ async function login(){
       localStorage.setItem("buyer_profile", JSON.stringify(data.profile || {}));
     }
 
-    try{
-      if (email !== "anmol@admpharmacy.com") {
-        await askForLocationPermission(data.role);
-      } else {
-        console.log("Bypassed location permission for developer account.");
+    if(data.role === "seller"){
+      // Sellers use their saved location from the database — no browser prompt needed
+      const profile = data.profile || {};
+      const sellerLat = profile.latitude || profile.location?.latitude;
+      const sellerLng = profile.longitude || profile.location?.longitude;
+      if(sellerLat && sellerLng){
+        const sellerProfile = JSON.parse(localStorage.getItem("seller_profile") || "{}");
+        sellerProfile.location = { latitude: sellerLat, longitude: sellerLng };
+        localStorage.setItem("seller_profile", JSON.stringify(sellerProfile));
+        console.log("Using saved seller location:", sellerLat, sellerLng);
       }
-    }
-    catch(error){
-      alert(error.message + " You can still continue, but tracking and delivery experience may be limited until location is enabled.");
+    } else {
+      // Buyers need location for distance calculation and delivery tracking
+      try{
+        if (email !== "anmol@admpharmacy.com") {
+          await askForLocationPermission("buyer");
+        } else {
+          console.log("Bypassed location permission for developer account.");
+        }
+      }
+      catch(error){
+        alert(error.message + " You can still continue, but tracking and delivery experience may be limited until location is enabled.");
+      }
     }
 
     if(data.role === "seller"){
