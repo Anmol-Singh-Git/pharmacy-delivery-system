@@ -23,7 +23,7 @@
 // Dynamic base URL for local development and Vercel production
 window.API_BASE = (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') 
   ? 'http://localhost:5000' 
-  : (window.location.hostname.includes('ngrok') ? '' : 'http://' + window.location.hostname + ':5000');
+  : '';
 
 window.getCartItemKey = function(item = {}) {
   return String(

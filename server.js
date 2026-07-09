@@ -117,7 +117,12 @@ app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(cors({
-  origin: ['http://127.0.0.1:5500', 'http://localhost:5500'],
+  origin: [
+    'http://127.0.0.1:5500',
+    'http://localhost:5500',
+    'http://localhost:5000',
+    'https://pharmacy-delivery-system-tau.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -1023,19 +1028,11 @@ app.post("/api/login", async (req, res) => {
 
   const { email, password } = req.body;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-entry',message:'login attempt',data:{email:email||null,hasPassword:!!password,mongooseReadyState:mongoose.connection.readyState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-
   try {
 
     /* CHECK BUYER */
 
     const buyer = await Buyer.findOne({ email, password });
-
-    // #region agent log
-    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-buyer-query',message:'buyer lookup done',data:{buyerFound:!!buyer,emailUsed:email||null},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
 
     if (buyer) {
 
@@ -1069,10 +1066,6 @@ app.post("/api/login", async (req, res) => {
 
     /* INVALID LOGIN */
 
-    // #region agent log
-    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-invalid',message:'no buyer or seller match',data:{email:email||null},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-
     res.status(401).json({
       success: false,
       message: "Invalid email or password"
@@ -1083,10 +1076,6 @@ app.post("/api/login", async (req, res) => {
   catch (error) {
 
     console.log(error);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7878/ingest/a140913d-c8cf-4f54-b2d2-dce9c3faf17f',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'504912'},body:JSON.stringify({sessionId:'504912',location:'server.js:login-catch',message:'login error',data:{errorName:error?.name,errorMessage:error?.message,mongooseReadyState:mongoose.connection.readyState},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
 
     res.status(500).json({
       success: false,
