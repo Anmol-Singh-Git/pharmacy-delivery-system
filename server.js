@@ -42,59 +42,76 @@ const Buyer = require("./models/Buyer");
 const Medicine = require("./models/Medicine");
 const Order = require("./models/Order");
 
+let isSeeded = false;
+let seedPromise = null;
+
 const seedDatabase = async () => {
-  try {
-    const ownerEmail = "mohit@gmail.com";
-    const devEmail = "anmol@admpharmacy.com";
-    
-    const existingOwner = await Seller.findOne({ email: ownerEmail });
-    if (!existingOwner) {
-      const owner = new Seller({
-        owner_name: "Mohit",
-        shopName: "ADM Pharmacy",
-        pharmacy_name: "ADM Pharmacy",
-        bio: "Your Online Healthcare Store",
-        mobile: "9723918822",
-        email: ownerEmail,
-        password: "AdmAdmin2026!",
-        address: "Kashipur",
-        city: "Kashipur",
-        pincode: "244713",
-        latitude: 29.2104,
-        longitude: 78.9613
-      });
-      await owner.save();
-      console.log("Seeded Master Owner Account:", ownerEmail);
+  if (isSeeded) return;
+  if (seedPromise) return seedPromise;
+  
+  seedPromise = (async () => {
+    try {
+      const ownerEmail = "mohit@gmail.com";
+      const devEmail = "anmol@admpharmacy.com";
+      
+      const existingOwner = await Seller.findOne({ email: ownerEmail });
+      if (!existingOwner) {
+        const owner = new Seller({
+          owner_name: "Mohit",
+          shopName: "ADM Pharmacy",
+          pharmacy_name: "ADM Pharmacy",
+          bio: "Your Online Healthcare Store",
+          mobile: "9723918822",
+          email: ownerEmail,
+          password: "AdmAdmin2026!",
+          address: "Kashipur",
+          city: "Kashipur",
+          pincode: "244713",
+          latitude: 29.2104,
+          longitude: 78.9613
+        });
+        await owner.save();
+        console.log("Seeded Master Owner Account:", ownerEmail);
+      }
+      
+      const existingDev = await Seller.findOne({ email: devEmail });
+      if (!existingDev) {
+        const dev = new Seller({
+          owner_name: "Developer",
+          shopName: "ADM Pharmacy",
+          pharmacy_name: "ADM Pharmacy",
+          bio: "Admin Access",
+          mobile: "0000000000",
+          email: devEmail,
+          password: "DevAccess2026!",
+          address: "Admin",
+          city: "Admin",
+          pincode: "000000",
+          latitude: 29.2104,
+          longitude: 78.9613
+        });
+        await dev.save();
+        console.log("Seeded Master Developer Account:", devEmail);
+      }
+      
+      isSeeded = true;
+    } catch (err) {
+      seedPromise = null;
+      console.error("Failed to seed database:", err);
     }
-    
-    const existingDev = await Seller.findOne({ email: devEmail });
-    if (!existingDev) {
-      const dev = new Seller({
-        owner_name: "Developer",
-        shopName: "ADM Pharmacy",
-        pharmacy_name: "ADM Pharmacy",
-        bio: "Admin Access",
-        mobile: "0000000000",
-        email: devEmail,
-        password: "DevAccess2026!",
-        address: "Admin",
-        city: "Admin",
-        pincode: "000000",
-        latitude: 29.2104,
-        longitude: 78.9613
-      });
-      await dev.save();
-      console.log("Seeded Master Developer Account:", devEmail);
-    }
-  } catch (err) {
-    console.error("Failed to seed database:", err);
-  }
+  })();
+  
+  return seedPromise;
+};
+
+const ensureDB = async () => {
+  await connectDB();
+  await seedDatabase();
 };
 
 // Eagerly start the connection for non-serverless environments
-connectDB().then(() => {
-  seedDatabase();
-}).catch(() => {});
+ensureDB().catch(() => {});
+
 
 const Razorpay = require("razorpay");
 
@@ -901,7 +918,7 @@ async function restoreRejectedMedicinesStock(oldMedicines, newMedicines) {
 // Ensure database is connected for all API routes (critical for serverless environments)
 app.use("/api", async (req, res, next) => {
   try {
-    await connectDB();
+    await ensureDB();
     next();
   } catch (error) {
     console.error("Database connection failed:", error);
@@ -1024,7 +1041,7 @@ app.post("/api/buyer-register", async (req, res) => {
 
 app.post("/api/login", async (req, res) => {
 
-  await connectDB();
+  await ensureDB();
 
   const { email, password } = req.body;
 
