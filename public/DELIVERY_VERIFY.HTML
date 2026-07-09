@@ -364,26 +364,6 @@
         });
     };
     document.head.appendChild(socketScript);
-
-    // Fallback polling for Vercel (Serverless) where WebSockets drop
-    setInterval(async () => {
-        if (deepLinkOrderId) {
-            try {
-                const data = await window.fetchJson(`${API_BASE_URL}/api/delivery/order/${deepLinkOrderId}`, { method: "GET" });
-                if (data.success && data.order) renderOrder(data.order);
-            } catch (e) {}
-        } else if (currentPin) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/delivery/lookup`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ pin: currentPin })
-                });
-                const data = await window.parseJsonResponse(response);
-                if (response.ok && data.success && data.order) renderOrder(data.order);
-            } catch (e) {}
-        }
-    }, 5000);
 </script>
 </body>
 </html>

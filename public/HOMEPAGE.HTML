@@ -842,11 +842,6 @@ socketScript.onload = () => {
   socket.on("inventory_updated", () => loadHomeProducts());
 };
 document.head.appendChild(socketScript);
-
-// Fallback polling for Vercel (Serverless) where WebSockets drop
-setInterval(() => {
-  loadHomeProducts();
-}, 15000);
 </script>
 
 </body>

@@ -688,11 +688,6 @@ socketScript.onload = () => {
   socket.on("location_updated", loadOrder);
 };
 document.head.appendChild(socketScript);
-
-// Fallback polling for Vercel (Serverless) where WebSockets drop
-setInterval(() => {
-  loadOrder();
-}, 5000);
 </script>
 
 </body>
