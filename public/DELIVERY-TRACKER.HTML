@@ -1143,6 +1143,12 @@ socketScript.onload = () => {
   });
 };
 document.head.appendChild(socketScript);
+
+// Fallback polling for Vercel (Serverless) where WebSockets drop
+pollTimer = setInterval(async () => {
+  await loadAcceptedOrders();
+  if(currentOrderId) await loadActiveOrder();
+}, 5000);
 }
 
 window.addEventListener("beforeunload", () => {

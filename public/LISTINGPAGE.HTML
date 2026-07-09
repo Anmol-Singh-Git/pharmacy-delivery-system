@@ -1265,6 +1265,11 @@ _socketScript.onload = () => {
   socket.on("inventory_updated", () => fetchMedicines(null, null));
 };
 document.head.appendChild(_socketScript);
+
+// Fallback polling for Vercel (Serverless) where WebSockets drop
+setInterval(() => {
+  fetchMedicines(null, null);
+}, 10000);
 </script>
 
 <!-- Cart Modal -->
